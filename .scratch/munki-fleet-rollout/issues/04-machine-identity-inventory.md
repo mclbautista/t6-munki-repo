@@ -146,6 +146,14 @@ Findings are recorded with what happened to each. The review ran against the sta
 
 ## Held open for the reviewer
 
-- Whether `production` having no machines is intended.
-- Whether `201 Bay 03` (primary address on `192.168.254.0/24` over Wi-Fi) belongs on the wired network — a decision in the 12/13 approval packet, not a defect here.
-- The ADR 0004 amendment above, which only Cyril can accept.
+- ~~Whether `production` having no machines is intended.~~ **Decided 2026-09-13: `production`
+  exists and is intentionally unassigned for now.** A role group with no machines is a deliberate
+  state, not a missing assignment; recorded in `CONTEXT.md` so the next reader does not re-open it.
+- Whether `201 Bay 03` (primary address on `192.168.254.0/24` over Wi-Fi) belongs on the wired
+  network — a decision in the 12/13 approval packet, not a defect here.
+- ~~The ADR 0004 amendment above, which only Cyril can accept.~~ **Accepted and applied
+  2026-09-13.** ADR 0004's identity bullet now names what the export actually carries, with the
+  superseded wording quoted in an amendment section and the verification cited. The decision
+  itself is unchanged; only its description of the source was wrong.
+- **The role matrix is still not recorded**, which is the one premise this ticket could not fix.
+  Until a per-machine list exists, nothing can be checked against it. Cyril has not decided it.

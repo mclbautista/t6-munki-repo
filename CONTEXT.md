@@ -37,8 +37,14 @@ Two failures this project exists to prevent, in order:
 - **Manifest chain:** `site_default` → `all` (fleet baseline policy) → role group → machine
   manifest. A machine manifest is named exactly the Mac's Munki short hostname.
 - **Role group:** a manifest per fleet role (`toc`, `online`, `warroom`, `client-facing`,
-  `dit`, `sound`, `interns-temporary`, `coordination-admin`). Carries role extras only.
+  `dit`, `sound`, `interns-temporary`, `coordination-admin`, `production`). Carries role extras
+  only. `production` exists and is **intentionally unassigned for now** (Cyril, 2026-09-13), so a
+  role group with no machines is a deliberate state, not a missing assignment.
 - **Role matrix:** the assignment of each Mac to one role group, recorded in the specification.
+  It is **not yet recorded as a per-machine list**; until it is, a machine's role is the role
+  group its own manifest names, which is derived from the same tree it would be checked against
+  (ticket 04). A manifest naming the wrong role group is therefore undetectable there — the probe
+  (ticket 05) and a resolution check (ticket 06) are what catch it.
 - **Ring:** a stage an item passes through before fleet-wide availability. `testing` → **pilot**
   (`202-TOC-M4-Max`, Cyril's Mac mini) → `production`.
 - **Promotion:** the recorded act of moving an item from `testing` to `production`.

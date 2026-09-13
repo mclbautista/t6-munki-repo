@@ -17,7 +17,8 @@ A **deterministic collector** on the admin workstation is the single authoritati
 fleet state:
 
 - **Identity** comes from the Apple Remote Desktop machine export (machine name, serial number,
-  hardware UUID, MAC address, OS version, known network addresses). The T6 operational database's
+  MAC address, OS version, known network addresses). The export carries **no hardware UUID and no
+  architecture**; those arrive from a probe of the machine itself. The T6 operational database's
   Bays records are a *projection* for IP and UUID fields, never the source.
 - **State** comes from a per-machine probe of the machine's Munki client: Munki tools version,
   resolved manifest name, pending update count, last check time and result, architecture
@@ -47,3 +48,25 @@ fleet state:
 
 Delete the observation store and its tooling. Nothing in the fleet depends on it: the store is a
 read-only observer, and Munki clients never consult it.
+
+## Amendment, 2026-09-13: what the machine export actually carries
+
+The first bullet of the decision was wrong about the source it names. It read:
+
+> - **Identity** comes from the Apple Remote Desktop machine export (machine name, serial number,
+>   hardware UUID, MAC address, OS version, known network addresses). The T6 operational
+>   database's Bays records are a *projection* for IP and UUID fields, never the source.
+
+The export was read against that claim when the identity inventory was built (ticket 04). It has
+44 columns and carries **no hardware UUID and no architecture** — and the UUID Apple Remote
+Desktop does keep per computer is ARD's own identifier, not the machine's: verified on the admin
+workstation, whose ARD record is `0B1919E6-1503-49DC-A573-DA2DA06A78AE` while the machine reports
+`CB3D4672-22E7-573F-9CD2-5F1D2A6BEC0F` (commands and outputs in
+`docs/evidence/04-uuid-source-check-2026-09-13.txt`). Taking ARD's value as a hardware UUID would
+have written sixteen wrong identifiers into the fleet record.
+
+The bullet now states what the export carries and where the UUID and architecture come from
+instead: the probe of the machine, which this ADR already makes the source of state. **The
+decision is unchanged** — identity still comes from the export, the Bays records are still only a
+projection, and the probe is still the machine's own word — only the description of what the
+export contains is corrected. Accepted by Cyril on 2026-09-13.
