@@ -1,0 +1,19 @@
+# Ticket 02 — pilot check-only run, key lines
+# Machine: 202-TOC-M4-Max (192.168.88.182), Munki 7.3.0.5808
+# Command: sudo /usr/local/munki/managedsoftwareupdate --checkonly -vv
+# Full log: 605 lines, 35,672 bytes, sha256=0b5bdf43a0dd65380c006a7641c75f1628c3695a6a902189df2a064166bc0e2b
+# Line numbers below are from that log; the file is held in the gitignored evidence store.
+# Nothing was installed: the run is check-only and ends by naming the install-only command.
+#
+  41:     Retrieved manifest toc
+  42:     ** Processing manifest toc for managed_installs
+  49:     Retrieved manifest all
+  57:     Retrieved manifest site_default
+ 215:     * Processing manifest item iTerm2 for install
+ 216:     Looking for detail for: iTerm2, version latest...
+ 217:     Considering 1 items with name iTerm2 from catalog testing
+ 218:     Considering item iTerm2, version 3.7.1 with minimum os version required 13.0
+ 599:     The following items will be installed or upgraded:
+ 600:         + GoogleChrome-153.0.8010.37
+ 603: Run managedsoftwareupdate --installonly to install the downloaded updates.
+ 605: Done.

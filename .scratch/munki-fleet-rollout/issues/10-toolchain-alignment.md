@@ -10,6 +10,15 @@
 
 **Notes:** Verified 2026-09-13: admin tools 6.6.0.4686 against enrolled clients at 7.3.0.5808 — two major versions apart.
 
+**Evidence added by ticket 02 (2026-09-13): the version gap already changes catalog output.** The
+live catalog was built by 6.6.0; rebuilding the same metadata with 7.3.0 produces a byte-different
+catalog whose Firefox duplicate pair is ordered the other way round, which changes which installer
+a client receives (details in ticket 09). Both builds are individually reproducible, so this is a
+tool-version difference. Aligning the toolchain is therefore not bookkeeping: it determines whether
+a catalog rebuild is a no-op or a behaviour change. The `SshTarget` publish path already runs
+against the checkout on the machine that holds it, so the decision includes *where* the build runs
+(see the open host question in the spec).
+
 ## Acceptance criteria
 
 - [ ] The admin workstation's Munki tool version and the version running on each client are recorded per machine from observed data.

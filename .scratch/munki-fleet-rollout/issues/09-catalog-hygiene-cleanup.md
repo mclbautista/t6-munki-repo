@@ -10,9 +10,26 @@
 
 **Notes:** Cleanup runs after the promotion path exists so nothing reaches the fleet mid-cleanup.
 
+**Evidence added by ticket 02 (2026-09-13) — this is no longer hygiene, it is a live defect:**
+
+- The duplicate Firefox pair is two *complete* pkginfos for the same name and version pointing at
+  different installer items: `apps/firefox/Firefox-155.0.1.plist` → `.dmg` (`copy_from_dmg`, one
+  `installs` entry) and `apps/firefox/Firefox-155.0.1__1.plist` → `.pkg` (one `receipts` entry).
+  GoogleChrome's duplicate is the same pattern across directories (`apps/…` `.dmg`,
+  `apps/Google/…` `.pkg`).
+- **Catalog output is tool-version dependent because of them.** A `makecatalogs` 6.6.0 build writes
+  the Firefox pair as `[.pkg, .dmg]`; a 7.3.0 build writes `[.dmg, .pkg]` (both builds
+  reproducible). Since Munki takes the first entry matching a name, the first publish from the
+  newer toolchain changes which Firefox installer the fleet receives.
+- The pre-publish gate now blocks that by default, so **routine publishing is blocked until this
+  ticket resolves the duplicate**. Which of the two survives is a decision for Cyril, and it is a
+  deletion (ADR 0008).
+- Moving the surviving pkginfo to the standard layout (top-level `pkgsinfo/`, one extension
+  convention) removes the ordering question entirely, because there is then only one entry.
+
 ## Acceptance criteria
 
-- [ ] Duplicate name+version catalog entries are eliminated, with the surviving entry's payload and hash the one that is actually installed.
+- [ ] Duplicate name+version catalog entries are eliminated (the Firefox pair must resolve to exactly one entry, so a rebuild can no longer reorder them), with the surviving entry's payload and hash the one that is actually installed.
 - [ ] The test artifact item is removed from every manifest section, and its pkginfo is retired from the repository.
 - [ ] Deferred vendor suites are removed from `site_default`'s optional list and appear in no manifest section.
 - [ ] The staged-but-unmanaged nested `apps` area is resolved: each item is either fully imported into the standard layout or withdrawn, and the decision for each is recorded.
