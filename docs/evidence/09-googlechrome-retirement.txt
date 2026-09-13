@@ -1,0 +1,40 @@
+# Ticket 09 — retiring the duplicate GoogleChrome pkginfo: what was verified
+
+## The change, on Cyril's decision to keep the `.dmg`
+
+    pkgsinfo/apps/GoogleChrome-153.0.8010.37.plist        -> apps/GoogleChrome-153.0.8010.37.dmg   copy_from_dmg, installs: com.google.Chrome 153.0.8010.37
+    pkgsinfo/apps/Google/GoogleChrome-153.0.8010.37.plist -> apps/Google/GoogleChrome-153.0.8010.37.pkg   installs + receipt com.google.Chrome
+
+The **`.pkg` pkginfo was retired** (removed from the checkout; kept in git history and as
+`docs/evidence/09-retired-GoogleChrome-153.0.8010.37.pkg.plist`). The `.dmg` pkginfo survives.
+
+## Verified: the served catalog entry is the one that survives
+
+Pre-images of the catalog served before this change are committed beside this file at
+`docs/evidence/09-catalog-before-googlechrome-retirement/`, so the comparison is re-derivable:
+
+    catalogs/all before   sha256 c34583a30e8bf56d092d78a3b65df2cf8c2ce39b3b3cbb6e197431e92d835a20
+    catalogs/all after    sha256 8e0614bac808ed1e7e7836452e10f2e8b6ba6ae4e727c1365c245b0b92b2805d
+
+    entries: 37 -> 36        GoogleChrome entries: 2 -> 1
+    surviving entry:             apps/GoogleChrome-153.0.8010.37.dmg
+    served first match before:   apps/GoogleChrome-153.0.8010.37.dmg
+    the two entries are byte-identical: True
+
+Munki takes the first entry matching a name and that entry is unchanged, so the installer clients
+are offered does not change.
+
+## Stronger than the Firefox case: the surviving entry matches an actual install
+
+Checked on the pilot `Cyril's Mac mini` (202) on 2026-09-13, read-only:
+
+    /Applications/Google Chrome.app  CFBundleShortVersionString = 153.0.8010.37
+    pkgutil --pkgs | grep -i google  ->  no com.google.Chrome receipt
+
+The installed copy is exactly the version the **surviving** `.dmg` entry declares in its `installs`
+array, and the **retired** `.pkg` entry's receipt (`com.google.Chrome`) does not exist on that
+machine. So the surviving entry is the one consistent with a real installed copy, and the retired
+one would have failed its receipt check and re-installed Chrome over an up-to-date copy.
+
+        Verified: on that pilot, for that entry. Not verified fleet-wide — only one machine was
+        checked, and `202-TOC-M4-Max` has no Chrome installed at all (it is its pending item).
