@@ -1,0 +1,148 @@
+Initial-promotion plan, read-only, 2026-09-13 19:02 PST
+command: python3 -m munki_fleet.cli promotion-plan --metadata-root .
+git: fdc183e  (this run changed nothing)
+
+=================== as-is: everything currently in the testing ring ===================
+pilot ring: 202-TOC-M4-Max, Cyrils-Mac-mini
+1 blocker(s) that must be cleared first:
+  ! pilot Cyrils-Mac-mini has no manifest of its own, so it cannot read the testing catalog; it resolves to site_default instead
+36 item(s) to promote to production:
+  AnyDesk 9.6.0
+  AppCleaner 3.6.8
+  CineCred 0.0
+  Cyberduck 9.5.4
+  DiskCatalogMaker 9.3.1
+  Dropbox 268.4.4124
+  Firefox 155.0.1
+  FrameioDrive 1.12.0
+  FrameioTransfer 1.12.0
+  FreeFileSync 14.12
+  GoogleChrome 153.0.8010.37
+  HandBrake 1.11.2
+  IBMAsperaConnect 4.2.19.956-HEAD
+  Keka 1.6.7
+  LucidLink 3.9.8795
+  MSAutoUpdate 4.85.26080216
+  MSEdge 152.0.4191.66
+  MSTeams 26225.1706.5101.3140
+  MediaInfo 26.05
+  Notion 7.33.0
+  OnyX 5.0.3
+  QfinderPro 1.0
+  RemoteDesktop 11.4.0
+  RemotePC 7.0
+  ShutterEncoder 20.3
+  Soundly 2026.07.43
+  Spotify 1.2.99.317
+  Stow 0.6.47
+  TeamViewer 1.0
+  Telegram 12.10
+  VLC 3.0.23
+  Zoom 7.1.5.84650
+  davinci-resolve-project-server 20.0
+  davinci-resolve-studio 20.0
+  iTerm2 3.7.1
+  t6-munki-test 1.0
+28 manifest(s) to repoint:
+  201-Bay-01-Mac-Pro: ['testing'] -> ['production']
+  201-Bay-02-M1-Max: ['testing'] -> ['production']
+  201-Bay-03-M1-Ultra: ['testing'] -> ['production']
+  201-Viewing-Room: ['testing'] -> ['production']
+  202-Jason-M2-Max: ['testing'] -> ['production']
+  202-Mac-Pro-3: ['testing'] -> ['production']
+  202-TOC-M4-Max: ['testing'] -> ['testing', 'production']
+  202-Tim-M2-Max-9: ['testing'] -> ['production']
+  202A-Mac-Mini-M4: ['testing'] -> ['production']
+  202B-Mac-Studio: ['testing'] -> ['production']
+  202C-Studio-M1-Ultra: ['testing'] -> ['production']
+  303B iMac: ['testing'] -> ['production']
+  303D-Mac-Studio-M2: ['testing'] -> ['production']
+  Angels-iMac: ['testing'] -> ['production']
+  T6-MacBook-M3-Pro: ['testing'] -> ['production']
+  T6-MacBook-M4-Max: ['testing'] -> ['production']
+  all: ['testing'] -> ['production']
+  client-facing: ['testing'] -> ['production']
+  coordination-admin: ['testing'] -> ['production']
+  dit: ['testing'] -> ['production']
+  interns-temporary: ['testing'] -> ['production']
+  online: ['testing'] -> ['production']
+  production: ['testing'] -> ['production']
+  site_default: ['testing'] -> ['production']
+  sound: ['testing'] -> ['production']
+  t6-test-client: ['testing'] -> ['production']
+  toc: ['testing'] -> ['production']
+  warroom: ['testing'] -> ['production']
+
+0 promotion(s) already on record
+
+=================== with the recommended exclusions ===================
+excluded: t6-munki-test (test artifact), davinci-resolve-studio + davinci-resolve-project-server (deferred)
+pilot ring: 202-TOC-M4-Max, Cyrils-Mac-mini
+3 item(s) deliberately left in testing: davinci-resolve-project-server, davinci-resolve-studio, t6-munki-test
+1 blocker(s) that must be cleared first:
+  ! pilot Cyrils-Mac-mini has no manifest of its own, so it cannot read the testing catalog; it resolves to site_default instead
+33 item(s) to promote to production:
+  AnyDesk 9.6.0
+  AppCleaner 3.6.8
+  CineCred 0.0
+  Cyberduck 9.5.4
+  DiskCatalogMaker 9.3.1
+  Dropbox 268.4.4124
+  Firefox 155.0.1
+  FrameioDrive 1.12.0
+  FrameioTransfer 1.12.0
+  FreeFileSync 14.12
+  GoogleChrome 153.0.8010.37
+  HandBrake 1.11.2
+  IBMAsperaConnect 4.2.19.956-HEAD
+  Keka 1.6.7
+  LucidLink 3.9.8795
+  MSAutoUpdate 4.85.26080216
+  MSEdge 152.0.4191.66
+  MSTeams 26225.1706.5101.3140
+  MediaInfo 26.05
+  Notion 7.33.0
+  OnyX 5.0.3
+  QfinderPro 1.0
+  RemoteDesktop 11.4.0
+  RemotePC 7.0
+  ShutterEncoder 20.3
+  Soundly 2026.07.43
+  Spotify 1.2.99.317
+  Stow 0.6.47
+  TeamViewer 1.0
+  Telegram 12.10
+  VLC 3.0.23
+  Zoom 7.1.5.84650
+  iTerm2 3.7.1
+28 manifest(s) to repoint:
+  201-Bay-01-Mac-Pro: ['testing'] -> ['production']
+  201-Bay-02-M1-Max: ['testing'] -> ['production']
+  201-Bay-03-M1-Ultra: ['testing'] -> ['production']
+  201-Viewing-Room: ['testing'] -> ['production']
+  202-Jason-M2-Max: ['testing'] -> ['production']
+  202-Mac-Pro-3: ['testing'] -> ['production']
+  202-TOC-M4-Max: ['testing'] -> ['testing', 'production']
+  202-Tim-M2-Max-9: ['testing'] -> ['production']
+  202A-Mac-Mini-M4: ['testing'] -> ['production']
+  202B-Mac-Studio: ['testing'] -> ['production']
+  202C-Studio-M1-Ultra: ['testing'] -> ['production']
+  303B iMac: ['testing'] -> ['production']
+  303D-Mac-Studio-M2: ['testing'] -> ['production']
+  Angels-iMac: ['testing'] -> ['production']
+  T6-MacBook-M3-Pro: ['testing'] -> ['production']
+  T6-MacBook-M4-Max: ['testing'] -> ['production']
+  all: ['testing'] -> ['production']
+  client-facing: ['testing'] -> ['production']
+  coordination-admin: ['testing'] -> ['production']
+  dit: ['testing'] -> ['production']
+  interns-temporary: ['testing'] -> ['production']
+  online: ['testing'] -> ['production']
+  production: ['testing'] -> ['production']
+  site_default: ['testing'] -> ['production']
+  sound: ['testing'] -> ['production']
+  t6-test-client: ['testing'] -> ['production']
+  toc: ['testing'] -> ['production']
+  warroom: ['testing'] -> ['production']
+
+0 promotion(s) already on record
