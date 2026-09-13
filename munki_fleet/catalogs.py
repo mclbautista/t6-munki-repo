@@ -73,10 +73,13 @@ class CatalogDiff:
     changed: Dict[str, List[str]] = field(default_factory=dict)
     duplicate_names: List[str] = field(default_factory=list)
     duplicate_order_changed: List[str] = field(default_factory=list)
+    duplicates_resolved: List[str] = field(default_factory=list)
+    duplicates_gained: List[str] = field(default_factory=list)
 
     def is_empty(self) -> bool:
         return not (self.added or self.removed or self.changed or self.duplicate_names
-                    or self.duplicate_order_changed)
+                    or self.duplicate_order_changed or self.duplicates_resolved
+                    or self.duplicates_gained)
 
     def has_item_changes(self) -> bool:
         return bool(self.added or self.removed or self.changed)
@@ -97,6 +100,10 @@ class CatalogDiff:
             parts.append(f"duplicate names: {', '.join(self.duplicate_names)}")
         if self.duplicate_order_changed:
             parts.append(f"duplicate-name order changed: {', '.join(self.duplicate_order_changed)}")
+        if self.duplicates_resolved:
+            parts.append(f"duplicate-name entries resolved: {', '.join(self.duplicates_resolved)}")
+        if self.duplicates_gained:
+            parts.append(f"NEW duplicate-name entries: {', '.join(self.duplicates_gained)}")
         return " | ".join(parts)
 
 
@@ -143,9 +150,18 @@ def compare_catalogs(old_bytes: bytes, new_bytes: bytes) -> CatalogDiff:
     old = _entries_by_name(old_bytes)
     new = _entries_by_name(new_bytes)
 
-    diff = CatalogDiff(duplicate_names=sorted(
-        name for name in set(old) | set(new) if len(old.get(name, [])) > 1 or len(new.get(name, [])) > 1
-    ))
+    def _is_duplicate(name: str) -> bool:
+        return len(old.get(name, [])) > 1 or len(new.get(name, [])) > 1
+
+    diff = CatalogDiff(duplicate_names=sorted(name for name in set(old) | set(new) if _is_duplicate(name)))
+    diff.duplicates_resolved = sorted(
+        name for name in set(old) | set(new)
+        if len(old.get(name, [])) > 1 and len(new.get(name, [])) <= 1
+    )
+    diff.duplicates_gained = sorted(
+        name for name in set(old) | set(new)
+        if len(old.get(name, [])) <= 1 and len(new.get(name, [])) > 1
+    )
     diff.added = sorted(set(new) - set(old))
     diff.removed = sorted(set(old) - set(new))
 
@@ -155,11 +171,18 @@ def compare_catalogs(old_bytes: bytes, new_bytes: bytes) -> CatalogDiff:
             keys = sorted({k for k in set(old_entries[0]) | set(new_entries[0])
                            if old_entries[0].get(k) != new_entries[0].get(k)})
         else:
-            # Per-key multiset comparison, so reordering alone never shows up as a key change.
-            all_keys = set().union(*[set(e) for e in old_entries + new_entries])
+            # Same-name entries: match them by the installer item they point at, so a reordering
+            # never shows up as a key change and a resolution is not mistaken for one either.
+            def by_location(entries):
+                return {e.get("installer_item_location"): e for e in entries}
+
+            old_by_loc, new_by_loc = by_location(old_entries), by_location(new_entries)
+            matched = set(old_by_loc) & set(new_by_loc)
+            all_keys = set().union(*[set(e) for e in old_entries + new_entries]) if old_entries or new_entries else set()
             keys = sorted(
                 k for k in all_keys
-                if sorted(repr(e.get(k)) for e in old_entries) != sorted(repr(e.get(k)) for e in new_entries)
+                if sorted(repr(old_by_loc[loc].get(k)) for loc in matched)
+                != sorted(repr(new_by_loc[loc].get(k)) for loc in matched)
             )
         if keys:
             diff.changed[name] = keys

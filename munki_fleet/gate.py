@@ -12,6 +12,9 @@ does not describe:
   otherwise let through silently;
 - **reordering of same-name duplicate entries**, which changes which installer a client receives
   while looking like a no-op;
+- **resolving a duplicate-name pair** — retiring one of two same-name pkginfos leaves name-level
+  membership unchanged, so nothing else in this gate would notice; a *newly appearing* duplicate is
+  refused outright rather than declarable, because one entry per name and version is the rule;
 - **any non-catalog file that differs** (`--expect-file path`) — a manifest edit produces no
   catalog diff at all, so it would otherwise publish undeclared.
 
@@ -66,6 +69,7 @@ def evaluate_gate(served: Dict[str, bytes], built: Dict[str, bytes],
                   expect_new_catalogs: Set[str] = frozenset(),
                   expect_additions: Set[str] = frozenset(),
                   expect_removals: Set[str] = frozenset(),
+                  expect_duplicates_resolved: Set[str] = frozenset(),
                   file_changes: Optional[Dict[str, str]] = None,
                   expect_files: Set[str] = frozenset(),
                   allow_duplicate_order_change: bool = False) -> GateDecision:
@@ -132,6 +136,30 @@ def evaluate_gate(served: Dict[str, bytes], built: Dict[str, bytes],
         decision.accepted_risks.append(
             "duplicate-name entry order changed for " + ", ".join(order_changed)
             + " — accepted explicitly by the operator"
+        )
+
+    resolved = sorted({name for diff in decision.diffs.values() for name in diff.duplicates_resolved})
+    gained = sorted({name for diff in decision.diffs.values() for name in diff.duplicates_gained})
+    for name in resolved:
+        if name in expect_duplicates_resolved:
+            decision.accepted_risks.append(
+                f"duplicate-name entries resolved for {name} — declared by the operator"
+            )
+        else:
+            decision.reasons.append(
+                f"duplicate-name entries resolved for {name} — retiring a same-name pkginfo is a "
+                f"change to which installer a client would receive; declare it with "
+                f"--expect-duplicate-resolved {name}"
+            )
+    for declared in sorted(expect_duplicates_resolved):
+        if declared not in resolved:
+            decision.reasons.append(
+                f"declared duplicate resolution for {declared} did not happen"
+            )
+    for name in gained:
+        decision.reasons.append(
+            f"a new duplicate-name entry appeared for {name} — one entry per name and version is "
+            f"the rule; remove the duplicate rather than publishing it"
         )
 
     for path, kind in sorted(file_changes.items()):

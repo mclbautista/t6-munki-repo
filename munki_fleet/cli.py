@@ -146,6 +146,7 @@ def cmd_publish(args, deps) -> int:
         expect_new_catalogs=set(args.expect_new_catalog or []),
         expect_additions=set(args.expect_add or []),
         expect_removals=set(args.expect_remove or []),
+        expect_duplicates_resolved=set(args.expect_duplicate_resolved or []),
         file_changes=file_changes(args.metadata_root, target, paths),
         expect_files=set(args.expect_file or []),
         allow_duplicate_order_change=args.allow_duplicate_order_change,
@@ -224,6 +225,8 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
                    help="an item this publish intends to add to the catalog (repeatable)")
     p.add_argument("--expect-remove", action="append", metavar="ITEM", default=[],
                    help="an item this publish intends to remove from the catalog (repeatable)")
+    p.add_argument("--expect-duplicate-resolved", action="append", metavar="ITEM", default=[],
+                   help="a same-name duplicate entry this publish retires (repeatable)")
     p.add_argument("--expect-file", action="append", metavar="PATH", default=[],
                    help="a non-catalog file this publish intends to change (repeatable)")
     p.add_argument("--expect-new-catalog", action="append", metavar="NAME", default=[],

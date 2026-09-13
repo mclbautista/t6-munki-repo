@@ -99,6 +99,36 @@ def test_duplicate_entry_reordering_is_allowed_when_explicitly_accepted():
     assert any("order" in r for r in decision.accepted_risks)
 
 
+def test_a_resolved_duplicate_must_be_declared():
+    """Retiring one of two same-name pkginfos changes the catalog's duplicate set.
+
+    Name-level membership does not change, so a diff that only reports added/removed names would
+    let this through — yet it is exactly the change that resolves the Firefox ordering hazard.
+    """
+    dmg = item("Firefox", installer_item_location="Firefox.dmg")
+    pkg = item("Firefox", installer_item_location="Firefox.pkg")
+    decision = gate([pkg, dmg], [pkg])
+    assert decision.allowed is False
+    assert any("duplicate" in r and "Firefox" in r for r in decision.reasons)
+
+
+def test_a_declared_duplicate_resolution_is_allowed_and_recorded():
+    dmg = item("Firefox", installer_item_location="Firefox.dmg")
+    pkg = item("Firefox", installer_item_location="Firefox.pkg")
+    decision = gate([pkg, dmg], [pkg], expect_duplicates_resolved={"Firefox"})
+    assert decision.allowed is True, decision.reasons
+    assert any("Firefox" in r for r in decision.accepted_risks)
+
+
+def test_a_newly_appearing_duplicate_is_refused_even_when_declared():
+    """One entry per name and version is the rule; a second one appearing is a defect, not a change."""
+    dmg = item("Firefox", installer_item_location="Firefox.dmg")
+    pkg = item("Firefox", installer_item_location="Firefox.pkg")
+    decision = gate([dmg], [dmg, pkg], expect_duplicates_resolved=set())
+    assert decision.allowed is False
+    assert any("duplicate" in r.lower() for r in decision.reasons)
+
+
 def test_an_undeclared_file_change_is_refused():
     """A manifest edit produces no catalog diff at all, so it must be declared as a file."""
     decision = gate([item("A")], [item("A")],
