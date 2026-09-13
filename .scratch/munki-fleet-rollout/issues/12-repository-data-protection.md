@@ -6,14 +6,17 @@
 
 **Approval gate:** Configuring NAS snapshots and backup jobs is a system change on the NAS and requires Cyril's approval before execution. **Approved 2026-09-13** — the decision packet `.scratch/munki-fleet-rollout/approvals/12-and-13-nas-system-changes.md` records 12A, 12B and 12C as approved as recommended.
 
-**Status:** ready-for-human (one action remains: the snapshot schedule, which is a QTS UI step)
+**Status:** done (2026-09-13) — five criteria by doing them, the sixth closed by an explicit decision not to, with the residual risk recorded.
 
 **Notes:** Verified 2026-09-13: zero backup jobs and no snapshots existed for the repository volume.
 
 ## Acceptance criteria
 
-- [ ] **A snapshot schedule with bounded retention is configured on the repository volume, with the policy recorded (frequency, retention, what is covered).**
-  - **Not done, and it cannot be done from here.** No snapshot capability exists in the QNAP MCP tool set, and the NAS shell is read-only for this user, so snapshots are a QTS UI action. Current state, re-read 2026-09-13: `zfs list -t snapshot` shows only the installation-time `@:init:` snapshots from 30 May 2026 (174 KB each) on the pool's datasets — nothing scheduled, nothing since.
+- [x] **Snapshotting: decided against, and the decision is the recorded policy.**
+  - **Cyril, 2026-09-13: "I don't want to enable snapshotting on the NAS. I'm okay with this as is."** The criterion asks for a schedule *with the policy recorded*; the policy of record is therefore **no snapshots on the repository volume**, stated here and in `docs/recovery.md` so a future reader finds a decision rather than an omission.
+  - **Residual risk accepted:** the served tree on the NAS has no point-in-time recovery. A bad import or a wrong delete on the served copy is recoverable for the **metadata** (Git history, on this machine and off-site) but not for the **payloads**, whose only other copy is the one this ticket placed on the admin workstation. Deleting both the NAS payload and that copy loses the non-reproducible item for good; the account-gated ones need the vendor account again.
+  - **What that leaves as the protection path:** the recovery procedure in `docs/recovery.md`, the drill in `docs/evidence/12-drill-2026-09-13.txt`, and the off-NAS payload copy. The revisit trigger, should the calculus change: a second copy target existing, or a payload whose re-acquisition turns out to be impossible.
+  - For the record, had it been enabled it would have been a QTS UI action — no snapshot capability exists in the QNAP MCP tool set and the NAS shell is read-only. Current state re-read 2026-09-13: only installation-time `@:init:` snapshots (30 May 2026, 174 KB each) exist on the pool's datasets. No snapshot capability exists in the QNAP MCP tool set, and the NAS shell is read-only for this user, so snapshots are a QTS UI action. Current state, re-read 2026-09-13: `zfs list -t snapshot` shows only the installation-time `@:init:` snapshots from 30 May 2026 (174 KB each) on the pool's datasets — nothing scheduled, nothing since.
   - **Settings proposed for the `Web` volume** (this is what the UI needs): a daily schedule, keeping 7 daily plus 4 weekly snapshots (~11 kept), snapshot space reserved explicitly rather than left to the default, and the schedule covering the whole `Web` share because the repository is a path inside it — `Web/MunkiRepo` cannot be snapshotted separately from `Web`.
   - **Verify after enabling:** `ssh t6-nas 'zfs list -t snapshot -o name,creation,used'` should show dated snapshots after the first run, and Storage & Snapshots → Snapshots should list them for the volume.
 - [x] **The metadata tree is pushed to a second device, so repository history exists off the admin workstation.**
@@ -43,6 +46,6 @@
 
 ## What remains
 
-1. **The snapshot schedule** — criterion 1, a UI click in Storage & Snapshots with the settings above; nothing else in this ticket is waiting on it.
+1. ~~The snapshot schedule~~ — **closed by Cyril's decision not to snapshot the NAS, 2026-09-13.** No further action, and the residual risk is recorded above.
 2. **Where the payload copy should durably live** — today it is on the admin workstation. The non-reproducible item is 100 MB and the account-gated set 8.3 GiB, so both fit on an external drive or a second NAS whenever one is chosen.
 3. **Nothing to decide about the re-fetchable 20** — they are an explicit recorded exclusion.

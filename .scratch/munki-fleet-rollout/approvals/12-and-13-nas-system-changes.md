@@ -118,7 +118,7 @@ Decided by Cyril on 2026-09-13. Recorded here as the decision of record; the wor
 
 | # | decision | outcome |
 |---|---|---|
-| 12A | snapshot schedule on the `Web` volume (daily, bounded retention, explicit snapshot space) | **approved as recommended** |
+| 12A | snapshot schedule on the `Web` volume (daily, bounded retention, explicit snapshot space) | **declined by Cyril, 2026-09-13: no snapshotting on the NAS.** The policy of record is therefore "no snapshots"; the residual risk is recorded in ticket 12, and the metadata's protection is the Git history (on the admin workstation and off-site) plus the off-NAS payload copy. |
 | 12B | off-NAS copy target for the metadata | **approved as recommended** — an HBS job *and* a pushed Git history |
 | 12C | where the restore drill restores to, and the payload classification's off-NAS rule | **approved as recommended** — drill on the second device, classify before copying |
 | 13A | install QuFirewall on the NAS | **network segregation chosen instead** — no firewall app is to be installed; the restriction comes from where clients can reach the NAS, not from a rule on it |

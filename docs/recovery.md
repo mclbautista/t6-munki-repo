@@ -82,6 +82,10 @@ equal the `installer_item_hash` in its pkginfo. 28 of 28 did on 2026-09-13.
 ## What is not protected today
 
 - **Payloads**: one NAS volume, no off-NAS copy. The classification artifact sizes the problem.
-- **Snapshots**: none on the repository volume (ticket 12, criterion 1 — settings proposed, needs
-  the QTS UI).
+- **Snapshots**: none on the repository volume — **by decision, not by omission** (Cyril,
+  2026-09-13: "I don't want to enable snapshotting on the NAS"). There is therefore no
+  point-in-time recovery of the served tree: a bad import or a wrong delete is recovered from the
+  Git history for the metadata, and from the off-NAS copy for the payloads listed above, and not
+  otherwise. The revisit trigger is a second copy target existing, or a payload whose
+  re-acquisition turns out to be impossible.
 - ARD's machine-alias list and other live-machine state: not repository data, out of scope here.
