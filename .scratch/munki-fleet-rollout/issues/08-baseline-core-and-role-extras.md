@@ -6,7 +6,51 @@
 
 **Approval gate:** Cyril confirms or amends the forced core list before it takes effect. Initial proposal: TeamViewer, AnyDesk, RemotePC, Remote Desktop, Google Chrome, Telegram, Notion.
 
-**Status:** ready-for-agent
+**Status:** ready-for-human (the forced core is suspended; role extras and the managed-updates pairing remain)
+
+## The forced core is empty (Cyril, 2026-09-13)
+
+Cyril: *"i don't want anything to be force installed on this mac at this time. actually turn off all
+the force installs for now."* Applied and recorded:
+
+- `manifests/all` declares `managed_installs` with no items; the 26 items moved to
+  `optional_installs` in the same manifest, so they remain installable by hand.
+- `data/baseline-suspended.json` carries the suspended list with the date, approver, reason and the
+  reversal instruction. Mechanism: `munki_fleet.baseline.suspend_forced_installs`, tested; the check
+  `forced_installs()` returns empty, verified across every machine manifest and role group
+  (`docs/evidence/08-baseline-suspension.txt`).
+- ADR 0002 carries an amendment quoting the superseded core list; `CONTEXT.md`'s glossary entry now
+  says the core is empty by decision.
+- **Nothing is uninstalled by this**, and the tier model in ADR 0002 is unchanged — only tier 1's
+  membership is currently empty.
+
+Two consequences that are now live decisions rather than footnotes: the 26 items are **visible in
+Self Service** (they were hidden as managed installs), and a Mac missing them **will not receive
+them** until a user installs one or the core is restored.
+
+**This change is committed but not published** — see the ordering note below.
+
+## Ordering: this change and ticket 06's manifests are entangled
+
+A publish is all-or-nothing: the pre-publish gate refuses any undeclared file difference between the
+checkout and the target, so the two machine manifests ticket 06 committed for `303A-Mac-Mini-M4-Pro`
+and `Sixto-5` (the admin workstation) cannot be left out of a publish that carries this change.
+
+Ticket 06's own approval gate requires Cyril to approve *what the admin workstation receives* before
+that manifest is applied, so the two should not be published by this ticket's urgency. The safe order
+is **one publish carrying both**, because the suspension lands in the same change: those two machines
+then resolve their own manifests and inherit 0 forced / 26 optional, where publishing them *before*
+this change would have force-installed up to 26 items on both.
+
+## Acceptance criteria (revised against the current decision)
+
+- [x] The forced core is listed explicitly and matches what is in the manifests; nothing else is
+      force-installed. **The core is empty**, so it trivially matches — and `forced_installs()`
+      asserts it rather than asserting it by eye.
+- [ ] Every approved non-core item appears as optional, and approved optional items are also listed
+      for managed updates so already-installed copies stay patched. **Half done:** the 26 are
+      optional; `managed_updates` is still empty everywhere, so nothing is kept patched yet. That
+      pairing is a follow-on decision, not part of Cyril's instruction.
 
 **Notes:** Role extras are proposed per group in this ticket and confirmed before publishing.
 

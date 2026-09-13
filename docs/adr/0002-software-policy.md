@@ -46,3 +46,37 @@ item may not sit in a section where a material share of the fleet can never inst
 
 Restore the prior `all` manifest from Git history and republish. Because the metadata tree is
 versioned, the previous policy is recoverable as a single commit.
+## Amendment: the baseline core is empty for now (2026-09-13)
+
+**Superseded wording** (Decision, item 1): "A deliberately small set, limited to remote support and
+shared essentials, force-installed on every Mac. Initial core: TeamViewer, AnyDesk, RemotePC,
+Remote Desktop, Google Chrome, Telegram, Notion. This list is confirmed or amended by Cyril before
+it takes effect on the fleet."
+
+Cyril, 2026-09-13: *"i don't want anything to be force installed on this mac at this time. actually
+turn off all the force installs for now."* That is the confirmation this ADR was waiting for, and
+the confirmed core is **empty**. `all` declares `managed_installs` with no items, and the 26 items
+that were force-installed are now in `optional_installs` in the same manifest, so they stay
+installable by hand instead of vanishing.
+
+The suspended list — AnyDesk, AppCleaner, CineCred, Stow, DiskCatalogMaker, FrameioDrive,
+FrameioTransfer, FreeFileSync, GoogleChrome, HandBrake, IBMAsperaConnect, iTerm2, Keka, LucidLink,
+MediaInfo, Notion, OnyX, QfinderPro, RemoteDesktop, RemotePC, ShutterEncoder, Soundly, TeamViewer,
+Telegram, VLC, Zoom — is recorded machine-readably in `data/baseline-suspended.json` with the date,
+approver, reason and the instruction for reversing it. Restoring the core is that list moved back to
+`managed_installs` in `all` and republished; it changes what 18 machines receive and needs Cyril's
+approval then as now (ADR 0008).
+
+Verified after the change: no manifest anywhere declares `managed_installs`, `default_installs` or
+`forced_installs`, and every machine manifest and role group resolves to **0 forced / 26 optional**.
+Evidence: `docs/evidence/08-baseline-suspension.txt`. The tables above describe the tier model, which
+is unchanged; only tier 1's membership is currently empty.
+
+Nothing is uninstalled by this: an item that leaves `managed_installs` stops being installed and
+updated automatically, it is not removed. Two consequences to know:
+
+- **Self Service changes.** `managed_installs` items are hidden from Managed Software Center;
+  `optional_installs` items are visible and user-installable. The 26 items become visible fleet-wide.
+- **A machine missing them will not get them.** Machines without the remote-support tools stay
+  without them until a user installs them from Self Service or the core is restored.
+

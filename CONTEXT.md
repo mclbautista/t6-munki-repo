@@ -54,8 +54,10 @@ Two failures this project exists to prevent, in order:
   record (ADR 0009).
 - **Pre-publish gate:** the check that refuses an undeclared change, an unreadable target, or a
   declaration that did not come true. There is no bypass.
-- **Baseline core:** the small set of items force-installed on every Mac (remote support and
-  shared essentials). Everything else approved for the fleet is optional.
+- **Baseline core:** the items force-installed on every Mac (remote support and shared essentials).
+  **Currently empty by Cyril's decision of 2026-09-13** — every item that was forced is listed as
+  optional instead, so nothing installs without a user action. `data/baseline-suspended.json` holds
+  the suspended list and the way back; see ADR 0002's amendment.
 - **Optional install:** an item a user may install from Managed Software Center. Approved items
   are also listed for managed updates so already-installed copies stay patched.
 - **Repository layout convention:** every pkginfo is

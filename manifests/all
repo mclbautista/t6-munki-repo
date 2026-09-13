@@ -14,6 +14,12 @@
 	</array>
 	<key>managed_installs</key>
 	<array>
+	</array>
+	<key>managed_updates</key>
+	<array>
+	</array>
+	<key>optional_installs</key>
+	<array>
 		<string>AnyDesk</string>
 		<string>AppCleaner</string>
 		<string>CineCred</string>
@@ -40,9 +46,6 @@
 		<string>Telegram</string>
 		<string>VLC</string>
 		<string>Zoom</string>
-	</array>
-	<key>managed_updates</key>
-	<array>
 	</array>
 </dict>
 </plist>

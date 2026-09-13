@@ -1,0 +1,65 @@
+Forced core suspension, 2026-09-13 19:28 PST
+git: 71e9e43
+
+before: {'all.managed_installs': ['AnyDesk', 'AppCleaner', 'CineCred', 'Stow', 'DiskCatalogMaker', 'FrameioDrive', 'FrameioTransfer', 'FreeFileSync', 'GoogleChrome', 'HandBrake', 'IBMAsperaConnect', 'iTerm2', 'Keka', 'LucidLink', 'MediaInfo', 'Notion', 'OnyX', 'QfinderPro', 'RemoteDesktop', 'RemotePC', 'ShutterEncoder', 'Soundly', 'TeamViewer', 'Telegram', 'VLC', 'Zoom']}
+after:  {} (empty means nothing is force-installed anywhere)
+recorded: 26 items, reversible from data/baseline-suspended.json
+
+-- the diff --
+ manifests/all | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+diff --git a/manifests/all b/manifests/all
+index 8e309be..25a740d 100644
+--- a/manifests/all
++++ b/manifests/all
+@@ -13,6 +13,12 @@
+ 		<string>site_default</string>
+ 	</array>
+ 	<key>managed_installs</key>
++	<array>
++	</array>
++	<key>managed_updates</key>
++	<array>
++	</array>
++	<key>optional_installs</key>
+ 	<array>
+ 		<string>AnyDesk</string>
+ 		<string>AppCleaner</string>
+@@ -41,8 +47,5 @@
+ 		<string>VLC</string>
+ 		<string>Zoom</string>
+ 	</array>
+-	<key>managed_updates</key>
+-	<array>
+-	</array>
+ </dict>
+ </plist>
+
+-- resolve the chain: does any machine still force anything? --
+  201-Bay-01-Mac-Pro         forced= 0 optional=26
+  201-Bay-02-M1-Max          forced= 0 optional=26
+  201-Bay-03-M1-Ultra        forced= 0 optional=26
+  201-Viewing-Room           forced= 0 optional=26
+  202-Jason-M2-Max           forced= 0 optional=26
+  202-Mac-Pro-3              forced= 0 optional=26
+  202-TOC-M4-Max             forced= 0 optional=26
+  202-Tim-M2-Max-9           forced= 0 optional=26
+  202A-Mac-Mini-M4           forced= 0 optional=26
+  202B-Mac-Studio            forced= 0 optional=26
+  202C-Studio-M1-Ultra       forced= 0 optional=26
+  303A-Mac-Mini-M4-Pro       forced= 0 optional=26
+  303B iMac                  forced= 0 optional=26
+  303D-Mac-Studio-M2         forced= 0 optional=26
+  Angels-iMac                forced= 0 optional=26
+  Sixto-5                    forced= 0 optional=26
+  T6-MacBook-M3-Pro          forced= 0 optional=26
+  T6-MacBook-M4-Max          forced= 0 optional=26
+  client-facing              forced= 0 optional=26
+  coordination-admin         forced= 0 optional=26
+  dit                        forced= 0 optional=26
+  interns-temporary          forced= 0 optional=26
+  online                     forced= 0 optional=26
+  production                 forced= 0 optional=26
+  sound                      forced= 0 optional=26
+  toc                        forced= 0 optional=26
+  warroom                    forced= 0 optional=26
