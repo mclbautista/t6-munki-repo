@@ -1,0 +1,47 @@
+# Ticket 02 — the authorised publish, the refusals, and the restore
+
+Target: t6-nas:/share/ZFS23_DATA/Web/MunkiRepo (the live repository behind
+http://192.168.88.188/MunkiRepo). Machine: the admin workstation that holds the Git checkout.
+
+## The gate refusing an unread diff (the incident, 18:02)
+
+    $ python3 -m munki_fleet.cli publish --metadata-root . --target <target> --allow-changes
+    catalogs/all: changed: Firefox (blocking_applications, installed_size, installer_item_hash, …);
+                  iTerm2 (display_name)
+    publish: written 3, unchanged 102, skipped 0, backed up 3
+
+That `--allow-changes` flag no longer exists (ADR 0009). It let through a second, undeclared change.
+
+## The gate refusing a declared change whose side effect was not declared (after the rewrite)
+
+    $ python3 -m munki_fleet.cli publish --metadata-root . --target <target> \
+        --expect-change iTerm2:display_name
+    catalogs/all: changed: iTerm2 (display_name) | duplicate names: Firefox, GoogleChrome |
+                  duplicate-name order changed: Firefox
+    REFUSED: duplicate-name entry order changed for Firefox — Munki takes the first match, so this
+             changes which installer a client receives; resolve the duplicate instead, or accept it
+             explicitly with --allow-duplicate-order-change
+    exit=3
+
+## The authorised publish (declared change + explicitly accepted order risk)
+
+    catalogs/all: changed: iTerm2 (display_name) | duplicate names: Firefox, GoogleChrome |
+                  duplicate-name order changed: Firefox
+    ACCEPTED RISK: duplicate-name entry order changed for Firefox — accepted explicitly by the operator
+    publish: written 3, unchanged 102, skipped 0, backed up 3
+    filesystem verify: matching 105, mismatching 0, missing 0
+
+Served vs checkout, over HTTP, while that state was live:
+
+    catalogs/all                   local=d023c41256120047 served=d023c41256120047
+    catalogs/testing               local=d023c41256120047 served=d023c41256120047
+    pkgsinfo/iTerm2-3.7.1.pkginfo  local=e7f6aff874c7ab29 served=e7f6aff874c7ab29
+
+## The restore (criterion 7)
+
+    restore publish: written 3, unchanged 0, skipped 0, backed up 0
+    catalogs/all                   expected=fabda778b3f6bd42 nas=fabda778b3f6bd42 http=fabda778b3f6bd42 MATCH
+    catalogs/testing               expected=fabda778b3f6bd42 nas=fabda778b3f6bd42 http=fabda778b3f6bd42 MATCH
+    pkgsinfo/iTerm2-3.7.1.pkginfo  expected=23c70bf5d89dd6ad nas=23c70bf5d89dd6ad http=23c70bf5d89dd6ad MATCH
+
+Temp files left on the NAS by either publish: `find … -name '*.tmp'` → 0.

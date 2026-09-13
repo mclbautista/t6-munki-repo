@@ -1,0 +1,39 @@
+# Ticket 02 — the rewritten gate against the real target, and the standing blocker
+
+Read-only: both runs used --dry-run, so nothing was published. Served hashes were re-checked
+afterwards and were unchanged.
+
+## A fresh build of the current checkout differs from what is served in exactly one way
+
+    $ python3 -m munki_fleet.cli publish --metadata-root . --target <target> --dry-run
+    catalogs/all: duplicate names: Firefox, GoogleChrome | duplicate-name order changed: Firefox
+    catalogs/testing: duplicate names: Firefox, GoogleChrome | duplicate-name order changed: Firefox
+    REFUSED: duplicate-name entry order changed for Firefox …
+    exit=3
+
+No item-level changes at all: every pkginfo in the checkout produces the same catalog entries the
+fleet is already served. The only difference is the order of the two same-name Firefox entries,
+because the fleet's catalogs were built by `makecatalogs` 6.6.0 and a build here uses 7.3.0.
+
+Consequence, stated plainly: **the checkout cannot currently reproduce the served catalogs byte for
+byte.** The tracked metadata matches — `pkgsinfo`, `manifests` and `icons` are identical to what is
+served — but the generated catalogs cannot, until ticket 09 resolves the duplicate or ticket 10
+aligns the toolchain. Any publish from this toolchain therefore needs the order change accepted
+explicitly, which is exactly what the gate now forces.
+
+    served catalogs/all   sha256 fabda778b3f6bd42  (built by makecatalogs 6.6.0)
+    local  catalogs/all   sha256 d5f572685c643575  (built by makecatalogs 7.3.0)
+
+## With the risk accepted, the gate allows the publish and says so
+
+    $ python3 -m munki_fleet.cli publish --metadata-root . --target <target> --dry-run \
+        --allow-duplicate-order-change
+    ACCEPTED RISK: duplicate-name entry order changed for Firefox — accepted explicitly by the operator
+    dry run: 105 files would be published to t6-nas:/share/ZFS23_DATA/Web/MunkiRepo
+    exit=0
+
+## The fleet was untouched by both dry runs
+
+    catalogs/all                   served=fabda778b3f6bd42
+    catalogs/testing               served=fabda778b3f6bd42
+    pkgsinfo/iTerm2-3.7.1.pkginfo  served=23c70bf5d89dd6ad

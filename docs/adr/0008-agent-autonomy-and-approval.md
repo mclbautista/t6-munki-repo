@@ -16,8 +16,8 @@ a judgement call about blast radius.
 - Read any repository, NAS, or client state needed to understand the fleet.
 - Edit the metadata tree in Git: pkginfos, manifests, role-group contents, icons.
 - Run `makecatalogs` against the Git checkout.
-- Publish lint-clean, checksum-verified metadata and catalogs to the NAS (ADR 0001), then verify
-  the result over HTTP.
+- Publish lint-clean, checksum-verified metadata and catalogs to the NAS (ADR 0001) **when the
+  pre-publish gate passes** (ADR 0009), then verify the result over HTTP.
 - Write observations to the observation store (ADR 0004).
 - Run check-only Munki verification on a client machine (resolution and pending state, no
   installs).

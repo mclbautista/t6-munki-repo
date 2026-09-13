@@ -1,0 +1,13 @@
+diff --git a/pkgsinfo/iTerm2-3.7.1.pkginfo b/pkgsinfo/iTerm2-3.7.1.pkginfo
+index 4732f27..8b7c937 100644
+--- a/pkgsinfo/iTerm2-3.7.1.pkginfo
++++ b/pkgsinfo/iTerm2-3.7.1.pkginfo
+@@ -21,6 +21,8 @@
+ 	</array>
+ 	<key>category</key>
+ 	<string>Utilities</string>
++	<key>display_name</key>
++	<string>iTerm2 (T6)</string>
+ 	<key>installer_item_hash</key>
+ 	<string>87be614644b1047cd82fc5499222baf897439823486e8cd08f7b9b672417b37b</string>
+ 	<key>installer_item_location</key>

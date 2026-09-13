@@ -21,8 +21,10 @@
   the Firefox pair as `[.pkg, .dmg]`; a 7.3.0 build writes `[.dmg, .pkg]` (both builds
   reproducible). Since Munki takes the first entry matching a name, the first publish from the
   newer toolchain changes which Firefox installer the fleet receives.
-- The pre-publish gate now blocks that by default, so **routine publishing is blocked until this
-  ticket resolves the duplicate**. Which of the two survives is a decision for Cyril, and it is a
+- The pre-publish gate now blocks that by default (ADR 0009), so **routine publishing is blocked
+  until this ticket resolves the duplicate**. Confirmed against the live repository: a fresh build
+  of the current checkout differs from what is served in exactly one way — the Firefox entry
+  order — with no item-level changes at all. Which of the two survives is a decision for Cyril, and it is a
   deletion (ADR 0008).
 - Moving the surviving pkginfo to the standard layout (top-level `pkgsinfo/`, one extension
   convention) removes the ordering question entirely, because there is then only one entry.

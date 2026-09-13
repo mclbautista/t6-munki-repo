@@ -30,13 +30,15 @@ class BuildResult:
         return sorted(self.catalogs)
 
 
-def default_runner(metadata_root: str, skip_pkg_check: bool = True) -> int:
-    """Run the real Munki `makecatalogs` against the metadata tree."""
-    argv = [DEFAULT_MAKECATALOGS]
-    if skip_pkg_check:
-        argv.append("--skip-pkg-check")
-    argv.append(metadata_root)
-    completed = subprocess.run(argv, capture_output=True)
+def default_runner(metadata_root: str) -> int:
+    """Run the real Munki `makecatalogs` against the metadata tree.
+
+    Payload checking is always skipped, deliberately: the payloads live on the NAS rather than in
+    the checkout, and proving that every item a manifest references has a reachable payload is the
+    drift and integrity check's job, against the published tree (ticket 03).
+    """
+    completed = subprocess.run([DEFAULT_MAKECATALOGS, "--skip-pkg-check", metadata_root],
+                               capture_output=True)
     print(completed.stdout.decode("utf-8", "replace"), end="")
     return completed.returncode
 
@@ -45,7 +47,7 @@ def build_catalogs(metadata_root: str, runner: Optional[Callable[..., int]] = No
     """Build catalogs from the metadata tree and return them as bytes, keyed by catalog name."""
     runner = runner or default_runner
     metadata_root = os.path.abspath(metadata_root)
-    returncode = runner(metadata_root, skip_pkg_check=True)
+    returncode = runner(metadata_root)
     if returncode != 0:
         raise CatalogError(f"makecatalogs exited {returncode} for {metadata_root}")
     catalogs_dir = os.path.join(metadata_root, "catalogs")
@@ -115,21 +117,6 @@ def _load_items(catalog_bytes: bytes):
         if isinstance(items, list):
             return items
     raise CatalogError(f"catalog has an unexpected shape: {type(catalog).__name__}")
-
-
-def _items_by_name(catalog_bytes: bytes) -> Dict[str, dict]:
-    items = _load_items(catalog_bytes)
-    by_name: Dict[str, dict] = {}
-    for item in items:
-        name = item.get("name")
-        if name in by_name:
-            # Keep the first, but remember the collision: the live repository carries two
-            # pkginfos for the same name+version and a diff must not silently hide that.
-            by_name.setdefault("__dupes__", []).append(name)
-            continue
-        if name:
-            by_name[name] = item
-    return by_name
 
 
 def _entries_by_name(catalog_bytes: bytes) -> Dict[str, List[dict]]:

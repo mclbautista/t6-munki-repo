@@ -1,8 +1,12 @@
 """Publish targets: the seam that keeps the publish path testable without SSH.
 
-A target is anything that can store metadata files at relative paths. `LocalDirTarget` is used by
-tests and for dry runs; `SshTarget` is the real NAS path. Keeping the two behind one small
-interface is what makes the publish invariants testable at all.
+A target stores metadata files at relative paths. `LocalDirTarget` is used by tests and dry runs;
+`SshTarget` is the real NAS path. One `write_atomic` implementation is shared by both, so the
+write-verify-rename invariant is stated once and cannot drift between transports.
+
+The invariant, in order: put the bytes at a temporary name derived from their own hash, read that
+back and compare hash *and* size, and only then replace the destination. On any mismatch the
+temporary file is removed and the destination is left exactly as it was.
 """
 from __future__ import annotations
 
@@ -11,7 +15,7 @@ import os
 import shlex
 import subprocess
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
 
 class TargetError(Exception):
@@ -28,12 +32,59 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-class LocalDirTarget:
-    """A target rooted at a local directory. Used by tests and dry runs."""
+class Target:
+    """Shared atomic-write behaviour over transport-specific primitives."""
 
-    def __init__(self, root: str, corrupt_on_write: bool = False) -> None:
+    # --- primitives subclasses must provide ---------------------------------
+    def stat(self, relpath: str) -> Optional[FileStat]:
+        raise NotImplementedError
+
+    def read(self, relpath: str) -> bytes:
+        raise NotImplementedError
+
+    def _put(self, relpath: str, data: bytes) -> None:
+        raise NotImplementedError
+
+    def _replace(self, relpath: str, destination: str) -> None:
+        raise NotImplementedError
+
+    def _remove(self, relpath: str) -> None:
+        raise NotImplementedError
+
+    def remove(self, relpath: str) -> None:
+        """Delete a file from the target. Used to undo a write that created one."""
+        self._remove(relpath)
+
+    # --- the invariant -------------------------------------------------------
+    def temp_name(self, relpath: str, data: bytes) -> str:
+        return f"{relpath}.{sha256_bytes(data)[:12]}.tmp"
+
+    def write_atomic(self, relpath: str, data: bytes) -> FileStat:
+        digest = sha256_bytes(data)
+        tmp = self.temp_name(relpath, data)
+        self._put(tmp, data)
+        try:
+            readback = self.stat(tmp)
+            if readback is None or readback.sha256 != digest or readback.size != len(data):
+                raise TargetError(
+                    f"read-back verification failed for {relpath}: "
+                    f"stored {readback.sha256[:12] if readback else 'nothing'}, expected {digest[:12]}"
+                )
+            self._replace(tmp, relpath)
+            placed = self.stat(relpath)
+            if placed is None or placed.sha256 != digest:
+                raise TargetError(f"destination verification failed for {relpath} after rename")
+        except TargetError:
+            self._remove(tmp)
+            raise
+        return FileStat(sha256=digest, size=len(data))
+
+
+class LocalDirTarget(Target):
+    """A target rooted at a local directory: tests, dry runs, and pre-image capture."""
+
+    def __init__(self, root: str) -> None:
         self.root = os.path.abspath(root)
-        self._corrupt_on_write = corrupt_on_write
 
     def _full(self, relpath: str) -> str:
         return os.path.join(self.root, relpath)
@@ -50,115 +101,92 @@ class LocalDirTarget:
         with open(self._full(relpath), "rb") as fh:
             return fh.read()
 
-    def write_atomic(self, relpath: str, data: bytes) -> FileStat:
+    def _put(self, relpath: str, data: bytes) -> None:
         full = self._full(relpath)
         os.makedirs(os.path.dirname(full), exist_ok=True)
-        tmp = f"{full}.{sha256_bytes(data)[:12]}.tmp"
-        stored = b"corrupted by the test target" if self._corrupt_on_write else data
-        with open(tmp, "wb") as fh:
-            fh.write(stored)
+        with open(full, "wb") as fh:
+            fh.write(data)
+
+    def _replace(self, relpath: str, destination: str) -> None:
+        os.replace(self._full(relpath), self._full(destination))
+
+    def _remove(self, relpath: str) -> None:
+        full = self._full(relpath)
+        if os.path.exists(full):
+            os.remove(full)
+
+
+def default_ssh_runner(host: str, timeout: int = 60):
+    """Run a command on `host` over ssh, multiplexing so a publish is not N handshakes."""
+
+    def run(command: str, stdin: Optional[bytes] = None):
+        argv = [
+            "ssh",
+            "-o", "BatchMode=yes",
+            "-o", "ControlMaster=auto",
+            "-o", f"ControlPath=/tmp/munki-fleet-{host}.sock",
+            "-o", "ControlPersist=120s",
+            host,
+            command,
+        ]
         try:
-            readback = self.stat(os.path.relpath(tmp, self.root))
-            if readback is None or readback.sha256 != sha256_bytes(data):
-                raise TargetError(f"read-back verification failed for {relpath}")
-        except TargetError:
-            if os.path.exists(tmp):
-                os.remove(tmp)
-            raise
-        os.replace(tmp, full)
-        return FileStat(sha256=sha256_bytes(data), size=len(data))
+            completed = subprocess.run(argv, input=stdin, capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            raise TargetError(f"ssh timed out after {timeout}s: {command}") from exc
+        return completed.returncode, completed.stdout, completed.stderr
+
+    return run
 
 
-class SshTarget:
-    """A target reached over SSH (`cat > file`, checksum, atomic `mv`).
+class SshTarget(Target):
+    """A target on a remote host reached over SSH.
 
-    The QNAP's SSH service has no SCP/SFTP subsystem that this project can rely on, so files are
-    streamed over stdin and moved into place only after their checksum has been read back.
+    The QNAP's SSH service offers no SCP/SFTP subsystem this project can rely on, so bytes are
+    streamed over stdin. `runner` is injectable so the whole sequence can be exercised without a
+    network in tests.
     """
 
-    def __init__(self, host: str, root: str, timeout: int = 60) -> None:
+    def __init__(self, host: str, root: str, runner: Optional[Callable] = None) -> None:
         self.host = host
         self.root = root.rstrip("/")
-        self.timeout = timeout
-
-    def _remote_command(self, *parts: str) -> str:
-        """Join a remote command: the first part is the command, the rest are quoted arguments."""
-        if not parts or not parts[0]:
-            raise TargetError("empty remote command")
-        return " ".join([parts[0]] + [shlex.quote(p) for p in parts[1:]])
+        self._run = runner or default_ssh_runner(host)
 
     def _abs(self, relpath: str) -> str:
         return f"{self.root}/{relpath}"
 
-    def ssh_argv(self, command: str) -> list:
-        """The ssh invocation, with connection multiplexing so a publish is not N handshakes."""
-        socket = f"/tmp/munki-fleet-{self.host}.sock"
-        return [
-            "ssh",
-            "-o", "BatchMode=yes",
-            "-o", "ControlMaster=auto",
-            "-o", f"ControlPath={socket}",
-            "-o", "ControlPersist=120s",
-            self.host,
-            command,
-        ]
-
-    def _run(self, command: str, stdin: Optional[bytes] = None) -> subprocess.CompletedProcess:
-        argv = self.ssh_argv(command)
-        try:
-            return subprocess.run(argv, input=stdin, capture_output=True, timeout=self.timeout)
-        except subprocess.TimeoutExpired as exc:
-            raise TargetError(f"ssh timed out after {self.timeout}s: {command}") from exc
+    def _command(self, command: str, stdin: Optional[bytes] = None):
+        returncode, stdout, stderr = self._run(command, stdin)
+        if returncode != 0:
+            raise TargetError(
+                f"remote command failed ({returncode}): {command} :: "
+                f"{stderr.decode('utf-8', 'replace')[:200]}"
+            )
+        return stdout
 
     def stat(self, relpath: str) -> Optional[FileStat]:
-        path = self._abs(relpath)
-        command = self._remote_command(
-            f"if [ -f {shlex.quote(path)} ]; then sha256sum {shlex.quote(path)}; "
-            f"wc -c < {shlex.quote(path)}; else echo MISSING; fi"
-        )
-        result = self._run(command)
-        out = result.stdout.decode("utf-8", "replace").strip()
-        if result.returncode != 0:
-            raise TargetError(f"remote stat failed for {relpath}: {result.stderr.decode()[:200]}")
+        path = shlex.quote(self._abs(relpath))
+        out = self._command(
+            f"if [ -f {path} ]; then sha256sum {path}; wc -c < {path}; else echo MISSING; fi"
+        ).decode("utf-8", "replace").strip()
         if out.startswith("MISSING"):
             return None
-        lines = [l for l in out.splitlines() if l.strip()]
+        lines = [line for line in out.splitlines() if line.strip()]
         if len(lines) < 2:
             raise TargetError(f"unexpected remote stat output for {relpath}: {out[:200]}")
-        digest = lines[0].split()[0]
-        return FileStat(sha256=digest, size=int(lines[1].strip()))
+        return FileStat(sha256=lines[0].split()[0], size=int(lines[1].strip()))
 
     def read(self, relpath: str) -> bytes:
-        path = self._abs(relpath)
-        result = self._run(self._remote_command(f"cat {shlex.quote(path)}"))
-        if result.returncode != 0:
-            raise TargetError(f"remote read failed for {relpath}: {result.stderr.decode()[:200]}")
-        return result.stdout
+        return self._command(f"cat {shlex.quote(self._abs(relpath))}")
 
-    def remove(self, relpath: str) -> None:
-        path = self._abs(relpath)
-        self._run(self._remote_command(f"rm -f {shlex.quote(path)}"))
+    def _put(self, relpath: str, data: bytes) -> None:
+        parent = os.path.dirname(self._abs(relpath))
+        self._command(f"mkdir -p {shlex.quote(parent)}")
+        self._command(f"cat > {shlex.quote(self._abs(relpath))}", stdin=data)
 
-    def write_atomic(self, relpath: str, data: bytes) -> FileStat:
-        digest = sha256_bytes(data)
-        path = self._abs(relpath)
-        parent = os.path.dirname(path)
-        tmp = f"{path}.{digest[:12]}.tmp"
-        mkdir = self._run(self._remote_command(f"mkdir -p {shlex.quote(parent)}"))
-        if mkdir.returncode != 0:
-            raise TargetError(f"remote mkdir failed for {parent}: {mkdir.stderr.decode()[:200]}")
-        upload = self._run(self._remote_command(f"cat > {shlex.quote(tmp)}"), stdin=data)
-        if upload.returncode != 0:
-            self.remove(os.path.relpath(tmp, self.root))
-            raise TargetError(f"remote upload failed for {relpath}: {upload.stderr.decode()[:200]}")
-        try:
-            readback = self.stat(os.path.relpath(tmp, self.root))
-            if readback is None or readback.sha256 != digest or readback.size != len(data):
-                raise TargetError(f"read-back verification failed for {relpath}")
-            moved = self._run(self._remote_command(f"mv -f {shlex.quote(tmp)} {shlex.quote(path)}"))
-            if moved.returncode != 0:
-                raise TargetError(f"remote rename failed for {relpath}: {moved.stderr.decode()[:200]}")
-        except TargetError:
-            self.remove(os.path.relpath(tmp, self.root))
-            raise
-        return FileStat(sha256=digest, size=len(data))
+    def _replace(self, relpath: str, destination: str) -> None:
+        self._command(
+            f"mv -f {shlex.quote(self._abs(relpath))} {shlex.quote(self._abs(destination))}"
+        )
+
+    def _remove(self, relpath: str) -> None:
+        self._command(f"rm -f {shlex.quote(self._abs(relpath))}")

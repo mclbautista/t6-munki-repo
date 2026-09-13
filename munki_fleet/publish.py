@@ -20,16 +20,34 @@ class PublishError(Exception):
     """A publish could not be completed safely."""
 
 
+class PublishAborted(PublishError):
+    """A publish failed after it had already written something.
+
+    Carries the report so the caller can see exactly what was rolled back — a failure must never be
+    reported as a bare error with the target in an unknown state.
+    """
+
+    def __init__(self, message: str, report: "PublishReport") -> None:
+        super().__init__(message)
+        self.report = report
+
+
 @dataclass
 class PublishReport:
     written: List[str] = field(default_factory=list)
     unchanged: List[str] = field(default_factory=list)
-    skipped: List[str] = field(default_factory=list)
     backed_up: List[str] = field(default_factory=list)
+    rolled_back: List[str] = field(default_factory=list)
+    rollback_errors: List[str] = field(default_factory=list)
 
     def describe(self) -> str:
-        return (f"written {len(self.written)}, unchanged {len(self.unchanged)}, "
-                f"skipped {len(self.skipped)}, backed up {len(self.backed_up)}")
+        parts = [f"written {len(self.written)}", f"unchanged {len(self.unchanged)}",
+                 f"backed up {len(self.backed_up)}"]
+        if self.rolled_back:
+            parts.append(f"rolled back {len(self.rolled_back)}")
+        if self.rollback_errors:
+            parts.append(f"ROLLBACK FAILED for {len(self.rollback_errors)}")
+        return ", ".join(parts)
 
 
 @dataclass
@@ -66,42 +84,80 @@ def _local_stat(source_root: str, relpath: str) -> Optional[FileStat]:
     return FileStat(sha256=sha256_bytes(data), size=len(data))
 
 
+def _rollback(target, done: List[tuple], report: PublishReport) -> None:
+    """Undo the writes this publish already made, so a failure is never a partial publish.
+
+    Each entry is (relpath, pre-image bytes or None). A file that existed is restored to its bytes;
+    a file that did not exist is removed, because leaving it would be the partial publish this
+    exists to prevent.
+    """
+    for relpath, pre_image in reversed(done):
+        try:
+            if pre_image is None:
+                target.remove(relpath)
+            else:
+                target.write_atomic(relpath, pre_image)
+            report.rolled_back.append(relpath)
+        except TargetError as exc:
+            report.rollback_errors.append(f"{relpath}: {exc}")
+
+
 def publish(source_root: str, target, paths: List[str], backup_dir: Optional[str] = None) -> PublishReport:
-    """Publish `paths` from the metadata checkout to `target`, verifying every write."""
+    """Publish `paths` from the metadata checkout to `target`, verifying every write.
+
+    Fails before writing anything when the checkout is incomplete, and rolls back the writes it has
+    already made if a later one fails — the spec's invariant is that a partial publish never
+    happens, not merely that a partial file never appears.
+    """
     source_root = os.path.abspath(source_root)
+    safe_paths = [safe_relpath(p) for p in paths]
+
+    missing = [p for p in safe_paths if _local_stat(source_root, p) is None]
+    if missing:
+        raise PublishError(
+            "refusing to publish an incomplete checkout; missing from the source: "
+            + ", ".join(sorted(missing)[:10]) + ("…" if len(missing) > 10 else "")
+        )
+
     report = PublishReport()
-    for relpath in sorted(paths):
-        relpath = safe_relpath(relpath)
+    done: List[tuple] = []
+    for relpath in sorted(safe_paths):
         local = _local_stat(source_root, relpath)
-        if local is None:
-            report.skipped.append(relpath)
-            continue
         try:
             existing = target.stat(relpath)
         except TargetError as exc:
-            raise PublishError(f"could not read {relpath} from the target: {exc}") from exc
+            _rollback(target, done, report)
+            raise PublishAborted(
+                f"could not read {relpath} from the target: {exc}", report) from exc
         if existing is not None and existing.sha256 == local.sha256:
             report.unchanged.append(relpath)
             continue
-        if existing is not None and backup_dir:
-            backup_target = LocalDirTarget(backup_dir)
-            backup_target.write_atomic(relpath, target.read(relpath))
-            report.backed_up.append(relpath)
+        pre_image: Optional[bytes] = None
+        if existing is not None:
+            try:
+                pre_image = target.read(relpath)
+            except TargetError as exc:
+                _rollback(target, done, report)
+                raise PublishAborted(
+                    f"could not capture the pre-image of {relpath}: {exc}", report) from exc
+            if backup_dir:
+                LocalDirTarget(backup_dir).write_atomic(relpath, pre_image)
+                report.backed_up.append(relpath)
         with open(os.path.join(source_root, relpath), "rb") as fh:
             data = fh.read()
         try:
             target.write_atomic(relpath, data)
-        except TargetError as exc:
-            raise PublishError(f"publish failed for {relpath}: {exc}") from exc
-        try:
             stored = target.stat(relpath)
         except TargetError as exc:
-            raise PublishError(f"could not verify {relpath} after publishing: {exc}") from exc
+            _rollback(target, done, report)
+            raise PublishAborted(f"publish failed for {relpath}: {exc}", report) from exc
         if stored is None or stored.sha256 != local.sha256:
-            raise PublishError(
+            _rollback(target, done, report)
+            raise PublishAborted(
                 f"{relpath} does not match the checkout after publishing "
-                f"(target {stored.sha256 if stored else 'missing'}, checkout {local.sha256})"
-            )
+                f"(target {stored.sha256 if stored else 'missing'}, checkout {local.sha256})",
+                report)
+        done.append((relpath, pre_image))
         report.written.append(relpath)
     return report
 

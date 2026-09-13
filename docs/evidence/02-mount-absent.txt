@@ -1,0 +1,31 @@
+# Ticket 02 — criterion 1: the admin SMB mount stayed absent
+
+Checks run on the admin workstation against the T6 Mac Mini (192.168.88.151), where the mount
+would live. Command, identical both times:
+
+    ssh -o BatchMode=yes t6-mac-mini \
+      'echo -n "smb mounts: "; mount | grep -ci smb; \
+       echo -n "Mnt/Web entries: "; ls -A /Users/t6/Mnt/Web 2>/dev/null | wc -l'
+
+## Before the run (start of ticket 02)
+
+    smb mounts: 0
+    Mnt/Web entries: 0
+    /etc/fstab: //t6-sixto@192.168.88.188/Web /Users/t6/Mnt/Web smbfs noowners,nosuid,-f=0644,-d=0755 0 0
+
+## After the restore (end of ticket 02)
+
+    smb mounts: 0
+    Mnt/Web entries: 0
+
+## Honest note on the word "during"
+
+There is **no discrete during-artifact**: the check was run at the start and at the end, and the
+publish happened between them. What bounds the window is that nothing in this ticket mounts
+anything — the tooling contains no mount code at all (verified by grep below), the publish path
+speaks only over SSH, and the mount point stayed empty at both ends.
+
+Grep for mount usage in the publish tooling:
+
+(no matches)
+

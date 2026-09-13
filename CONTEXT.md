@@ -42,6 +42,11 @@ Two failures this project exists to prevent, in order:
 - **Ring:** a stage an item passes through before fleet-wide availability. `testing` → **pilot**
   (`202-TOC-M4-Max`, Cyril's Mac mini) → `production`.
 - **Promotion:** the recorded act of moving an item from `testing` to `production`.
+- **Declaration:** the statement of what a publish intends to change, passed to the pre-publish
+  gate. A publish with no declaration for a change is refused; the declaration is the authorisation
+  record (ADR 0009).
+- **Pre-publish gate:** the check that refuses an undeclared change, an unreadable target, or a
+  declaration that did not come true. There is no bypass.
 - **Baseline core:** the small set of items force-installed on every Mac (remote support and
   shared essentials). Everything else approved for the fleet is optional.
 - **Optional install:** an item a user may install from Managed Software Center. Approved items

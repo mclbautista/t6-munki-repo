@@ -134,8 +134,9 @@ For Cyril, the finished state behaves like this:
 
 **1. Metadata mirror.** *Responsibility:* own the editable `pkgsinfo/`, `manifests/` and `icons/`
 trees in Git and publish them to the NAS host. *Non-responsibility:* deciding what the metadata
-should contain; owning payloads. *Smallest interface:* `publish(paths, verify=True)` and
-`compare() -> DriftReport`. *State owned:* the Git working tree and the publish manifest of
+should contain; owning payloads. *Smallest interface (as shipped):* `publish(source_root, target,
+paths, backup_dir=None) -> PublishReport` and `verify_served(source_root, target, paths) ->
+ServedCheck`; the transport seam is a `Target` (`LocalDirTarget`, `SshTarget`). *State owned:* the Git working tree and the publish manifest of
 checksums. *Invariants:* after a successful publish the served tree matches the checkout
 byte-for-byte for files under the metadata tree; a partial checkout is never publishable.
 *Failure:* abort without partial publish; report which files diverged. *Dependencies:* the NAS
@@ -152,10 +153,12 @@ catalog entry.
 
 **3. Catalog builder.** *Responsibility:* build `testing` and `production` from the metadata tree
 and publish the result. *Non-responsibility:* deciding membership — a pkginfo declares its own
-catalog. *Smallest interface:* `build() -> CatalogSet` and `verify_served(names) -> list[Gap]`.
+catalog. *Smallest interface (as shipped):* `build_catalogs(metadata_root, runner=None) -> BuildResult` and
+`compare_catalogs(old_bytes, new_bytes) -> CatalogDiff`.
 *Invariants:* every item in a machine manifest's catalog chain exists in the catalog and has a
 reachable payload; catalog membership matches declared membership. *Failure:* a build that changes
-membership unexpectedly is reported before publish.
+membership unexpectedly is **refused** before publish — membership changes are declared explicitly
+and anything undeclared blocks (ADR 0009).
 
 **4. Manifest builder.** *Responsibility:* express fleet policy (baseline core, fleet optional,
 role extras, machine→role assignment) as manifest files. *Non-responsibility:* resolving items,
@@ -189,6 +192,14 @@ work those approvals gate. *Smallest interface:* the approval-gated actions enum
 and the recorded approval attached to each. *Invariants:* no approval-gated action executes without
 a recorded approval; illegal states (an item in `production` with no promotion record) are detected
 and reported.
+
+**8. Pre-publish gate.** *Responsibility:* refuse a publish that would change something the
+publisher did not declare, and refuse a publish whose target state is unknown. *Non-responsibility:*
+deciding what should change — that is the publisher's declaration. *Smallest interface (as shipped):*
+`evaluate_gate(served, built, ...) -> GateDecision`. *Invariants:* no bypass exists; changed keys,
+membership, duplicate-name reordering and non-catalog file changes are each declared or refused; a
+declared change that did not happen is refused; an unreadable target file is refused rather than
+treated as absent. *Failure:* refuses, and says which declaration is missing. See ADR 0009.
 
 ### Where the LLM boundary sits
 
@@ -230,6 +241,10 @@ at 7.3.0.5808; NAS backup jobs zero; snapshots none; admin mount absent.
 - **Nothing in the test suite touches the live NAS or a live Mac.** Fixtures are a fake metadata
   tree and a fake served tree; the metadata mirror and catalog builder are exercised against a
   local static file server and a local temporary directory.
+- **Publish transports are injected, not mocked away.** The remote target takes a command runner,
+  so the write-verify-rename sequence and its failure paths are exercised end to end without a
+  network; the command line takes its target and catalog runner as dependencies, so a refusal can
+  be asserted to have published nothing.
 - **Drift detection is tested by mutation:** a mutated, missing and extra file must each be
   reported with the right classification, and an in-sync tree must report clean.
 - **Manifest resolution is tested as a resolution problem:** for each inventoried machine, the
