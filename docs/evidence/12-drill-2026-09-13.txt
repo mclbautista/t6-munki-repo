@@ -12,17 +12,29 @@ Command:
 - Source: the **off-NAS copy** — the private GitHub remote (visibility PRIVATE), i.e. a second
   device, not this checkout. Checked afterwards: the remote's main and the local HEAD were the
   same commit, so nothing was silently missing.
-- Restored: 183 tracked files at the remote's head; **29 manifest files** and
+- Restored: **182 tracked files at `c29821b`** — the commit the clone was taken at, because a file
+  count only means anything with its commit (it was 203 at `HEAD` later the same evening) — with
+  **29 manifest files** and
   **28 pkginfos**, all readable (every plist parsed).
 - What the payloads are *not* part of this: no `pkgs/` exists in Git. Payloads live only on the
   NAS. That is the finding below.
 
 ## Catalog rebuild from the restored metadata
 
-`makecatalogs` from the restored tree emitted **one warning per pkginfo** ("refers to missing
-installer item: …") and produced an **empty catalog**: with no payloads present it drops every
-item. Run where the payloads are visible it would produce the served catalog — proved instead by
-comparing what the metadata contributes, item by item.
+`munki_fleet.catalogs.build_catalogs` — which runs the Munki tool the way this repository builds,
+`makecatalogs --skip-pkg-check` — rebuilt **both catalogs from the restored tree alone**, with no
+payloads present at all, and the rebuilt `all` is **byte-identical to the served catalog**: 41,135
+bytes, 28 items. That is ADR 0006's own wording ("`makecatalogs` has regenerated catalogs identical
+to the live ones") satisfied on a metadata-only tree.
+
+**Correction, same evening.** The first version of this record ran **bare** `makecatalogs`, saw an
+empty catalog, and concluded that a metadata-only tree cannot rebuild the catalogs — and then that
+ADR 0001's "does not require the package payloads" was wrong. Both conclusions were wrong, and the
+invocation was the cause: bare `makecatalogs` silently skips every item whose
+`installer_item_location` is absent, one warning per item, **exit status 0**, and writes an empty
+catalog. With the flag this repository actually passes, the rebuild is exact. The trap is real, so
+it is now a warning in the recovery procedure: a restore performed with the bare command would
+publish an empty catalog and every client would see nothing.
 
 ## Comparison against the live catalogs
 
@@ -60,6 +72,9 @@ suggests: only 0.10 GB is non-reproducible, 8.74 GB needs a vendor account to re
 ## Assessed but not done here
 
 - The snapshot schedule (criterion 1) needs the QTS UI: no MCP tool exists for snapshot creation
-  and the NAS shell is read-only for this user. Settings proposed in the ticket.
+  and the NAS shell is read-only for this user. The repository volume, `zpool1/zfs23`, carries only
+  its installation-time `@:init:` snapshot (10 Sep 2026, 166 KB). The NAS holds 18 snapshots in
+  total, but the rest belong to other datasets — most of them per-app filesystems under
+  `zpool1/zfs530/zfs5300002`, which are the App Center's own, not this repository's.
 - A payload copy needs a target device, which is a decision rather than a task. Recorded in the
   classification artifact as the action on the copy-required rows.
