@@ -34,5 +34,10 @@ More than one agent can be working this repository at the same time, and more th
   edit a file someone else is actively writing.
 - **Do not rewrite shared history** to correct a mistake: annotate the commit with `git notes` and
   record the correction in a follow-up commit.
+- **Edit files with targeted, verified edits, never a slice-and-replace over a region.** Slicing
+  from one marker to another and replacing the span silently deletes anything that sits inside it:
+  that is how two acceptance criteria were removed from ticket 09, and the follow-up edit that
+  looked for them then matched nothing and reported success. Use an edit that fails loudly when its
+  target text is absent, and read the file back.
 - **Check the count before citing it.** Test counts and hashes in tickets are read from command
   output, never recalled.

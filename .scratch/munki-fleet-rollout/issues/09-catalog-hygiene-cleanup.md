@@ -48,8 +48,26 @@
         verified is narrower: the entry clients are *offered* is unchanged, and both entries install
         155.0.1 while differing in detection mechanics (`installs` vs `receipts`).
       - Evidence: `docs/evidence/09-firefox-retirement.txt`, `docs/evidence/09-googlechrome-retirement.txt`.
+- [x] The retired pkginfos are **_detected_** as NAS-only drift. Ticket 03's live run reported exactly
+      two drift findings, naming them: `pkgsinfo/apps/firefox/Firefox-155.0.1.plist` and
+      `pkgsinfo/apps/Google/GoogleChrome-153.0.8010.37.plist`, both present on the NAS and absent from
+      the checkout, both still served over HTTP (200). Detecting them was the point of leaving them.
+- [x] The retired pkginfos are **_deleted_** from the NAS, on Cyril's approval (2026-09-13). Verified
+      in both directions: each NAS file's sha256 matched its committed pre-image exactly before
+      removal, and after removal both are **absent on the NAS and return HTTP 404**. `check` now
+      reports `drift: missing on the target 0, only on the target 0, differing 0, unreadable 0` and
+      `no integrity findings` — exit 0.
+- [ ] The two payloads those pkginfos referenced are still on the NAS, referenced by nothing:
+      `pkgs/apps/firefox/Firefox-155.0.1.dmg` (159,394,794 bytes) and
+      `pkgs/apps/Google/GoogleChrome-153.0.8010.37.pkg` (263,986,305 bytes) — ~423 MB between them.
+      Cyril approved deleting the pkginfos, not the payloads, so they stay until that is decided.
+      Nothing references them, so they affect neither clients nor the catalogs.
 - [ ] Deferred vendor suites are removed from `site_default`'s optional list and appear in no manifest section.
 - [ ] The staged-but-unmanaged nested `apps` area is resolved: each item is either fully imported into the standard layout or withdrawn, and the decision for each is recorded.
 - [ ] All pkginfos follow one declared extension convention, and the nested directories no longer split the repository's layout.
 - [ ] The stale, empty NAS share that shadows the repository's name is removed so it cannot be mistaken for the repository.
-- [ ] After cleanup the drift check reports clean, both catalogs build, and every manifest's items resolve with an existing payload.
+- [ ] After cleanup the drift check reports clean, both catalogs build, and every manifest's items
+      resolve with an existing payload. **Partially satisfied today:** the drift check reports clean
+      and reports no integrity findings (2026-09-13), but "after cleanup" means after the deferred
+      suites, the nested `apps` area, the extension convention and the stale share are dealt with —
+      none of which is done, so this stays open.
