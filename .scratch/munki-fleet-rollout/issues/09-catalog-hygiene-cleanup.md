@@ -69,19 +69,35 @@
 - [x] The **catalog** half of the cleanup is live: the served catalog is now 28 items, 28 unique
       names, published with 8 declared removals and 3 declared file changes, verified
       `94/94` over both the filesystem and HTTP.
-- [ ] The retired files are **removed from the NAS**. Eleven files are present only on the target
+- [x] The retired files are **removed from the NAS** — done 2026-09-13 on Cyril's approval, with the
+      `reconcile` command. All 11 declared paths were removed and every one **hash-matched its
+      record** (9 against `data/withdrawals.jsonl`, 2 against the checkout's new paths); the run
+      refused the same request undeclared, first. After: drift `0/0/0/0`, `verify` 94/94 over both
+      filesystem and HTTP, integrity clean. Evidence: `docs/evidence/09-reconcile-plan.txt`.
+      Superseded text: [ ] The retired files are **removed from the NAS**. Eleven files are present only on the target
       and are declared, dry-run, and **hash-verified for removal**: 9 against
       `data/withdrawals.jsonl`, 2 against the checkout's new paths. Plan:
       `docs/evidence/09-reconcile-plan.txt`. Command ready:
       `munki_fleet.cli reconcile --expect-remove-file …`. **Awaiting Cyril: this is a deletion on
       the NAS.** Until it runs, `check` reports drift 11 by design.
-- [ ] The payloads nothing references any more are still on the NAS: **11 files, 2,229.9 MB** —
+- [x] The payloads nothing referenced were **removed from the NAS** — done 2026-09-13 on Cyril's
+      approval. 10 orphans (the 11th was a 0-byte `.DS_Store`, skipped by design), **2,229,887,796
+      bytes**, each recorded with its sha256 in `data/payload-removals.jsonl` before deletion and
+      verified absent after. Measured effect: volume used **12.1 GB → 10.2 GB**, `pkgs/` 13 GB → 11 GB.
+      The retained payloads still serve (spot-checked HTTP 200). Evidence:
+      `docs/evidence/09-payload-removal.txt`. Superseded text: the payloads were described as
+      still present: **11 files, 2,229.9 MB** —
       MSEdge 432.3 MB, Dropbox 398.3 MB, MSTeams 355.4 MB, the retired GoogleChrome `.pkg`
       264.0 MB, Cyberduck 181.4 MB, Spotify-arm64 165.5 MB, both Firefox payloads 159.4 + 144.4 MB,
       `Telegram-1.0.dmg` 124.7 MB (a stray beside the live 12.10), MSAutoUpdate 4.5 MB,
       `.DS_Store`. Of 39 payloads / 13.0 GB, **28 remain referenced**. Cyril approved the
       withdrawals, not the payload deletions, so they stay until that is decided.
-- [ ] **CORRECTED — the stale NAS path is a configured share, and it is not empty.** The ticket
+- [ ] **CORRECTED — the stale NAS path is a configured share, and it is not empty.** Read from the
+      NAS itself: share `MunkiRepo`, **volume 7** (ZFS22), not hidden, **allocated 284,240 bytes**,
+      6 directories, 2 files, and `guest` has **read-only** access. Its removal leaves the fleet
+      untouched: nothing mounts it (`/etc/fstab` on the Mac Mini mounts the `Web` share), Munki's
+      `SoftwareRepoURL` is `http://192.168.88.188/MunkiRepo` served from `Web`, and `munkiimport`
+      uses `file:///Users/t6/Mnt/Web/MunkiRepo` — all verified 2026-09-13. The ticket
       used to call it "the stale, empty NAS share". It is `[MunkiRepo]` in
       `/etc/config/smb.conf`, `path = /share/ZFS22_DATA/MunkiRepo`, `browsable = yes`, with a
       recycle bin. It holds a **hollow skeleton** — empty `catalogs/ icons/ manifests/ pkgs/
@@ -91,7 +107,12 @@
       directories (`catalogs/ icons/ manifests/`, 2026-09-10) beside the live `MunkiRepo/`.
       **Removal is a NAS share-configuration change and a WebUI action** — the QNAP MCP exposes no
       share-deletion tool, and the NAS shell is read-only by design. **Awaiting Cyril.**
-- [ ] After cleanup the drift check reports clean, both catalogs build, and every manifest's items
+- [ ] After cleanup the drift check reports clean — **blocked by another session's in-flight work,
+      not by this ticket.** It reported `0/0/0/0` immediately after the reconcile; it now reports two
+      *missing-on-target* findings, `manifests/303A-Mac-Mini-M4-Pro` and `manifests/Sixto-5`, which
+      that session committed (`c29821b`) to give the two manifest-less machines their own manifests.
+      Publishing them is their declared change to make, not mine to sweep up. Everything this ticket
+      owns is clean. both catalogs build, and every manifest's items
       resolve with an existing payload. Current state: **both catalogs build** (41,135 bytes each),
       **every manifest item resolves to an existing payload** (28/28 referenced), integrity clean;
       drift is the 11 declared files above. This closes when the reconcile runs and the payload

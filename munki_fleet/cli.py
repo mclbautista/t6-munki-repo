@@ -30,6 +30,7 @@ from .drift import drift as drift_report
 from .gate import evaluate_gate
 from .promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions, demote,
                       initial_promotion_plan, load_history, load_pilots, promote)
+from .payloads import PayloadError, orphan_payloads, remove_payloads
 from .reconcile import ReconcileError, apply_removals, plan_removals, recorded_hashes
 from .publish import PublishAborted, PublishError, publish, verify_served
 from .targets import SshTarget, TargetError
@@ -248,6 +249,35 @@ def _declared_hashes(pairs) -> Dict[str, str]:
     return out
 
 
+def cmd_payload_orphans(args, deps: Deps) -> int:
+    """Payloads on the target that no pkginfo in the checkout references (read-only)."""
+    target = deps.target_factory(args.target)
+    orphans = orphan_payloads(args.metadata_root, target)
+    total = 0
+    print(f"{len(orphans)} payload(s) referenced by no pkginfo:")
+    for path in orphans:
+        stat = target.stat(path)
+        size = stat.size if stat else 0
+        total += size
+        print(f"  {path}  {size/1e6:.1f} MB  {stat.sha256[:16] if stat else ''}")
+    print(f"total {total/1e6:.1f} MB")
+    return 0
+
+
+def cmd_payload_remove(args, deps: Deps) -> int:
+    target = deps.target_factory(args.target)
+    orphans = orphan_payloads(args.metadata_root, target)
+    results = remove_payloads(args.metadata_root, target, orphans,
+                              declared=args.expect_remove_payload, approved_by=args.approved_by,
+                              reason=args.reason, dry_run=args.dry_run)
+    print(f"{len(results)} of {len(orphans)} orphan(s) addressed:")
+    for path, outcome in results:
+        print(f"  {path}: {outcome}")
+    remaining = orphan_payloads(args.metadata_root, target)
+    print(f"orphans remaining: {len(remaining)}")
+    return 0 if not remaining or results else 1
+
+
 def cmd_reconcile(args, deps: Deps) -> int:
     """Remove metadata the checkout has retired, with every removal declared and verified."""
     target = deps.target_factory(args.target)
@@ -366,6 +396,18 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.add_argument("--exclude", action="append", default=[], metavar="ITEM",
                    help="an item to leave in testing rather than promote (repeatable)")
     p.set_defaults(func=cmd_promotion_plan)
+    p = sub.add_parser("payload-orphans",
+                       help="payloads no pkginfo references any more (read-only)")
+    common(p, with_target=True)
+    p.set_defaults(func=cmd_payload_orphans)
+    p = sub.add_parser("payload-remove", help="remove declared orphan payloads")
+    common(p, with_target=True)
+    p.add_argument("--expect-remove-payload", action="append", default=[], metavar="PATH",
+                   help="a payload to remove (repeatable; each must actually be an orphan)")
+    p.add_argument("--approved-by", required=True)
+    p.add_argument("--reason", required=True)
+    p.add_argument("--dry-run", action="store_true")
+    p.set_defaults(func=cmd_payload_remove)
     p = sub.add_parser("reconcile",
                        help="remove target-only metadata the checkout has retired (declared)")
     common(p, with_target=True)
@@ -390,7 +432,7 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
             for problem in exc.report.rollback_errors:
                 print(f"  ROLLBACK FAILED: {problem}", file=sys.stderr)
         return 4
-    except ReconcileError as exc:
+    except (ReconcileError, PayloadError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 3
     except PromotionError as exc:

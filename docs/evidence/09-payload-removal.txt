@@ -1,0 +1,42 @@
+Payload removal, 2026-09-13 19:20 PST
+git: 4aa5d14
+Approved by Cyril 2026-09-13. Every declared path verified to be an orphan first.
+
+zpool1/zfs23             23.1T     12.1G     23.1T   0% /share/ZFS23_DATA
+-- payloads before --
+10 payload(s) referenced by no pkginfo:
+  pkgs/Telegram-1.0.dmg  124.7 MB  5aa6abac9f39e367
+  pkgs/apps/Cyberduck-9.5.4.dmg  181.4 MB  208cda6b5e018a4e
+  pkgs/apps/Dropbox/Dropbox-268.4.4124.dmg  398.3 MB  6ae7f7efce0b1d16
+  pkgs/apps/Google/GoogleChrome-153.0.8010.37.pkg  264.0 MB  5b6419437af33a3e
+  pkgs/apps/MSAutoUpdate-4.85.26080216.pkg  4.5 MB  318e3ba568e7c4db
+  pkgs/apps/MSEdge-152.0.4191.66.pkg  432.3 MB  ea0cb511706321fb
+  pkgs/apps/MSTeams-26225.1706.5101.3140.pkg  355.4 MB  7286fc72255c3f76
+  pkgs/apps/Spotify-arm64-1.2.99.317.dmg  165.5 MB  c45e8ea0700c36fb
+  pkgs/apps/firefox/Firefox-155.0.1.dmg  159.4 MB  ab75b7c9f02083de
+  pkgs/apps/firefox/Firefox-155.0.1.pkg  144.4 MB  d2379ea8797f1f4b
+total 2229.9 MB
+
+== removal ==
+10 of 10 orphan(s) addressed:
+  pkgs/Telegram-1.0.dmg: removed 124696948 bytes, recorded as 5aa6abac9f39e367
+  pkgs/apps/Cyberduck-9.5.4.dmg: removed 181409439 bytes, recorded as 208cda6b5e018a4e
+  pkgs/apps/Dropbox/Dropbox-268.4.4124.dmg: removed 398329648 bytes, recorded as 6ae7f7efce0b1d16
+  pkgs/apps/Google/GoogleChrome-153.0.8010.37.pkg: removed 263986305 bytes, recorded as 5b6419437af33a3e
+  pkgs/apps/MSAutoUpdate-4.85.26080216.pkg: removed 4492427 bytes, recorded as 318e3ba568e7c4db
+  pkgs/apps/MSEdge-152.0.4191.66.pkg: removed 432276854 bytes, recorded as ea0cb511706321fb
+  pkgs/apps/MSTeams-26225.1706.5101.3140.pkg: removed 355400813 bytes, recorded as 7286fc72255c3f76
+  pkgs/apps/Spotify-arm64-1.2.99.317.dmg: removed 165452866 bytes, recorded as c45e8ea0700c36fb
+  pkgs/apps/firefox/Firefox-155.0.1.dmg: removed 159394794 bytes, recorded as ab75b7c9f02083de
+  pkgs/apps/firefox/Firefox-155.0.1.pkg: removed 144447702 bytes, recorded as d2379ea8797f1f4b
+orphans remaining: 0
+
+-- payloads after --
+0 payload(s) referenced by no pkginfo:
+total 0.0 MB
+zpool1/zfs23             23.1T     10.2G     23.1T   0% /share/ZFS23_DATA
+11G	/share/ZFS23_DATA/Web/MunkiRepo/pkgs
+-- the retained payloads still serve (HEAD only) --
+  pkgs/iTerm2-3.7.1.dmg              200 0B
+  pkgs/AppCleaner-3.6.8.dmg          200 0B
+  pkgs/apps/VLC/VLC-3.0.23.dmg       200 0B
