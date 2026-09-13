@@ -11,7 +11,8 @@ classified findings rather than as a silent state.
 **Notes:** Detection and reporting only. This ticket does not repair drift — repairing from Git is
 the documented direction (ADR 0001) and is performed deliberately. Alert delivery is ticket 15.
 
-**Verification:** `python3 -m pytest` → **80 passed**. Live read-only run against the real
+**Verification:** `python3 -m pytest` → **76 passed, 0 failed** (counts as measured, not recalled —
+the previous commit of this ticket claimed 80, which was wrong). Live read-only run against the real
 repository: exit 1 with exactly two findings, in ~6 seconds. Raw output committed at
 `docs/evidence/03-check-live-raw.txt`.
 
