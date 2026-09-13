@@ -80,10 +80,20 @@ Second finding: **the repository's port is port 80, shared with everything else 
 ### What would be configured, in order
 
 1. **Install QuFirewall** (App Center) — a system change; the packet treats this as decision **13A**.
-2. **Allowlist rule** permitting `TCP 80` only from the fleet's own addresses — decision **13B**, and the substantive one, because of a real ambiguity found in the machine inventory: every Mac is on `192.168.88.0/24` **except one**. `201 Bay 03 M1 Ultra` reports primary address `192.168.254.106` over **AirPort** (Wi-Fi) in the ARD System Overview Report of 9/13/26. So:
-   - allow `192.168.88.0/24` only → **that machine's Munki check-ins break** until it is back on the wired path;
-   - allow both `192.168.88.0/24` and `192.168.254.0/24` → keeps it working, and widens the allowlist to whatever else lives on that subnet.
-   - Recommendation: decide deliberately — either fix that machine's network path first (it belongs on the wired 88.x network as a studio machine) and allowlist the single fleet subnet, or accept both subnets in writing. Do not let it be decided by accident.
+2. **Allowlist rule** permitting `TCP 80` only from the fleet's own addresses — decision **13B**, and the substantive one, because the inventory shows **three** address ranges in play, not one:
+
+   | range | who is on it | evidence |
+   |---|---|---|
+   | `192.168.88.0/24` | the wired fleet — 15 of the 16 inventoried Macs, and the NAS itself | System Overview Report, primary addresses |
+   | `192.168.254.0/24` | `201 Bay 03 M1 Ultra`, primary address `192.168.254.106` over **AirPort (Wi-Fi)** | same report, row "201 Bay 03 M1 Ultra (1620)" |
+   | `192.168.0.0/24` | **Cyril's Mac mini** (this workstation): LAN `192.168.88.202`, **Wi-Fi `192.168.0.107`** | `ipconfig getifaddr en1` on the machine, 2026-09-13 |
+
+   So the choice is not "one subnet or the other" but "which of the client paths must keep working":
+   - allow `192.168.88.0/24` only → any Mac that is on Wi-Fi at the time of its Munki run **cannot fetch** (201 Bay 03 today, Cyril's Mac mini whenever its Wi-Fi is primary);
+   - allow all three → keeps every client working, and admits whatever else shares those Wi-Fi ranges — the Wi-Fi subnets are not fleet-only, so this weakens the allowlist's meaning;
+   - **recommended:** treat the two Wi-Fi ranges as a *network-path defect to fix*, not as allowlist entries — a studio Mac that must reach the repository belongs on the wired path, and the fix is where the Mac connects, not a firewall hole. Allowlist `192.168.88.0/24`, record the two machines as needing a wired path, and re-check after.
+
+   A related fact for the same decision: **Cyril's Mac mini does not appear in the ARD export at all** (serial `RWJ57V9PW4`, `Mac16,10`, macOS 26.6.2 — `grep` finds it zero times in the captured artifact), even though ticket 04 requires it to be "present as a fleet member in its own right". Whoever runs 04 has to report that as a machine needing a record, not invent one, and 13's client list has to include it once it has one.
 3. **Keep a second access path open before applying** (SSH to the NAS, or a console session), so a mis-scoped rule cannot lock administration out along with the clients.
 4. **The negative case — decision 13C.** The ticket requires "a refused connection from an address outside the allowlist", with the source recorded, *or* an explicit statement that the negative case was not verified by us and exactly what remains unverified. Options: a phone on cellular (only proves anything if the NAS is otherwise routable from outside — if there is no inbound route, the traffic never reaches the firewall and the test proves nothing), a machine on a different VLAN, or the honest statement. This one cannot be faked in a report.
 5. **The internet-reachability claim needs one more check: `myQNAPcloud` is installed and enabled.** Its status (registered/active, and whether it exposes anything) should be verified as part of 13's evidence, because the ticket's own words are "the evidence that this restriction is what stands between the repository and the wider network is stated explicitly, including that the repository must never be internet-reachable." A remote-access app left enabled weakens that sentence even if no firewall rule is missing.
