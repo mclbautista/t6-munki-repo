@@ -268,9 +268,15 @@ def _inventory_targets(path: str, limit: Optional[int] = None) -> List[dict]:
         targets.append({"host": host, "address": row.get("primary_ip"), "serial": row.get("serial"),
                         "name": row.get("computer_name")})
     for entry in inventory.get("known_absent") or []:
-        if isinstance(entry, dict) and entry.get("host"):
-            targets.append({"host": entry["host"], "serial": entry.get("serial"),
-                            "name": entry.get("name")})
+        if not isinstance(entry, dict):
+            continue
+        host = entry.get("probe_hostname") or entry.get("name")
+        if not host:
+            continue
+        # A machine the export has no row for is still a machine to probe: it is how the pilot
+        # ring's second member gets observed at all.
+        targets.append({"host": host, "address": entry.get("primary_ip"),
+                        "serial": entry.get("serial"), "name": entry.get("name")})
     targets.sort(key=lambda t: t["host"])
     return targets[:limit] if limit else targets
 
@@ -298,31 +304,41 @@ def cmd_probe(args, deps: Deps) -> int:
         print("error: no targets; pass --machine HOST[:SERIAL] or --from-inventory", file=sys.stderr)
         return 2
 
-    here = args.local_host or ""
-    build_runner = (lambda host, command, timeout=None: local_runner(host, command, timeout)) \
-        if args.local else None
+    # A local target is matched on its name *or* its address, because the runner is handed the
+    # address: matching only the name silently sent the local machine over ssh.
+    local_addresses = set()
+    for candidate in targets:
+        if args.local_host in (candidate.get("host"), candidate.get("address")):
+            local_addresses |= {candidate.get("host"), candidate.get("address")}
 
-    def runner(host, command, timeout=None):
-        if here and host == here:
-            return local_runner(host, command, timeout or args.timeout)
-        return probe.default_runner(host, command, timeout or args.timeout)
+    def runner(address, command, timeout=None):
+        if address and address in local_addresses:
+            return local_runner(address, command, timeout or args.timeout)
+        return probe.default_runner(address, command, timeout or args.timeout)
 
     run, observations = probe.probe_run(targets, runner, store_path=args.store,
-                                        observer=args.observer, timeout=args.timeout)
+                                        observer=args.observer or probe.DEFAULT_OBSERVER,
+                                        timeout=args.timeout)
     print(f"run {run.run_id}")
     print(f"  targeted {run.targeted}, reached {run.reached} "
           f"(observed {run.observed}, partial {run.partial}), unobserved {run.unobserved}")
     print(f"  complete: {run.complete}" if run.complete else
           "  INCOMPLETE: some targets were not observed")
     for observation in observations:
+        host = observation.target["host"]
+        state = observation.state
         if observation.outcome == "observed":
-            state = observation.state
-            print(f"    {observation.target['host']:28} {observation.machine['serial']:14} "
-                  f"manifest={state['manifest_name']} pending={state['pending_count']} "
+            serial = (observation.machine or {}).get("serial", "?")
+            print(f"    {host:28} {serial:14} manifest={state['manifest_name']} "
+                  f"pending={state['pending_count']} "
                   f"rejections={len(state['architecture_rejections'])}")
+        elif state is not None:
+            print(f"    {host:28} {'PARTIAL':12} {observation.reason} "
+                  f"(state read: manifest={state['manifest_name']}, "
+                  f"pending={state['pending_count']})")
         else:
-            print(f"    {observation.target['host']:28} {observation.outcome.upper():12} "
-                  f"{observation.reason}: {observation.detail or ''}")
+            print(f"    {host:28} {'UNOBSERVED':12} {observation.reason}: "
+                  f"{observation.detail or ''}")
     print(f"  appended to {args.store}")
     return 0
 
@@ -511,11 +527,10 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
                         "192.168.88.182@202-TOC-M4-Max:RW3HL9FL4M")
     p.add_argument("--from-inventory", default=None, metavar="PATH",
                    help="probe the machines in an identity inventory, e.g. data/machines.json")
-    p.add_argument("--limit", type=int, default=None, help="probe at most this many targets")
-    p.add_argument("--observer", default=None, help="who is observing (default: this tool)")
+    p.add_argument("--observer", default=None,
+                   help=f"who is observing (default: {probe.DEFAULT_OBSERVER})")
     p.add_argument("--local-host", default=None, metavar="HOST",
                    help="probe this target by running locally instead of over ssh")
-    p.add_argument("--local", action="store_true", help="run every probe locally")
     p.add_argument("--timeout", type=int, default=None)
     p.set_defaults(func=cmd_probe)
     p = sub.add_parser("observations", help="latest reading per machine, with age (read-only)")

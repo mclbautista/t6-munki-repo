@@ -19,7 +19,7 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 PROBE_VERSION = "munki-fleet-probe/1"
 CLIENT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probe_client.sh")
@@ -187,19 +187,29 @@ def summarise(payload: ProbePayload, observed_at: str) -> dict:
         "last_check": {
             # the report writes these in UTC; they are recorded as given, with the source named
             "timestamp": (run or {}).get("started") or _as_text(report.get("EndTime")),
+            "result": _run_result(report),
             "report_started": _as_text(report.get("StartTime")),
             "report_ended": _as_text(report.get("EndTime")),
             "log_run_started": (run or {}).get("started"),
             "log_run_ended": (run or {}).get("ended"),
             "run_kind": (run or {}).get("kind"),
-            "report_mtime": payload.report_mtime,
         },
         "warnings": report.get("Warnings") or [],
         "errors": report.get("Errors") or [],
         "architecture_rejections": architecture_rejections(payload.log),
         "manifest_lookups": manifest_lookups(payload.log),
-        "source_age_seconds": (observed_epoch - source_epoch) if source_epoch else None,
+        "source_age_seconds": (observed_epoch - source_epoch)
+        if (observed_epoch is not None and source_epoch is not None) else None,
     }
+
+
+def _run_result(report: dict) -> str:
+    """How the last run ended, as a value rather than something a reader has to infer."""
+    if report.get("Errors") or report.get("ProblemInstalls"):
+        return "failed"
+    if report.get("Warnings"):
+        return "warnings"
+    return "clean"
 
 
 def _as_text(value) -> Optional[str]:
@@ -208,7 +218,9 @@ def _as_text(value) -> Optional[str]:
     return value.isoformat(sep=" ") if hasattr(value, "isoformat") else str(value)
 
 
-def _epoch_of(iso: str) -> Optional[int]:
+def _epoch_of(iso) -> Optional[int]:
+    if not isinstance(iso, str):
+        return None
     try:
         return int(datetime.fromisoformat(iso).timestamp())
     except ValueError:
@@ -237,14 +249,15 @@ class Observation:
 
     @classmethod
     def from_json(cls, line) -> "Observation":
-        body = json.loads(line) if isinstance(line, str) else dict(line)
+        body = _body(line)
         body.pop("kind", None)
         return cls(**body)
 
     @classmethod
     def from_payload(cls, target: dict, payload: ProbePayload, observed_at: str, observer: str,
                      run_id: str = "") -> "Observation":
-        common = dict(run_id=run_id, observed_at=observed_at, observer=observer, target=target)
+        common: Dict[str, Any] = dict(run_id=run_id, observed_at=observed_at, observer=observer,
+                                      target=target)
         if "no-munki-tools" in payload.problems:
             return cls(outcome="partial", reason="no-munki-tools", **common)
         if payload.report is None:
@@ -254,9 +267,15 @@ class Observation:
 
         machine = machine_identity(payload.report)
         state = summarise(payload, observed_at)
+        if machine is None:
+            # The report was read but names no serial, so this observation cannot carry the
+            # machine's identity. The state is kept because it is real; the outcome is not
+            # `observed` because a row identified only by a hostname is not a compliant one.
+            return cls(outcome="partial", reason="no-serial", state=state, problems=["no-serial"],
+                       **common)
         problems: List[str] = []
         claimed = (target or {}).get("serial")
-        if machine and claimed and machine.get("serial") != claimed:
+        if claimed and machine.get("serial") != claimed:
             problems.append("identity-mismatch")
         return cls(outcome="observed", machine=machine, state=state, problems=problems,
                    source={"timestamp": state["last_check"]["log_run_started"]
@@ -370,39 +389,78 @@ class ObservationStore:
     def append(self, records: Sequence) -> int:
         """Append records, skipping any the store already holds.
 
-        Idempotent per run, so a retried or replayed run cannot double-count itself, and a run's
-        records are written in one pass so a reader never sees half a run.
+        Idempotent per run, so a retried or replayed run cannot double-count itself. A run's records
+        leave in **one** write on an `O_APPEND` descriptor, flushed to disk: ADR 0004 forbids a
+        partially written run, and writing record-by-record left a crash window in which half a run
+        was on disk and a torn final line blocked every later run.
         """
         parent = os.path.dirname(os.path.abspath(self.path))
         os.makedirs(parent, exist_ok=True)
-        existing = {_record_key(body) for body in self.read()}
-        written = 0
-        with open(self.path, "a", encoding="utf-8") as fh:
-            for record in records:
-                body = _body(record)
-                key = _record_key(body)
-                if key in existing:
-                    continue
-                existing.add(key)
-                fh.write(json.dumps(body, sort_keys=True) + "\n")
-                written += 1
-        return written
+        existing = self._known_keys()
+        batch = []
+        for record in records:
+            body = _body(record)
+            key = _record_key(body)
+            if key in existing:
+                continue
+            existing.add(key)
+            batch.append(json.dumps(body, sort_keys=True) + "\n")
+        if not batch:
+            return 0
+        payload = "".join(batch).encode("utf-8")
+        descriptor = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            written = 0
+            while written < len(payload):
+                written += os.write(descriptor, payload[written:])
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        return len(batch)
 
-    def read(self) -> List[dict]:
+    def _lines(self) -> List[str]:
         if not os.path.isfile(self.path):
             return []
         with open(self.path, encoding="utf-8") as fh:
-            return [json.loads(line) for line in fh if line.strip()]
+            return [line for line in fh if line.strip()]
+
+    def _known_keys(self) -> set:
+        """Keys the store holds, tolerating a torn final line.
+
+        A torn line is corruption and `read()` says which line it is, but it must not make the store
+        permanently unwritable: the collector would never be able to record anything again.
+        """
+        keys = set()
+        for line in self._lines():
+            try:
+                keys.add(_record_key(json.loads(line)))
+            except json.JSONDecodeError:
+                continue
+        return keys
+
+    def read(self) -> List[dict]:
+        records = []
+        for number, line in enumerate(self._lines(), start=1):
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ProbeError(f"{self.path} line {number} is not readable JSON: {exc}") from exc
+        return records
 
     def runs(self) -> List[dict]:
         return [r for r in self.read() if r.get("kind") == "run"]
 
 
 def _body(record) -> dict:
+    """One serialisation path for every record, whether it is a dataclass, a dict or a line.
+
+    Going through `to_json()` matters: `RunRecord.to_json` adds the computed `reached`, so reading
+    `__dict__` instead stored a run record missing a field its own JSON carries.
+    """
     if isinstance(record, str):
         return json.loads(record)
-    if hasattr(record, "__dict__"):
-        return dict(record.__dict__)
+    if hasattr(record, "to_json"):
+        return json.loads(record.to_json())
     return dict(record)
 
 
@@ -420,9 +478,7 @@ def _identity_key(record: dict) -> Optional[str]:
 
 def staleness(observation, now: str) -> Optional[int]:
     """How old an observation is, in seconds, from its own timestamp."""
-    body = json.loads(observation) if isinstance(observation, str) else observation
-    if hasattr(body, "observed_at"):
-        body = body.__dict__
+    body = _body(observation)
     observed = _epoch_of(body.get("observed_at"))
     reference = _epoch_of(now)
     if observed is None or reference is None:
@@ -430,11 +486,30 @@ def staleness(observation, now: str) -> Optional[int]:
     return reference - observed
 
 
+def latest(hostname: str, records: Optional[Sequence] = None, store_path: Optional[str] = None,
+           now: Optional[str] = None, max_age: int = 3600) -> Optional[dict]:
+    """The most recent reading for one machine, with its age (the spec's `latest(hostname)`).
+
+    Returns None when nothing has been observed for it, which is not the same answer as an
+    observation that says the machine was unreachable.
+    """
+    if records is None:
+        records = ObservationStore(store_path).read() if store_path else []
+    now = now or datetime.now().astimezone().isoformat(timespec="seconds")
+    for entry in latest_per_machine(records, now=now, max_age=max_age).values():
+        observation = entry["observation"]
+        names = {observation.get("target", {}).get("host"),
+                 (observation.get("machine") or {}).get("hostname")}
+        if hostname in names or str(hostname) in {k for k in names if k}:
+            return entry
+    return None
+
+
 def latest_per_machine(records: Sequence, now: str, max_age: int = 3600) -> Dict[str, dict]:
     """The newest observation per machine, with its age and whether that age is too old to trust."""
     latest: Dict[str, dict] = {}
     for record in records:
-        body = json.loads(record) if isinstance(record, str) else dict(record)
+        body = _body(record)
         if body.get("kind") == "run":
             continue
         key = _identity_key(body)
