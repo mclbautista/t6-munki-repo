@@ -117,6 +117,19 @@ Two implementations of one ticket is an architecture decision, not a merge detai
 observation code, and have the other session commit its work (or Cyril parks it) so it is not lost.
 I have not touched those files.
 
+### Resolution, same evening
+
+That session deleted its version — `munki_fleet/observe.py`, `tests/test_observe.py`,
+`tests/fixtures/munki/` and `data/observations.db` are gone from the tree, and its `.gitignore` lines
+with them. **Only the committed implementation remains**, so there is one observation store again and
+no decision is outstanding.
+
+Recorded because the cost is real: the deleted version had never been committed, so its 38 KB of code
+and ~50 tests are **not recoverable from Git** — they exist only in that session's own history. Which
+implementation was better is now unanswerable from the repository. That is the hazard of untracked
+work, and it is the second collision in this repo where a session's work was invisible to the other
+until it was too late to compare it.
+
 ## The remaining decision: fleet access
 
 Only the machine the collector runs on is observable today. The rest need SSH access, or a different
