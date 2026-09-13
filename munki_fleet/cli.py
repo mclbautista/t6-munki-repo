@@ -28,6 +28,8 @@ from .catalogs import CatalogError, build_catalogs
 from .drift import DriftReport, integrity, repo_url
 from .drift import drift as drift_report
 from .gate import evaluate_gate
+from .promote import (PROMOTIONS_PATH, PromotionError, demote, initial_promotion_plan,
+                      load_history, load_pilots, promote)
 from .publish import PublishAborted, PublishError, publish, verify_served
 from .targets import SshTarget, TargetError
 
@@ -234,6 +236,35 @@ def cmd_verify(args, deps) -> int:
     return 0 if served_check.ok else 1
 
 
+def cmd_promote(args, deps: Deps) -> int:
+    record = promote(args.metadata_root, args.item, args.version, args.approved_by, args.evidence)
+    print(f"promoted {record.item} {record.version}: "
+          f"{' + '.join(record.from_catalogs)} -> {' + '.join(record.to_catalogs)}")
+    print(f"  approved by {record.approved_by} at {record.at}")
+    for item in record.evidence:
+        print(f"  evidence: {item}")
+    print(f"  recorded in {PROMOTIONS_PATH} (pkginfo {record.pkginfo_path}, {record.pkginfo_sha256[:16]})")
+    print("  the checkout changed; nothing is live until it is published (ADR 0009)")
+    return 0
+
+
+def cmd_demote(args, deps: Deps) -> int:
+    record = demote(args.metadata_root, args.item, args.version, args.approved_by, args.reason)
+    print(f"demoted {record.item} {record.version}: "
+          f"{' + '.join(record.from_catalogs)} -> {' + '.join(record.to_catalogs)}")
+    print(f"  reason: {record.reason}")
+    print(f"  recorded in {PROMOTIONS_PATH}; publish to take it off the fleet")
+    return 0
+
+
+def cmd_promotion_plan(args, deps: Deps) -> int:
+    pilots = args.pilot or load_pilots(args.metadata_root)
+    plan = initial_promotion_plan(args.metadata_root, pilots, exclude=args.exclude)
+    print(plan.describe())
+    print(f"\n{len(load_history(args.metadata_root))} promotion(s) already on record")
+    return 0
+
+
 def main(argv=None, deps: Optional[Deps] = None) -> int:
     deps = deps or Deps()
     parser = argparse.ArgumentParser(prog="munki_fleet.cli", description=__doc__)
@@ -269,6 +300,29 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.set_defaults(func=cmd_publish)
     p = sub.add_parser("verify"); common(p, with_target=True, with_http=True)
     p.set_defaults(func=cmd_verify)
+    p = sub.add_parser("promote", help="move an item testing -> production, on the record")
+    common(p)
+    p.add_argument("--item", required=True)
+    p.add_argument("--version", required=True)
+    p.add_argument("--approved-by", required=True, help="who approved this reaching the fleet")
+    p.add_argument("--evidence", action="append", default=[], required=True,
+                   help="pilot verification evidence (repeatable; at least one is required)")
+    p.set_defaults(func=cmd_promote)
+    p = sub.add_parser("demote", help="move an item production -> testing, with a reason")
+    common(p)
+    p.add_argument("--item", required=True)
+    p.add_argument("--version", required=True)
+    p.add_argument("--approved-by", required=True)
+    p.add_argument("--reason", required=True)
+    p.set_defaults(func=cmd_demote)
+    p = sub.add_parser("promotion-plan",
+                       help="what the one-off initial promotion would do (read-only)")
+    common(p)
+    p.add_argument("--pilot", action="append", default=[],
+                   help="override the declared pilot ring (repeatable)")
+    p.add_argument("--exclude", action="append", default=[], metavar="ITEM",
+                   help="an item to leave in testing rather than promote (repeatable)")
+    p.set_defaults(func=cmd_promotion_plan)
     p = sub.add_parser("check", help="drift and integrity against a target (read-only)")
     common(p, with_target=True)
     p.add_argument("--max-list", type=int, default=25, help="entries to print per category")
@@ -284,6 +338,9 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
             for problem in exc.report.rollback_errors:
                 print(f"  ROLLBACK FAILED: {problem}", file=sys.stderr)
         return 4
+    except PromotionError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 3
     except (PublishError, CatalogError, TargetError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

@@ -36,3 +36,10 @@ first, promote to production after verification" was never implemented.
 
 Demote the item by restoring its `testing` catalog membership in Git and republishing; clients
 stop seeing it at their next check. No client state is destroyed by a demotion.
+
+## Where the ring is declared
+
+The pilot ring is machine-readable in `data/rings.json`, which names the two machines and where each
+name came from. It exists because the promotion path has to decide who tests first, and prose in an
+ADR cannot be read by the plan. **If the file and this decision disagree, this ADR wins and the file
+is the bug.**

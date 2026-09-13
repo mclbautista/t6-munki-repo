@@ -1,0 +1,20 @@
+{
+  "_source": "ADR 0003: the pilot ring is '202-TOC-M4-Max and Cyril's Mac mini'. This file is the machine-readable form of that decision; if it and the ADR disagree, the ADR wins and this file is the bug.",
+  "_why_it_matters": "Pilot machines are the only Macs whose manifests declare the testing catalog, so this list decides the maximum blast radius of a bad package.",
+  "pilots": [
+    {
+      "name": "202-TOC-M4-Max",
+      "resolved_from": "data/machines.json (munki_name, ARD export 2026-09-13)",
+      "munki_name": "202-TOC-M4-Max",
+      "reachable_for_verification": true
+    },
+    {
+      "name": "Cyrils-Mac-mini",
+      "resolved_from": "known_absent in data/machines.json: no ARD row, probed locally 2026-09-13 (serial RWJ57V9PW4, Mac16,10, macOS 26.6.2)",
+      "munki_name": "Cyrils-Mac-mini",
+      "munki_name_source": "probed on the machine: hostname -s = Cyrils-Mac-mini, 2026-09-13",
+      "reachable_for_verification": true,
+      "open": "its Munki identity is currently overridden by ClientIdentifier=t6-test-client, a test artifact (ticket 09). Until that is removed this machine resolves to the t6-test-client manifest, not its own, so it cannot serve as a pilot."
+    }
+  ]
+}
