@@ -1,0 +1,29 @@
+payload	item	version	installer_type	bytes	class	basis	action
+AppCleaner-3.6.8.dmg	AppCleaner	3.6.8	copy_from_dmg	4384865	re-fetchable	AppCleaner (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Aspera-4.2.19.956-HEAD.pkg	IBMAsperaConnect	4.2.19.956-HEAD	-	90194185	re-fetchable-with-account	IBM: Aspera Connect downloads are behind an IBM account	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+CineCred-0.0.pkg	CineCred	0.0	-	98055667	non-reproducible	packaged in-house: version 0.0 and a T6-built .pkg, no upstream package to re-fetch	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+DaVinci_Resolve_Project_Server_20.0_Mac-20.0.dmg	davinci-resolve-project-server	20.0	-	887654573	re-fetchable-with-account	Blackmagic Design: same gate as Resolve Studio	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+DaVinci_Resolve_Studio_20.0_Mac-20.0.dmg	davinci-resolve-studio	20.0	-	6871506711	re-fetchable-with-account	Blackmagic Design: download requires a Blackmagic account, and 20.0 will leave their site	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+DiskCatalogMaker-9.3.1.dmg	DiskCatalogMaker	9.3.1	copy_from_dmg	20599368	re-fetchable	DiskCatalogMaker (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+FrameioDrive-1.12.0.pkg	FrameioDrive	1.12.0	-	233226337	re-fetchable-with-account	Adobe/Frame.io: account gated	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+FrameioTransfer-1.12.0.dmg	FrameioTransfer	1.12.0	copy_from_dmg	127466736	re-fetchable	Frame.io/Adobe Transfer (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+FreeFileSync-14.12.dmg	FreeFileSync	14.12	-	30776260	re-fetchable	FreeFileSync (open source mirrors) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+GoogleChrome-153.0.8010.37.dmg	GoogleChrome	153.0.8010.37	copy_from_dmg	280723546	re-fetchable	Google (open download) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+HandBrake-1.11.2.dmg	HandBrake	1.11.2	copy_from_dmg	47978117	re-fetchable	HandBrake (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Keka-1.6.7.dmg	Keka	1.6.7	copy_from_dmg	35899246	re-fetchable	Keka (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+LucidLink-3.9.8795.pkg	LucidLink	3.9.8795	-	469515609	re-fetchable-with-account	LucidLink: account and licence gated	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+MediaInfo-26.05.dmg	MediaInfo	26.05	copy_from_dmg	11174951	re-fetchable	MediaInfo (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Notion-7.33.0.dmg	Notion	7.33.0	copy_from_dmg	225202825	re-fetchable	Notion (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+OnyX-5.0.3.dmg	OnyX	5.0.3	copy_from_dmg	7743658	re-fetchable	OnyX (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+QfinderPro-1.0.dmg	QfinderPro	1.0	-	145994674	re-fetchable	QNAP (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+RemotePC-7.0.dmg	RemotePC	7.0	-	122722982	re-fetchable	IDrive RemotePC (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Remote_Desktop-11.4.0.pkg	RemoteDesktop	11.4.0	-	102915960	re-fetchable-with-account	Apple Remote Desktop: distributed through Apple, not a plain download	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+Shutter_Encoder-20.3.pkg	ShutterEncoder	20.3	-	183493104	re-fetchable	Shutter Encoder (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Soundly-2026.07.43.dmg	Soundly	2026.07.43	copy_from_dmg	89555472	re-fetchable-with-account	Soundly: account/licence gated	copied off-NAS to Sixto-5 ~/munki-offnas-copy/, sha256 verified against the pkginfo
+Stow-0.6.47.dmg	Stow	0.6.47	copy_from_dmg	5926341	re-fetchable	Stow (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+TeamViewer-1.0.dmg	TeamViewer	1.0	copy_from_dmg	135469405	re-fetchable	TeamViewer (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Telegram-12.10.dmg	Telegram	12.10	copy_from_dmg	139045791	re-fetchable	Telegram (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+VLC-3.0.23.dmg	VLC	3.0.23	copy_from_dmg	89124160	re-fetchable	VideoLAN (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+Zoom-7.1.5.84650.pkg	Zoom	7.1.5.84650	-	213330475	re-fetchable	Zoom (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+anydesk-4-9.6.0.dmg	AnyDesk	9.6.0	copy_from_dmg	26310518	re-fetchable	AnyDesk (vendor) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor
+iTerm2-3.7.1.dmg	iTerm2	3.7.1	copy_from_dmg	68663130	re-fetchable	iTerm2 (open source) — vendor download available again	no copy: exclusion reason — re-fetchable from the vendor

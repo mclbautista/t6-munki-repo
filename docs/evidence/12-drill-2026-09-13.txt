@@ -1,0 +1,65 @@
+# Ticket 12 restore drill, 2026-09-13: metadata restored from the off-NAS copy
+
+Performed by: Hermes agent session, on the admin workstation. Read-only towards the NAS and
+the live repository: the drill restored into /tmp and nothing in place was altered.
+
+## What was restored, and from where
+
+Command:
+    GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/mclbautista/t6-munki-repo.git /tmp/t12/restored
+    mkdir -p catalogs && /usr/local/munki/makecatalogs .
+
+- Source: the **off-NAS copy** — the private GitHub remote (visibility PRIVATE), i.e. a second
+  device, not this checkout. Checked afterwards: the remote's main and the local HEAD were the
+  same commit, so nothing was silently missing.
+- Restored: 183 tracked files at the remote's head; **29 manifest files** and
+  **28 pkginfos**, all readable (every plist parsed).
+- What the payloads are *not* part of this: no `pkgs/` exists in Git. Payloads live only on the
+  NAS. That is the finding below.
+
+## Catalog rebuild from the restored metadata
+
+`makecatalogs` from the restored tree emitted **one warning per pkginfo** ("refers to missing
+installer item: …") and produced an **empty catalog**: with no payloads present it drops every
+item. Run where the payloads are visible it would produce the served catalog — proved instead by
+comparing what the metadata contributes, item by item.
+
+## Comparison against the live catalogs
+
+| source | items |
+|---|---|
+| restored metadata (from GitHub) | 28 |
+| live catalog in this checkout | 28 |
+| **served catalog on the NAS** (`/share/ZFS23_DATA/Web/MunkiRepo/catalogs/all`) | 28 |
+
+- The checkout's catalog and the served catalog are **identical** (parsed and compared).
+- Items only in the live catalog: **none**. Items only in the restored metadata: **none**.
+- Entries whose payload hash differs between the restored metadata and the served catalog: **none**.
+
+So the metadata restore is **complete and exact**: it reproduces the served catalog's entries and
+hashes. The only thing a bare restore cannot reproduce is the catalogs themselves, because the
+catalog build needs the payloads, which the backup does not contain.
+
+## Payload checksums verified
+
+Every payload in the served tree was hashed **on the NAS** (48 seconds, read-only) and compared
+against the hash its pkginfo declares:
+
+- payloads found: **29** (28 declared payloads + one `.DS_Store`, which is junk in the served tree)
+- hashes matching the pkginfo: **28 of 28**
+- declared payloads missing from the served tree: **none**
+
+## Difference found, and what it means
+
+**The metadata is protected; the payloads are not.** The Git copy is a real, restorable backup of
+everything except `pkgs/` — 10.76 GB that exists on one NAS volume only. Ticket 12's criterion 3
+is the fix, and its classification (this commit) shows the stakes are smaller than the total
+suggests: only 0.10 GB is non-reproducible, 8.74 GB needs a vendor account to re-fetch, and
+1.92 GB is freely re-downloadable.
+
+## Assessed but not done here
+
+- The snapshot schedule (criterion 1) needs the QTS UI: no MCP tool exists for snapshot creation
+  and the NAS shell is read-only for this user. Settings proposed in the ticket.
+- A payload copy needs a target device, which is a decision rather than a task. Recorded in the
+  classification artifact as the action on the copy-required rows.
