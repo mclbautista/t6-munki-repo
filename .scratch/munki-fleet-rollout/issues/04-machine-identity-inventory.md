@@ -83,7 +83,11 @@ Munki resolves a machine's manifest from `HostName`/`LocalHostName`, while the A
 
 The criterion says the inventory is "cross-checked against the role matrix", and `CONTEXT.md` defines the role matrix as "the assignment of each Mac to one role group, **recorded in the specification**". The specification records no per-machine assignment. So the only checkable source is the manifests themselves, and this ticket derives each machine's role from its own manifest — which means **a manifest that names the wrong role group cannot be detected here**. What detects it is the probe (ticket 05) and a resolution check (ticket 06), both of which ask the machine what it actually resolved. Recorded as a finding about the ticket's own premise rather than papered over.
 
-Related, and for a human to settle: `CONTEXT.md` enumerates **eight** role groups; the spec and the manifest tree have **nine** (`production` is the extra). The code follows the spec, and `production` is used by no machine.
+Related, and for a human to settle: `CONTEXT.md` enumerates **eight** role groups; the spec and the manifest tree have **nine** (`production` is the extra). The code follows the spec, and `production` is used by no machine — **Cyril's decision, 2026-09-13: it exists and is intentionally unassigned for now.**
+
+### The matrix, as a file to fill in
+
+`docs/role-matrix.csv` was generated from this ticket's artifact: 19 rows (the 16 inventoried machines, the two manifests no machine answers to, and Cyril's Mac mini), each pre-filled with the role group its manifest names today, plus a `notes` column for the five rows that need a human answer. Five rows have no role to pre-fill: `303A-Mac-Mini-M4-Pro` and `Sixto-5` (no manifest), `202B-Mac-Studio` and `Angels-iMac` (manifest, no machine — the row asks whether the Mac exists), and Cyril's Mac mini (neither). Once filled, this becomes the recorded matrix and can be wired into the identity tool as a real cross-check: a manifest whose role group disagrees with the recorded matrix becomes a finding instead of being invisible.
 
 ## Finding: ADR 0004 states the export carries a hardware UUID, and it does not
 

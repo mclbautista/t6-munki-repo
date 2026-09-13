@@ -1,0 +1,20 @@
+machine,serial,unix_hostname,munki_short_hostname,role_group,notes
+201 Bay 01 Mac Pro (63),C02C71SCK7GF,201-Bay-01-Mac-Pro-111,201-Bay-01-Mac-Pro,sound,
+201 Bay 02 M1 Max,GK7RW3463R,201-Bay-02-M1-Max,201-Bay-02-M1-Max,client-facing,
+201 Bay 03 M1 Ultra (1620),KL6G9VMQVP,201-Bay-03-M1-Ultra-2805,201-Bay-03-M1-Ultra,client-facing,
+201 Viewing Room (1279),J4X5JTVXDD,201-Viewing-Room-1309,201-Viewing-Room,client-facing,
+202 Jason M2 Max,J90PHXGC5V,202-Jason-M2-Max,202-Jason-M2-Max,online,
+202 Mac Pro (1943),C02C71SDK7GF,202-Mac-Pro-3,202-Mac-Pro-3,toc,
+202 TOC M4 Max,RW3HL9FL4M,202-TOC-M4-Max,202-TOC-M4-Max,toc,
+202 Tim M2 Max (6),R6WV6DCVVH,202-Tim-M2-Max-9,202-Tim-M2-Max-9,online,
+202A Mac Mini M4,X904F44LHX,202A-Mac-Mini-M4,202A-Mac-Mini-M4,warroom,
+202C Studio M1 Ultra,PM4PWN40R0,202C-Studio-M1-Ultra,202C-Studio-M1-Ultra,online,
+303A Mac Mini M4 Pro,HPXH7XG2DD,303A-Mac-Mini-M4-Pro,303A-Mac-Mini-M4-Pro,,no machine manifest — resolves site_default; which role group should it be in?
+303B iMac,C02DX110PN5V,303B-iMac,303B iMac,interns-temporary,
+303D Mac Studio M2,PKXTGR769Q,303D-Mac-Studio-M2,303D-Mac-Studio-M2,client-facing,
+Sixto (3),C07D317NPJJ7,Sixto-5,Sixto-5,,no machine manifest — resolves site_default; which role group should it be in?
+T6 MacBook M3 Pro,K267DWDMWX,T6-MacBook-M3-Pro,T6-MacBook-M3-Pro,dit,
+T6 MacBook M4 Max,GYC39Q30PJ,T6-MacBook-M4-Max,T6-MacBook-M4-Max,dit,
+,,,202B-Mac-Studio,,"manifest exists, no machine in the export — does this Mac exist? If yes, add its name and serial and confirm the role; if not, retire the manifest"
+,,,Angels-iMac,,"manifest exists, no machine in the export — does this Mac exist? If yes, add its name and serial and confirm the role; if not, retire the manifest"
+Cyril's Mac mini,RWJ57V9PW4,Cyrils-Mac-mini,(HostName unset; LocalHostName is Cyrils-Mac-mini),,fleet member with no row in the export and no machine manifest; what role group?

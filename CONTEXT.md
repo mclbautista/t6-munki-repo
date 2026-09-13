@@ -40,11 +40,12 @@ Two failures this project exists to prevent, in order:
   `dit`, `sound`, `interns-temporary`, `coordination-admin`, `production`). Carries role extras
   only. `production` exists and is **intentionally unassigned for now** (Cyril, 2026-09-13), so a
   role group with no machines is a deliberate state, not a missing assignment.
-- **Role matrix:** the assignment of each Mac to one role group, recorded in the specification.
-  It is **not yet recorded as a per-machine list**; until it is, a machine's role is the role
-  group its own manifest names, which is derived from the same tree it would be checked against
-  (ticket 04). A manifest naming the wrong role group is therefore undetectable there — the probe
-  (ticket 05) and a resolution check (ticket 06) are what catch it.
+- **Role matrix:** the assignment of each Mac to one role group. Being recorded in
+  `docs/role-matrix.csv` — 19 rows generated from the identity inventory (ticket 04), pre-filled with
+  the role group each manifest names today, for Cyril to correct and return (2026-09-13). Until it is
+  filled in, a machine's role is the role group its own manifest names, derived from the same tree it
+  would be checked against, so a manifest naming the wrong role group is undetectable there — the
+  probe (ticket 05) and a resolution check (ticket 06) are what catch it.
 - **Ring:** a stage an item passes through before fleet-wide availability. `testing` → **pilot**
   (`202-TOC-M4-Max`, Cyril's Mac mini) → `production`.
 - **Promotion:** the recorded act of moving an item from `testing` to `production`.
