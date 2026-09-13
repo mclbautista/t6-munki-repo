@@ -123,8 +123,20 @@ Decided by Cyril on 2026-09-13. Recorded here as the decision of record; the wor
 | 12C | where the restore drill restores to, and the payload classification's off-NAS rule | **approved as recommended** — drill on the second device, classify before copying |
 | 13A | install QuFirewall on the NAS | **network segregation chosen instead** — no firewall app is to be installed; the restriction comes from where clients can reach the NAS, not from a rule on it |
 | 13B | the allowlist: one fleet subnet, or the Wi-Fi subnets too | **one subnet** — `192.168.88.0/24`; the two Wi-Fi ranges are treated as a network-path defect to fix, per the recommendation above |
-| 13C | how the negative case is verified (or recorded as unverified) | **Cyril decides the source; asked 2026-09-13** — pending his answer, recorded below when it lands |
-| 13D | `myQNAPcloud` status verified as part of the evidence | **to be verified with Cyril** — pending, recorded below when it lands |
+| 13C | how the negative case is verified (or recorded as unverified) | **no such source — the negative case is recorded as not verified by us**, with exactly what remains unverified stated (Cyril, 2026-09-13). Ticket 13 carries this as a decision, not as a gap discovered later. |
+| 13D | `myQNAPcloud` status verified as part of the evidence | **verified read-only from the NAS** — installed and enabled, but **no QNAP ID linked, no service published, no DDNS name of our own, Auto Router Configuration force-disabled**. What stays open is gateway-side only. Evidence: `docs/evidence/13-myqnapcloud-and-reachability-state-2026-09-13.txt` |
+
+### What 13D's check found
+
+Read-only, from the NAS itself, with the sources named in the evidence file:
+
+- `myQNAPcloud` is installed **and enabled** (v1.1.100) — the capability exists and could be switched on from the UI. That is the one thing the app list settles.
+- Nothing links the NAS to a QNAP account: both `qid_hash.conf` files are **0 bytes**. No linked ID, no relay path.
+- Nothing is published: the QNAP DDNS publish map is `-1` across the board, and every third-party DDNS provider block is disabled with an empty username.
+- The NAS does **not** open its own ports on the gateway — Auto Router Configuration is force-disabled with QTS's own reason code (`QTSMQC00-313`).
+- A separate fact for 12B: HBS 3's cloud connector has **0 accounts and 0 credentials**, so there is no cloud destination configured today — consistent with the approved off-NAS copy being another device plus the metadata's Git history, not a cloud service.
+- **Not verified by us:** whether the NAS is reachable from the public internet. The intended off-network probe was blocked by the browser backend's address guard and was not worked around, and no off-network vantage point is available to the agent. The remaining unknown is gateway-side — a hand-made port-forward, and whether the ISP address is public or carrier-shared. That is a UI fact, and it is recorded as unverified rather than assumed either way.
+
 
 ### What 13A's answer changes
 

@@ -1,0 +1,56 @@
+# myQNAPcloud and internet-reachability state, read-only, 2026-09-13 19:0x +08:00
+
+Probed by: Hermes agent session, from the T6 Mac Mini workstation (192.168.88.202).
+Ticket: `.scratch/munki-fleet-rollout/issues/13-repository-network-restriction.md`, decision 13D.
+Method: read-only. QNAP MCP read calls, and the NAS shell at `t6-nas` (port 2222, user `t6-cyril`),
+whose filesystem is read-only for this user — `/etc/`, `/mnt/HDA_ROOT/` and `/share/` are readable,
+only `/tmp` is writable, so nothing here changed any state. Secret-shaped values were redacted at the
+shell, and only non-secret columns were selected from the one database copied for inspection.
+
+## Why this matters
+
+Ticket 13's criterion 4 requires the evidence that this restriction is what stands between the
+repository and the wider network, "including that the repository must never be internet-reachable".
+The finding that reshaped ticket 13 was that **no firewall is installed on the NAS at all**
+(`appcenter_list_apps` shows no QuFirewall or equivalent). Whether a cloud relay or a DDNS name gives
+the NAS a path from the internet is the other half of that question, so 13D asked for it to be
+verified rather than assumed.
+
+## What is established
+
+| fact | evidence | source |
+|---|---|---|
+| `myQNAPcloud` is installed **and enabled**, v1.1.100 | app list entry `internalName: MyCloudNas`, `installed: true`, `enabled: true` | `mcp__qnap__appcenter_list_apps` |
+| The app is installed to `/mnt/ext/opt/MyCloudNas`, `Status = complete`, build 20260727, directory last touched 2026-09-13 10:58 | `[MyCloudNas]` block in `/etc/config/qpkg.conf` | NAS shell |
+| **No QNAP ID is linked to this NAS** | `/mnt/HDA_ROOT/.config/qcloud/qid_hash.conf` and `/etc/config/qcloud/qid_hash.conf` are both **0 bytes** | NAS shell |
+| **No service is published** to a myQNAPcloud name | `/mnt/HDA_ROOT/.config/qnapddns.conf` → `[Publish Service]` `Service10 … Service19 = -1` | NAS shell |
+| **No DDNS name of our own exists**: every provider block is disabled with an empty username and hostname | `/etc/config/ddns.conf` (selfHOST.de, PeanutHull, STRATO, DyNS, PubYun … all `enable = 0`) | NAS shell |
+| **The NAS does not open its own ports on the gateway**: Auto Router Configuration is force-disabled | `/etc/config/upnpc.conf` → `[Force_Disable]` `REASON = QTSMQC00-313` | NAS shell |
+| Ports 80, 443, 8081 and 8082 are listening on all interfaces | `netstat -tln` | NAS shell |
+| **No cloud storage account is configured in HBS 3** (separate from myQNAPcloud) | CloudConnector3 `config.db`: `accounts` 0 rows, `credentials` 0 rows, `cloud_info_cache` 0 rows | read-only copy of `/etc/config/cloudconnector/CloudConnector3/config.db`, inspected with `sqlite3` |
+
+Read together: nothing on the NAS side creates an internet path. A myQNAPcloud relay needs a linked
+QNAP ID; there is none. A published name needs a published service; there is none. A DDNS name needs
+an enabled provider; there is none. A router forward opened by the NAS itself needs Auto Router
+Configuration; it is force-disabled with QTS's own reason code. The app being installed and enabled
+means the *capability* is present and could be turned on from the UI — it is not a path by itself.
+
+The HBS finding is a different fact that matters to ticket 12B: the off-NAS copy has **no cloud
+destination configured today**, which is consistent with the approved recommendation (an HBS job to
+another device, plus the metadata's Git history pushed off the NAS) rather than a cloud service.
+
+## What is NOT established, and why
+
+- **Reachability from the public internet was not verified by us.** The intended off-network probe
+  (fetching the NAS's external address `27.49.72.161` on ports 80/443/8082 from a host outside T6's
+  network) **could not be made**: the browser backend refuses to fetch a bare IP address
+  (`Blocked: URL targets a private or internal address`), and that guard was not worked around. No
+  off-network vantage point is available to this session.
+- **The gateway is the remaining unknown.** Whether a *manual* port-forward to the NAS exists on the
+  router (the Deco mesh or the Unifi switch/router), and whether the ISP address is public or
+  carrier-shared, are facts only the gateway UI can show. The NAS-side evidence above says the NAS
+  itself did not create such a forward; it cannot speak for a hand-made one.
+- Per decision **13C**, the negative case for ticket 13 is recorded as **not verified by us**, with
+  exactly what remains unverified stated — the reachability of the metadata endpoint from an address
+  outside the fleet's path, which will be a routing fact rather than a firewall refusal because 13A
+  chose network segregation over a firewall.
