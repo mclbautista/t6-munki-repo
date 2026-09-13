@@ -1,0 +1,51 @@
+# Ticket 04 supporting check, 2026-09-13: is there a hardware UUID anywhere besides a probe?
+# Read-only; the ARD file below belongs to the export task Cyril ran at 18:37 today.
+#
+# Command 1 — the ARD export task's own per-computer records:
+#   python3 - <<'EOF'  (plistlib.load of the file below; see the extraction after this header)  EOF
+# file: /Users/cyrilbautista/Library/Containers/com.apple.RemoteDesktop/Data/Library/Application Support/Remote Desktop/Task History/2026-09-13.plist
+#
+201 Bay 01 Mac Pro (63)      369E4774-3B94-4CD2-B976-7B002C5AF440  94:F6:D6:F3:F9:88  192.168.88.171
+201 Bay 02 M1 Max            3C3E69AD-6536-44CE-8425-17B1BAC3C78A  9C:76:0E:32:E5:C9  192.168.88.172
+201 Bay 03 M1 Ultra (1620)   4456C17D-BD00-4996-8A4E-D13055197DD7  9C:76:0E:30:95:05  192.168.88.135
+201 Viewing Room (1279)      9EC8768A-3AA1-47C5-AB47-E2E7709569B2  9C:76:0E:6B:F6:CC  192.168.88.24
+202 Jason M2 Max             16F2C690-DDCC-4F9A-BDCE-6826FDCFF2CB  A4:FC:14:04:F0:E7  192.168.88.179
+202 Mac Pro (1943)           718C43E6-EDD4-42FE-8923-51C3968265D2  94:F6:D6:F3:99:C7  192.168.88.174
+202 TOC M4 Max               E737A017-CEE2-4335-B3EB-949F47F7C77C  1C:1D:D3:F0:F3:F2  192.168.88.182
+202 Tim M2 Max (6)           EE3AA3A8-B9F9-4DFA-80A5-ACC5A47347BA  A4:FC:14:04:E0:91  192.168.88.180
+202A Mac Mini M4             CE4FCFCF-2A73-4B40-BF15-FFA52B5D5B00  D0:11:E5:0B:9B:90  192.168.88.175
+202C Studio M1 Ultra         B2528F5F-51F8-4B1A-95CB-00C8F51F4E25  9C:76:0E:6A:B3:25  192.168.88.181
+303A Mac Mini M4 Pro         DA1A1586-6F79-4E39-856D-8A7A6336F70B  D0:11:E5:00:42:5F  192.168.88.190
+303B iMac                    095BD652-BC86-4927-AE84-867805D437E9  3C:7D:0A:0C:27:B0  192.168.88.177
+303D Mac Studio M2           A4BB59A5-E0FA-4561-90F7-05265B58CE8A  A4:FC:14:27:12:CB  192.168.88.193
+Sixto (3)                    0B1919E6-1503-49DC-A573-DA2DA06A78AE  14:9D:99:7B:CA:14  192.168.88.151
+T6 MacBook M3 Pro            79D56BDF-A59A-4FB0-A105-28B2C0F11A03  60:3E:5F:4E:79:14  192.168.88.18
+T6 MacBook M4 Max            A8F54259-31FC-413A-8A42-F65090419E85  84:2F:57:61:52:F2  192.168.88.144
+# records: 16
+#
+# Command 2 — the same record against the machine's own answer:
+#   ARD record 'Sixto (3)' UUID : 0B1919E6-1503-49DC-A573-DA2DA06A78AE
+#   ssh t6-mac-mini "system_profiler SPHardwareDataType | grep -E 'Serial Number|Hardware UUID'"
+#         Serial Number (system): C07D317NPJJ7
+#         Hardware UUID: CB3D4672-22E7-573F-9CD2-5F1D2A6BEC0F
+#
+# Command 3 — this workstation, probed locally:
+#   system_profiler SPHardwareDataType | grep -E 'Serial Number|Hardware UUID|Model Identifier|Chip'
+#   Model Identifier: Mac16,10
+#   Chip: Apple M4
+#   Serial Number (system): RWJ57V9PW4
+#   Hardware UUID: B30D55C8-679C-56E2-9654-16CBFD4A905D
+#
+# Conclusion: ARD's per-computer UUID is ARD's own identifier, not the hardware UUID — the
+# admin workstation's record above does not match its Hardware UUID on the line below it.
+# The ARD System Overview Report carries no UUID column at all. So a hardware UUID comes
+# either from a probe of the machine (these two) or from the operational projection, which
+# ADR 0004 calls a projection and never the source.
+
+# A second thing this file shows, which the reconciliation reports separately: ARD's
+# cached per-computer MAC and address are not the ones the System Overview Report
+# collected for the same machine (e.g. 201 Bay 01: cached 94:F6:D6:F3:F9:88 at
+# 192.168.88.171, reported 94:F6:D6:F3:E0:8D; 201 Bay 03: cached 192.168.88.135, reported
+# 192.168.254.106; 201 Viewing Room: cached 192.168.88.24, reported 192.168.88.170). ARD's
+# cache is a third, stale view. The report's per-row collection date is what the inventory
+# carries; the cache is not an identity source and was not used.

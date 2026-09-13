@@ -97,7 +97,19 @@ class TestParseArdExport:
         captured.write_text("# exported 2026-09-13 18:37 from ARD 3.10\n# 44 columns, "
                             "16 rows, no UUID column\n\n" + FIXTURE.read_text())
         rows, export_date = parse_ard_export(captured)
-        assert len(rows) == 6 and export_date == EXPORT_DATE
+        # ...and the header's own export date is what the report carries, not the
+        # newest per-row collection date that follows it.
+        assert len(rows) == 6 and export_date == "2026-09-13 18:37"
+
+    def test_the_export_date_is_the_export_s_own_date_not_the_newest_collection(self, tmp_path):
+        # The header records when the report was taken; "Date Collected" is per machine
+        # and can be months older, so it cannot stand in for the export date.
+        captured = tmp_path / "captured.txt"
+        captured.write_text("# Identity source for ticket 04, exported 2026-09-13 18:37\n\n"
+                            + FIXTURE.read_text())
+        _, export_date = parse_ard_export(captured)
+        assert export_date == "2026-09-13 18:37"
+        assert export_date != EXPORT_DATE
 
     def test_a_row_that_does_not_match_the_header_is_refused(self, tmp_path):
         broken = tmp_path / "broken.txt"
@@ -125,7 +137,7 @@ class TestArchitectureInference:
     def test_a_model_the_report_cannot_place_stays_unknown(self):
         record = ArdRecord(computer="Mystery Mac", unix_hostname="mystery", serial="X",
                            model="MacBook Air", os_version="", primary_ip="", primary_mac="",
-                           wifi_mac="", cpu_speed="", processor_count="", memory="", collected_at="")
+                           wifi_mac="", cpu_speed="", collected_at="")
         assert infer_architecture(record) == (None, "unknown")
 
 
@@ -153,17 +165,20 @@ class TestManifestReconciliation:
 
     def test_a_machine_with_no_manifest_is_reported_not_hidden(self, tmp_path):
         rep = report(tmp_path)
-        assert set(rep.machines_without_manifest) == {
+        assert set(rep.unmanaged_machines) == {
             "303A-Mac-Mini-M4-Pro", "Sixto-5", "303D-Mac-Studio-M2"}
         unmatched = row(rep, "303A-Mac-Mini-M4-Pro")
         assert unmatched.manifest is None and unmatched.role is None
-        assert unmatched.munki_name == "303A-Mac-Mini-M4-Pro"  # falls back, never invents
+        # munki_name is the manifest name or nothing: the ARD UNIX hostname is not a
+        # Munki HostName, so promoting it here would assert an equivalence nobody checked.
+        assert unmatched.munki_name is None
+        assert unmatched.unix_hostname == "303A-Mac-Mini-M4-Pro"  # still addressable
         assert {f.subject for f in kinds(rep, "machine-without-manifest")} == set(
-            rep.machines_without_manifest)  # both directions agree, order is not a contract
+            rep.unmanaged_machines)  # both directions agree, order is not a contract
 
     def test_a_manifest_with_no_machine_is_reported_in_the_other_direction(self, tmp_path):
         rep = report(tmp_path)
-        assert set(rep.manifests_without_machine) == {"202B-Mac-Studio", "201-Bay-03-M1-Ultra"}
+        assert set(rep.orphan_manifests) == {"202B-Mac-Studio", "201-Bay-03-M1-Ultra"}
         assert {f.subject for f in kinds(rep, "manifest-without-machine")} == \
             {"202B-Mac-Studio", "201-Bay-03-M1-Ultra"}
 
@@ -175,8 +190,7 @@ class TestManifestReconciliation:
         manifests, _ = load_manifests(metadata)
         machine = ArdRecord(computer="Orphan mini", unix_hostname="orphan-mini", serial="S1",
                             model="Mac mini", os_version="", primary_ip="", primary_mac="",
-                            wifi_mac="", cpu_speed="3.2 GHz", processor_count="6", memory="16 GB",
-                            collected_at="9/13/26 12:00 AM")
+                            wifi_mac="", cpu_speed="3.2 GHz", collected_at="9/13/26 12:00 AM")
         rep = build_report([machine], manifests, source="fixture", export_date=EXPORT_DATE)
         assert rep.unassigned_roles == ("201-Bay-03-M1-Ultra", "orphan-mini")
         # only the unassigned manifest that has a machine produces a machine finding
@@ -190,12 +204,36 @@ class TestManifestReconciliation:
         assert "Sixto-5" not in unassigned
 
     def test_a_machine_known_to_exist_but_absent_needs_a_record(self, tmp_path):
-        rep = report(tmp_path, known_absent=("Cyrils-Mac-mini:Cyril's Mac mini, locally verified "
-                                            "as serial RWJ57V9PW4 on 192.168.88.202"))
+        rep = report(tmp_path, known_absent=("Cyrils-Mac-mini:Cyril's Mac mini is a fleet member "
+                                             "and has no row in the export"))
         assert "Cyrils-Mac-mini" not in [r.unix_hostname for r in rep.rows]
         needs = kinds(rep, "needs-record")
         assert len(needs) == 1 and needs[0].subject == "Cyrils-Mac-mini"
-        assert "RWJ57V9PW4" in needs[0].detail
+        assert len(rep.known_absent) == 1
+        assert rep.known_absent[0].name == "Cyrils-Mac-mini"
+        assert rep.known_absent[0].serial is None  # no probe was supplied for it
+
+    def test_a_known_absent_machine_carries_its_serial_when_a_probe_exists(self, tmp_path):
+        # Ticket 05 targets machines by serial, so the hand-off must not be prose.
+        rep = report(tmp_path,
+                     known_absent=("Cyrils-Mac-mini:Cyril's Mac mini, absent from the export",),
+                     probes=[ProbeRecord(serial="RWJ57V9PW4",
+                                         hardware_uuid="B30D55C8-679C-56E2-9654-16CBFD4A905D",
+                                         architecture="arm64", hostname="Cyrils-Mac-mini",
+                                         model_identifier="Mac16,10", os_version="26.6.2")])
+        entry = rep.known_absent[0]
+        assert entry.serial == "RWJ57V9PW4"
+        assert entry.probe.hardware_uuid == "B30D55C8-679C-56E2-9654-16CBFD4A905D"
+        payload = json.loads(report_to_json(rep))["known_absent"][0]
+        assert payload["serial"] == "RWJ57V9PW4" and payload["model_identifier"] == "Mac16,10"
+
+    def test_a_probe_with_no_row_is_reported_without_being_declared(self, tmp_path):
+        # A machine that answered a probe but has no export row is evidence, not a guess.
+        rep = report(tmp_path, probes=[ProbeRecord(serial="ZZZ", hostname="Sixto",
+                                                   architecture="x86_64")])
+        absent = {entry.name for entry in rep.known_absent}
+        assert "Sixto" in absent
+        assert len(kinds(rep, "needs-record")) == 1
 
 
 class TestHardwareUuidProvenance:
@@ -215,9 +253,24 @@ class TestHardwareUuidProvenance:
                                                 lan_ip_address="192.168.88.182",
                                                 hardware_uuid="B393E619-D093-5769-A19A-7C2670C32B49")])
         matched = row(rep, "202-TOC-M4-Max")
-        assert matched.hardware_uuid_source == "bays-projection-unverified:hardware_uuid"
+        # ADR 0004: the projection is never the source, so it cannot occupy the
+        # authoritative field. A consumer reading hardware_uuid alone sees nothing.
+        assert matched.hardware_uuid is None
+        assert matched.hardware_uuid_source == "unavailable"
+        assert matched.hardware_uuid_candidate == "B393E619-D093-5769-A19A-7C2670C32B49"
+        assert matched.hardware_uuid_candidate_source == \
+            "bays-projection-unverified:hardware_uuid"
         assert len(kinds(rep, "uuid-unverified")) == 1
         assert matched.serial not in [f.subject for f in kinds(rep, "uuid-unavailable")]
+
+    def test_a_probe_resolves_the_candidate_instead_of_being_overwritten_by_it(self, tmp_path):
+        rep = report(tmp_path,
+                     bays=[BaysRecord(name="202 TOC M4 Max", hostname="202 TOC M4 Max",
+                                      hardware_uuid="PROJECTION")],
+                     probes=[ProbeRecord(serial="RW3HL9FL4M", hardware_uuid="REAL")])
+        matched = row(rep, "202-TOC-M4-Max")
+        assert matched.hardware_uuid == "REAL" and matched.hardware_uuid_source == "probe"
+        assert matched.hardware_uuid_candidate is None
 
     def test_no_source_means_no_value_and_a_finding(self, tmp_path):
         rep = report(tmp_path)
@@ -248,15 +301,19 @@ class TestProjectionReconciliation:
         assert all("Bays records in Notion" in f.proposed for f in missing)
 
 
-class TestStaleness:
-    def test_a_collection_older_than_the_window_is_flagged(self, tmp_path):
-        rep = report(tmp_path)
-        stale = {f.subject for f in kinds(rep, "stale-collection")}
-        assert "303D-Mac-Studio-M2" in stale        # 6/29/26 against a 9/13/26 export
-        assert "202-TOC-M4-Max" not in stale         # collected the day of the export
+class TestTheSourceDateIsCarriedNotJudged:
+    """Staleness *exposure* is ticket 05's. This ticket carries each row's own
+    collection date, which is identity provenance: when the source said so."""
 
-    def test_identity_fields_are_not_affected_by_age(self, tmp_path):
+    def test_every_row_carries_the_date_it_was_collected(self, tmp_path):
         rep = report(tmp_path)
+        assert row(rep, "303D-Mac-Studio-M2").collected_at == "6/29/26 12:00 AM"
+        assert row(rep, "202-TOC-M4-Max").collected_at == "9/13/26 12:00 AM"
+        assert rep.export_date == EXPORT_DATE
+
+    def test_no_staleness_verdict_is_recorded_here(self, tmp_path):
+        rep = report(tmp_path)
+        assert not kinds(rep, "stale-collection")
         assert row(rep, "303D-Mac-Studio-M2").serial == "PKXTGR769Q"
 
 
@@ -268,11 +325,12 @@ class TestSerialisationAndCli:
         assert payload["identity_source"] == str(FIXTURE)
         assert payload["export_date"] == EXPORT_DATE
         assert len(payload["machines"]) == 6
-        assert all({"serial", "munki_name", "architecture_source", "hardware_uuid_source"} <= set(m)
-                   for m in payload["machines"])
+        assert all({"serial", "munki_name", "architecture_source", "hardware_uuid_source",
+                    "hardware_uuid_candidate_source"} <= set(m) for m in payload["machines"])
         assert {f["kind"] for f in payload["findings"]} >= {
             "uuid-unavailable", "machine-without-manifest", "manifest-without-machine",
-            "name-difference", "bays-missing", "stale-collection"}
+            "name-difference", "bays-missing"}
+        assert payload["orphan_manifests"] and payload["unmanaged_machines"]
 
     def test_the_same_inputs_produce_the_same_bytes(self, tmp_path):
         assert report_to_json(report(tmp_path)) == report_to_json(report(tmp_path))
@@ -299,7 +357,22 @@ class TestSerialisationAndCli:
         assert "machines=6" in printed and "finding uuid-unavailable" in printed
         payload = json.loads(out.read_text())
         assert len(payload["machines"]) == 6
-        assert payload["known_absent"] == ["Cyrils-Mac-mini:local probe, serial RWJ57V9PW4"]
+        assert payload["known_absent"][0]["name"] == "Cyrils-Mac-mini"
+        assert "serial RWJ57V9PW4" in payload["known_absent"][0]["detail"]
+
+    def test_a_manifest_that_is_not_a_machine_is_named_not_hardcoded(self, tmp_path, capsys):
+        # A manifest added to the tree for another purpose (a future test client, a
+        # staging manifest) must not be reported as a machine nothing answers to.
+        metadata = fake_metadata_tree(tmp_path / "metadata")
+        write_manifest(metadata, "t6-staging-client", ["all"], "T6 staging client")
+        out = tmp_path / "m.json"
+
+        main(["--ard-export", str(FIXTURE), "--metadata-root", str(metadata),
+              "--site-manifest", "t6-staging-client", "--out", str(out), "--summary"])
+        payload = json.loads(out.read_text())
+        assert "t6-staging-client" not in payload["machines"]
+        assert "t6-staging-client" not in payload["orphan_manifests"]
+        assert "t6-manifests" not in capsys.readouterr().out  # summary still prints
 
     def test_loaders_accept_the_shapes_the_probe_and_the_database_produce(self, tmp_path):
         probes = tmp_path / "p.json"

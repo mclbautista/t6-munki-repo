@@ -1,5 +1,5 @@
 {
-  "export_date": "9/13/26 12:00\u202fAM",
+  "export_date": "2026-09-13 18:37",
   "findings": [
     {
       "detail": "the inventory calls this machine '201-Bay-01-Mac-Pro-111' while the manifest is '201-Bay-01-Mac-Pro'",
@@ -8,25 +8,25 @@
       "subject": "201-Bay-01-Mac-Pro-111"
     },
     {
-      "detail": "the ARD export carries no hardware UUID column and no probe exists for 201 Bay 01 Mac Pro (63)",
+      "detail": "the ARD export carries no hardware UUID column, no probe exists for 201 Bay 01 Mac Pro (63), and the projection has no UUID for it either",
       "kind": "uuid-unavailable",
       "proposed": "record it from the machine's own probe (ticket 05); identity for delivery purposes keys on the serial, which is present",
       "subject": "C02C71SCK7GF"
     },
     {
-      "detail": "named 'Bay 01 Mac Pro' in the projection vs '201 Bay 01 Mac Pro (63)' collected",
+      "detail": "named 'Bay 01 Mac Pro' in the projection vs '201 Bay 01 Mac Pro (63)' collected (https://app.notion.com/p/Bay-01-Mac-Pro-b43030ebec854c2c9c8d4377ba74b028)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "201-Bay-01-Mac-Pro-111"
     },
     {
-      "detail": "no machine has reported its hardware UUID; '441D8C2F-37B0-5F59-A6D1-0C93BB41DF3B' is the operational database's device_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; '441D8C2F-37B0-5F59-A6D1-0C93BB41DF3B' is the operational database's device_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "GK7RW3463R"
     },
     {
-      "detail": "named 'Bay 02 Mac Studio' in the projection vs '201 Bay 02 M1 Max' collected",
+      "detail": "named 'Bay 02 Mac Studio' in the projection vs '201 Bay 02 M1 Max' collected (https://app.notion.com/p/Bay-02-Mac-Studio-8927247d36494da98e5e1bbd2c6c6cd9)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "201-Bay-02-M1-Max"
@@ -38,13 +38,13 @@
       "subject": "201-Bay-03-M1-Ultra-2805"
     },
     {
-      "detail": "no machine has reported its hardware UUID; '630F031E-AEB9-539F-9B37-75EF968B5A12' is the operational database's device_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; '630F031E-AEB9-539F-9B37-75EF968B5A12' is the operational database's device_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "KL6G9VMQVP"
     },
     {
-      "detail": "address 192.168.88.173 in the projection vs 192.168.254.106 collected; named 'Bay 03 Mac Studio Ultra' in the projection vs '201 Bay 03 M1 Ultra (1620)' collected",
+      "detail": "address 192.168.88.173 in the projection vs 192.168.254.106 collected; named 'Bay 03 Mac Studio Ultra' in the projection vs '201 Bay 03 M1 Ultra (1620)' collected (https://app.notion.com/p/Bay-03-Mac-Studio-Ultra-220190b0f3f9462babf9d1be496beb7f)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "201-Bay-03-M1-Ultra-2805"
@@ -56,31 +56,25 @@
       "subject": "201-Viewing-Room-1309"
     },
     {
-      "detail": "no machine has reported its hardware UUID; '6C48C6B3-D095-5BBF-A9D2-838215EA754A' is the operational database's hardware_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; '6C48C6B3-D095-5BBF-A9D2-838215EA754A' is the operational database's hardware_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "J4X5JTVXDD"
     },
     {
-      "detail": "named 'Viewing Room' in the projection vs '201 Viewing Room (1279)' collected",
+      "detail": "named 'Viewing Room' in the projection vs '201 Viewing Room (1279)' collected (https://app.notion.com/p/Viewing-Room-7a849c7a3edc48f69d4e516f12529bbb)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "201-Viewing-Room-1309"
     },
     {
-      "detail": "collected 12/3/25 12:00\u202fAM, more than 30 days before the export",
-      "kind": "stale-collection",
-      "proposed": "re-run the ARD report for this machine before trusting any state field; identity fields are unaffected by age",
-      "subject": "201-Viewing-Room-1309"
-    },
-    {
-      "detail": "no machine has reported its hardware UUID; 'B81809A7-8F34-5973-BD62-CBDC7C34D84E' is the operational database's device_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; 'B81809A7-8F34-5973-BD62-CBDC7C34D84E' is the operational database's device_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "J90PHXGC5V"
     },
     {
-      "detail": "the ARD export carries no hardware UUID column and no probe exists for 202 Mac Pro (1943)",
+      "detail": "the ARD export carries no hardware UUID column, no probe exists for 202 Mac Pro (1943), and the projection has no UUID for it either",
       "kind": "uuid-unavailable",
       "proposed": "record it from the machine's own probe (ticket 05); identity for delivery purposes keys on the serial, which is present",
       "subject": "C02C71SDK7GF"
@@ -92,7 +86,7 @@
       "subject": "202-Mac-Pro-3"
     },
     {
-      "detail": "the ARD export carries no hardware UUID column and no probe exists for 202 Tim M2 Max (6)",
+      "detail": "the ARD export carries no hardware UUID column, no probe exists for 202 Tim M2 Max (6), and the projection has no UUID for it either",
       "kind": "uuid-unavailable",
       "proposed": "record it from the machine's own probe (ticket 05); identity for delivery purposes keys on the serial, which is present",
       "subject": "R6WV6DCVVH"
@@ -104,13 +98,13 @@
       "subject": "202-Tim-M2-Max-9"
     },
     {
-      "detail": "no machine has reported its hardware UUID; 'B393E619-D093-5769-A19A-7C2670C32B49' is the operational database's hardware_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; 'B393E619-D093-5769-A19A-7C2670C32B49' is the operational database's hardware_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "RW3HL9FL4M"
     },
     {
-      "detail": "the ARD export carries no hardware UUID column and no probe exists for 202A Mac Mini M4",
+      "detail": "the ARD export carries no hardware UUID column, no probe exists for 202A Mac Mini M4, and the projection has no UUID for it either",
       "kind": "uuid-unavailable",
       "proposed": "record it from the machine's own probe (ticket 05); identity for delivery purposes keys on the serial, which is present",
       "subject": "X904F44LHX"
@@ -122,13 +116,13 @@
       "subject": "202A-Mac-Mini-M4"
     },
     {
-      "detail": "no machine has reported its hardware UUID; 'F9D06A97-54A7-4807-B818-B7E00688ED8B' is the operational database's hardware_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; 'F9D06A97-54A7-4807-B818-B7E00688ED8B' is the operational database's hardware_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "PM4PWN40R0"
     },
     {
-      "detail": "the ARD export carries no hardware UUID column and no probe exists for 303A Mac Mini M4 Pro",
+      "detail": "the ARD export carries no hardware UUID column, no probe exists for 303A Mac Mini M4 Pro, and the projection has no UUID for it either",
       "kind": "uuid-unavailable",
       "proposed": "record it from the machine's own probe (ticket 05); identity for delivery purposes keys on the serial, which is present",
       "subject": "HPXH7XG2DD"
@@ -146,28 +140,22 @@
       "subject": "303B-iMac"
     },
     {
-      "detail": "no machine has reported its hardware UUID; '3B2CCC82-B08E-5C26-BF32-F842E5DC7B0E' is the operational database's device_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; '3B2CCC82-B08E-5C26-BF32-F842E5DC7B0E' is the operational database's device_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "C02DX110PN5V"
     },
     {
-      "detail": "address 192.168.88.177 in the projection vs 192.168.88.191 collected",
+      "detail": "address 192.168.88.177 in the projection vs 192.168.88.191 collected (https://app.notion.com/p/303B-iMac-5cf3c7aeeb0947ce86cfc6ef252326a7)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "303B-iMac"
     },
     {
-      "detail": "no machine has reported its hardware UUID; '5B31AF0F-26E0-5368-8537-4A8AE3110050' is the operational database's device_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; '5B31AF0F-26E0-5368-8537-4A8AE3110050' is the operational database's device_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "PKXTGR769Q"
-    },
-    {
-      "detail": "collected 6/29/26 12:01\u202fAM, more than 30 days before the export",
-      "kind": "stale-collection",
-      "proposed": "re-run the ARD report for this machine before trusting any state field; identity fields are unaffected by age",
-      "subject": "303D-Mac-Studio-M2"
     },
     {
       "detail": "the operational database has no bays record matching this machine",
@@ -176,25 +164,25 @@
       "subject": "Sixto-5"
     },
     {
-      "detail": "no machine has reported its hardware UUID; 'B903BCF6-9D5B-4FCB-A4F7-0542F3BBF86D' is the operational database's hardware_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; 'B903BCF6-9D5B-4FCB-A4F7-0542F3BBF86D' is the operational database's hardware_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "K267DWDMWX"
     },
     {
-      "detail": "address 192.168.88.118 in the projection vs 192.168.88.80 collected",
+      "detail": "address 192.168.88.118 in the projection vs 192.168.88.80 collected (https://app.notion.com/p/T6-MacBook-M3-Pro-3d8fb4d59e5981d087f5c70e8cad0d75)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "T6-MacBook-M3-Pro"
     },
     {
-      "detail": "no machine has reported its hardware UUID; 'E0978034-F498-413F-B624-A8C69E9553B8' is the operational database's hardware_uuid, which ADR 0004 calls a projection",
+      "detail": "no machine has reported its hardware UUID; 'E0978034-F498-413F-B624-A8C69E9553B8' is the operational database's hardware_uuid, which ADR 0004 calls a projection and never the source",
       "kind": "uuid-unverified",
-      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value",
+      "proposed": "confirm with the machine's own probe (ticket 05) and report any difference rather than adopting this value; the authoritative field stays empty until a machine says so",
       "subject": "GYC39Q30PJ"
     },
     {
-      "detail": "address 192.168.88.17 in the projection vs 192.168.88.100 collected; named 't6\u2019s MacBook Pro M4 Max' in the projection vs 'T6 MacBook M4 Max' collected",
+      "detail": "address 192.168.88.17 in the projection vs 192.168.88.100 collected; named 't6\u2019s MacBook Pro M4 Max' in the projection vs 'T6 MacBook M4 Max' collected (https://app.notion.com/p/t6-s-MacBook-Pro-M4-Max-35efb4d59e598083b327dbcb76710bff)",
       "kind": "bays-difference",
       "proposed": "correct the Bays record in Notion; the projection is never written back to",
       "subject": "T6-MacBook-M4-Max"
@@ -224,7 +212,7 @@
       "subject": "Sixto-5"
     },
     {
-      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202.",
+      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.",
       "kind": "needs-record",
       "proposed": "create an inventory record; this module will not invent one",
       "subject": "Cyrils-Mac-mini"
@@ -232,7 +220,16 @@
   ],
   "identity_source": "docs/evidence/04-ard-system-overview-2026-09-13.txt",
   "known_absent": [
-    "Cyrils-Mac-mini:Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202."
+    {
+      "architecture": "arm64",
+      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.",
+      "hardware_uuid": "B30D55C8-679C-56E2-9654-16CBFD4A905D",
+      "model_identifier": "Mac16,10",
+      "name": "Cyrils-Mac-mini",
+      "os_version": "26.6.2 (25G83)",
+      "probe_hostname": "Cyrils-Mac-mini",
+      "serial": "RWJ57V9PW4"
+    }
   ],
   "machines": [
     {
@@ -241,6 +238,8 @@
       "collected_at": "9/10/26 12:00\u202fAM",
       "computer_name": "201 Bay 01 Mac Pro (63)",
       "hardware_uuid": null,
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "unavailable",
       "manifest": "201-Bay-01-Mac-Pro",
       "model": "Mac Pro",
@@ -258,8 +257,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "201 Bay 02 M1 Max",
-      "hardware_uuid": "441D8C2F-37B0-5F59-A6D1-0C93BB41DF3B",
-      "hardware_uuid_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "441D8C2F-37B0-5F59-A6D1-0C93BB41DF3B",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "201-Bay-02-M1-Max",
       "model": "Mac Studio",
       "munki_name": "201-Bay-02-M1-Max",
@@ -276,8 +277,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "201 Bay 03 M1 Ultra (1620)",
-      "hardware_uuid": "630F031E-AEB9-539F-9B37-75EF968B5A12",
-      "hardware_uuid_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "630F031E-AEB9-539F-9B37-75EF968B5A12",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "201-Bay-03-M1-Ultra",
       "model": "Mac Studio",
       "munki_name": "201-Bay-03-M1-Ultra",
@@ -294,8 +297,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "12/3/25 12:00\u202fAM",
       "computer_name": "201 Viewing Room (1279)",
-      "hardware_uuid": "6C48C6B3-D095-5BBF-A9D2-838215EA754A",
-      "hardware_uuid_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "6C48C6B3-D095-5BBF-A9D2-838215EA754A",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "201-Viewing-Room",
       "model": "Mac Studio",
       "munki_name": "201-Viewing-Room",
@@ -312,8 +317,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/12/26 12:00\u202fAM",
       "computer_name": "202 Jason M2 Max",
-      "hardware_uuid": "B81809A7-8F34-5973-BD62-CBDC7C34D84E",
-      "hardware_uuid_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "B81809A7-8F34-5973-BD62-CBDC7C34D84E",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "202-Jason-M2-Max",
       "model": "Mac Studio",
       "munki_name": "202-Jason-M2-Max",
@@ -331,6 +338,8 @@
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "202 Mac Pro (1943)",
       "hardware_uuid": null,
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "unavailable",
       "manifest": "202-Mac-Pro-3",
       "model": "Mac Pro",
@@ -348,8 +357,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "202 TOC M4 Max",
-      "hardware_uuid": "B393E619-D093-5769-A19A-7C2670C32B49",
-      "hardware_uuid_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "B393E619-D093-5769-A19A-7C2670C32B49",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "202-TOC-M4-Max",
       "model": "Mac Studio",
       "munki_name": "202-TOC-M4-Max",
@@ -367,6 +378,8 @@
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "202 Tim M2 Max (6)",
       "hardware_uuid": null,
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "unavailable",
       "manifest": "202-Tim-M2-Max-9",
       "model": "Mac Studio",
@@ -385,6 +398,8 @@
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "202A Mac Mini M4",
       "hardware_uuid": null,
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "unavailable",
       "manifest": "202A-Mac-Mini-M4",
       "model": "Mac mini",
@@ -402,8 +417,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "202C Studio M1 Ultra",
-      "hardware_uuid": "F9D06A97-54A7-4807-B818-B7E00688ED8B",
-      "hardware_uuid_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "F9D06A97-54A7-4807-B818-B7E00688ED8B",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "202C-Studio-M1-Ultra",
       "model": "Mac Studio",
       "munki_name": "202C-Studio-M1-Ultra",
@@ -421,10 +438,12 @@
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "303A Mac Mini M4 Pro",
       "hardware_uuid": null,
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "unavailable",
       "manifest": null,
       "model": "Mac mini",
-      "munki_name": "303A-Mac-Mini-M4-Pro",
+      "munki_name": null,
       "os_version": "macOS 15.3.1 (24D70)",
       "primary_ip": "192.168.88.190",
       "primary_mac": "D0:11:E5:00:42:5F",
@@ -438,8 +457,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/11/26 12:00\u202fAM",
       "computer_name": "303B iMac",
-      "hardware_uuid": "3B2CCC82-B08E-5C26-BF32-F842E5DC7B0E",
-      "hardware_uuid_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "3B2CCC82-B08E-5C26-BF32-F842E5DC7B0E",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "303B iMac",
       "model": "iMac",
       "munki_name": "303B iMac",
@@ -456,8 +477,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "6/29/26 12:01\u202fAM",
       "computer_name": "303D Mac Studio M2",
-      "hardware_uuid": "5B31AF0F-26E0-5368-8537-4A8AE3110050",
-      "hardware_uuid_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "5B31AF0F-26E0-5368-8537-4A8AE3110050",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:device_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "303D-Mac-Studio-M2",
       "model": "Mac Studio",
       "munki_name": "303D-Mac-Studio-M2",
@@ -475,10 +498,12 @@
       "collected_at": "9/13/26 12:00\u202fAM",
       "computer_name": "Sixto (3)",
       "hardware_uuid": "CB3D4672-22E7-573F-9CD2-5F1D2A6BEC0F",
+      "hardware_uuid_candidate": null,
+      "hardware_uuid_candidate_source": "none",
       "hardware_uuid_source": "probe",
       "manifest": null,
       "model": "Mac mini",
-      "munki_name": "Sixto-5",
+      "munki_name": null,
       "os_version": "macOS 15.7.1 (24G231)",
       "primary_ip": "192.168.88.151",
       "primary_mac": "14:9D:99:7B:CA:14",
@@ -492,8 +517,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/1/26 12:00\u202fAM",
       "computer_name": "T6 MacBook M3 Pro",
-      "hardware_uuid": "B903BCF6-9D5B-4FCB-A4F7-0542F3BBF86D",
-      "hardware_uuid_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "B903BCF6-9D5B-4FCB-A4F7-0542F3BBF86D",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "T6-MacBook-M3-Pro",
       "model": "MacBook Pro",
       "munki_name": "T6-MacBook-M3-Pro",
@@ -510,8 +537,10 @@
       "architecture_source": "inferred-from-report",
       "collected_at": "9/12/26 12:00\u202fAM",
       "computer_name": "T6 MacBook M4 Max",
-      "hardware_uuid": "E0978034-F498-413F-B624-A8C69E9553B8",
-      "hardware_uuid_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid": null,
+      "hardware_uuid_candidate": "E0978034-F498-413F-B624-A8C69E9553B8",
+      "hardware_uuid_candidate_source": "bays-projection-unverified:hardware_uuid",
+      "hardware_uuid_source": "unavailable",
       "manifest": "T6-MacBook-M4-Max",
       "model": "MacBook Pro",
       "munki_name": "T6-MacBook-M4-Max",
@@ -524,14 +553,14 @@
       "wifi_mac": "84:2F:57:61:52:F2"
     }
   ],
-  "machines_without_manifest": [
-    "303A-Mac-Mini-M4-Pro",
-    "Sixto-5"
-  ],
-  "manifests_without_machine": [
+  "orphan_manifests": [
     "202B-Mac-Studio",
     "Angels-iMac"
   ],
   "schema_version": 1,
-  "unassigned_roles": []
+  "unassigned_roles": [],
+  "unmanaged_machines": [
+    "303A-Mac-Mini-M4-Pro",
+    "Sixto-5"
+  ]
 }
