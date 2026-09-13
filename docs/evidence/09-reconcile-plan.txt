@@ -1,0 +1,20 @@
+Reconcile plan, dry run (read-only), 2026-09-13 19:08 PST
+git: 76bb7da   — this run changed nothing on the target
+
+=== without declarations: refused, by design ===
+error: drift on the target is undeclared: manifests/t6-test-client, pkgsinfo/apps/Cyberduck-9.5.4.plist, pkgsinfo/apps/Dropbox/Dropbox-268.4.4124.plist, pkgsinf
+
+=== with all 11 declared, and the two renamed files hash-declared ===
+target: missing on the target 0, only on the target 11, differing 0, unreadable 0
+would remove 11 file(s) present only on the target:
+  - manifests/t6-test-client  386 bytes  5f9170df15985ad2  (matches the record)
+  - pkgsinfo/apps/Cyberduck-9.5.4.plist  2137 bytes  f55aa294940b41ef  (matches the record)
+  - pkgsinfo/apps/Dropbox/Dropbox-268.4.4124.plist  3386 bytes  71d3da10707483f2  (matches the record)
+  - pkgsinfo/apps/GoogleChrome-153.0.8010.37.plist  2105 bytes  e84d0c20d36c5668  (matches the record)
+  - pkgsinfo/apps/MSAutoUpdate-4.85.26080216.plist  2021 bytes  6a3b8205d7afbdee  (matches the record)
+  - pkgsinfo/apps/MSEdge-152.0.4191.66.plist  2077 bytes  ca1b8ece70041324  (matches the record)
+  - pkgsinfo/apps/MSTeams-26225.1706.5101.3140.plist  2490 bytes  8930de750fba145f  (matches the record)
+  - pkgsinfo/apps/Spotify-1.2.99.317.plist  2505 bytes  a35e22a75b180044  (matches the record)
+  - pkgsinfo/apps/VLC/VLC-3.0.23.plist  2316 bytes  f393d54732dd4ab3  (matches the record)
+  - pkgsinfo/apps/firefox/Firefox-155.0.1__1.plist  1609 bytes  03509f2a52bc00db  (matches the record)
+  - pkgsinfo/t6-munki-test-1.0.pkginfo  1990 bytes  cf21510825a5b1d2  (matches the record)

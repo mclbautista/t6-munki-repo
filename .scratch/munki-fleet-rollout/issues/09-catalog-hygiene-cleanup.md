@@ -29,45 +29,82 @@
 - Moving the surviving pkginfo to the standard layout (top-level `pkgsinfo/`, one extension
   convention) removes the ordering question entirely, because there is then only one entry.
 
+**Status:** ready-for-human (implementation done; three NAS/client actions await Cyril)
+
 ## Acceptance criteria
 
 - [x] Duplicate name+version catalog entries are **eliminated**. Both pairs are resolved: Firefox
       2026-09-13 (kept the `.pkg`) and GoogleChrome 2026-09-13 (kept the `.dmg`), each on Cyril's
       decision and each verified behaviour-preserving against a committed pre-image of the served
-      catalog. Checkable from here on: the integrity check now reports
-      `no integrity findings (membership checked against the served catalogs)` — no duplicate names
-      anywhere in the served catalogs.
+      catalog. Checkable from here on: the integrity check reports
+      `no integrity findings (membership checked against the served catalogs)`.
 - [~] …with the surviving entry's payload and hash the one **that is actually installed**.
-      - **GoogleChrome: verified** on the pilot Cyril's Mac mini (202) — Chrome 153.0.8010.37 is
-        installed, matching the surviving `.dmg` entry's `installs`, and the retired `.pkg`'s receipt
+      - **GoogleChrome: verified** on Cyril's Mac mini — Chrome 153.0.8010.37 is installed,
+        matching the surviving `.dmg` entry's `installs`, and the retired `.pkg`'s receipt
         `com.google.Chrome` is absent, so the retired entry would have re-installed over a current
-        copy. Not verified fleet-wide: only one machine was checked, and `202-TOC-M4-Max` has no
-        Chrome installed.
-      - **Firefox: not verified.** The pilot `202-TOC-M4-Max` runs Firefox 154.0 with no
-        `org.mozilla.firefox` receipt, so neither pkginfo's install path put Firefox there. What is
-        verified is narrower: the entry clients are *offered* is unchanged, and both entries install
-        155.0.1 while differing in detection mechanics (`installs` vs `receipts`).
+        copy. Not verified fleet-wide: only one machine was checked.
+      - **Firefox: not verified, and now moot.** The pilot ran Firefox 154.0 with no
+        `org.mozilla.firefox` receipt, so neither entry's install path put it there. Firefox was
+        withdrawn on Cyril's 2026-09-13 decision, so no Firefox entry survives to be wrong.
       - Evidence: `docs/evidence/09-firefox-retirement.txt`, `docs/evidence/09-googlechrome-retirement.txt`.
-- [x] The retired pkginfos are **_detected_** as NAS-only drift. Ticket 03's live run reported exactly
-      two drift findings, naming them: `pkgsinfo/apps/firefox/Firefox-155.0.1.plist` and
-      `pkgsinfo/apps/Google/GoogleChrome-153.0.8010.37.plist`, both present on the NAS and absent from
-      the checkout, both still served over HTTP (200). Detecting them was the point of leaving them.
-- [x] The retired pkginfos are **_deleted_** from the NAS, on Cyril's approval (2026-09-13). Verified
-      in both directions: each NAS file's sha256 matched its committed pre-image exactly before
-      removal, and after removal both are **absent on the NAS and return HTTP 404**. `check` now
-      reports `drift: missing on the target 0, only on the target 0, differing 0, unreadable 0` and
-      `no integrity findings` — exit 0.
-- [ ] The two payloads those pkginfos referenced are still on the NAS, referenced by nothing:
-      `pkgs/apps/firefox/Firefox-155.0.1.dmg` (159,394,794 bytes) and
-      `pkgs/apps/Google/GoogleChrome-153.0.8010.37.pkg` (263,986,305 bytes) — ~423 MB between them.
-      Cyril approved deleting the pkginfos, not the payloads, so they stay until that is decided.
-      Nothing references them, so they affect neither clients nor the catalogs.
-- [ ] Deferred vendor suites are removed from `site_default`'s optional list and appear in no manifest section.
-- [ ] The staged-but-unmanaged nested `apps` area is resolved: each item is either fully imported into the standard layout or withdrawn, and the decision for each is recorded.
-- [ ] All pkginfos follow one declared extension convention, and the nested directories no longer split the repository's layout.
-- [ ] The stale, empty NAS share that shadows the repository's name is removed so it cannot be mistaken for the repository.
+- [x] The retired pkginfos were **_detected_** as NAS-only drift, and **_deleted_** from the NAS on
+      Cyril's approval. Verified in both directions: each NAS file's sha256 matched its committed
+      pre-image exactly before removal, and after removal both are absent and return HTTP 404.
+- [x] Deferred vendor suites are removed from `site_default`'s optional list and appear in no
+      manifest section. Verified across all 27 manifests: zero occurrences of
+      `davinci-resolve-studio` or `davinci-resolve-project-server`. Their pkginfos stay parked in
+      `testing`, and are **declared** promotion exclusions in `data/rings.json` so a future plan
+      does not silently promote them.
+- [x] The staged-but-unmanaged nested `apps` area is resolved: each item is either fully imported
+      into the standard layout or withdrawn, and the decision for each is recorded.
+      All 9 items resolved — **7 withdrawn** (Cyberduck, Dropbox, Firefox, MSAutoUpdate, MSEdge,
+      MSTeams, Spotify: outside the documented baseline, no recorded decision to offer them, Cyril
+      2026-09-13) and **2 imported to the standard layout** (GoogleChrome, VLC, moved by `git mv`).
+      Every withdrawal carries a record in `data/withdrawals.jsonl` with the item, version,
+      timestamp, approver, reason, source path and source sha256 — 9 records written.
+- [x] All pkginfos follow one declared extension convention, and the nested directories no longer
+      split the repository's layout. **36 → 28 pkginfos, all `.pkginfo`, all at `pkgsinfo/` top
+      level**; `remaining non-standard paths: []`. The convention is declared in `CONTEXT.md` as
+      the repository layout convention, in the glossary and in the boundaries.
+- [x] The **catalog** half of the cleanup is live: the served catalog is now 28 items, 28 unique
+      names, published with 8 declared removals and 3 declared file changes, verified
+      `94/94` over both the filesystem and HTTP.
+- [ ] The retired files are **removed from the NAS**. Eleven files are present only on the target
+      and are declared, dry-run, and **hash-verified for removal**: 9 against
+      `data/withdrawals.jsonl`, 2 against the checkout's new paths. Plan:
+      `docs/evidence/09-reconcile-plan.txt`. Command ready:
+      `munki_fleet.cli reconcile --expect-remove-file …`. **Awaiting Cyril: this is a deletion on
+      the NAS.** Until it runs, `check` reports drift 11 by design.
+- [ ] The payloads nothing references any more are still on the NAS: **11 files, 2,229.9 MB** —
+      MSEdge 432.3 MB, Dropbox 398.3 MB, MSTeams 355.4 MB, the retired GoogleChrome `.pkg`
+      264.0 MB, Cyberduck 181.4 MB, Spotify-arm64 165.5 MB, both Firefox payloads 159.4 + 144.4 MB,
+      `Telegram-1.0.dmg` 124.7 MB (a stray beside the live 12.10), MSAutoUpdate 4.5 MB,
+      `.DS_Store`. Of 39 payloads / 13.0 GB, **28 remain referenced**. Cyril approved the
+      withdrawals, not the payload deletions, so they stay until that is decided.
+- [ ] **CORRECTED — the stale NAS path is a configured share, and it is not empty.** The ticket
+      used to call it "the stale, empty NAS share". It is `[MunkiRepo]` in
+      `/etc/config/smb.conf`, `path = /share/ZFS22_DATA/MunkiRepo`, `browsable = yes`, with a
+      recycle bin. It holds a **hollow skeleton** — empty `catalogs/ icons/ manifests/ pkgs/
+      pkgsinfo/` from 2026-09-10, a `.DS_Store` and `@Recycle`, 69 KB, no metadata and no payloads.
+      That is the "can be mistaken for the repository" hazard, and worse than empty precisely
+      because it is browsable and looks right. The `Web` share root also carries three stray empty
+      directories (`catalogs/ icons/ manifests/`, 2026-09-10) beside the live `MunkiRepo/`.
+      **Removal is a NAS share-configuration change and a WebUI action** — the QNAP MCP exposes no
+      share-deletion tool, and the NAS shell is read-only by design. **Awaiting Cyril.**
 - [ ] After cleanup the drift check reports clean, both catalogs build, and every manifest's items
-      resolve with an existing payload. **Partially satisfied today:** the drift check reports clean
-      and reports no integrity findings (2026-09-13), but "after cleanup" means after the deferred
-      suites, the nested `apps` area, the extension convention and the stale share are dealt with —
-      none of which is done, so this stays open.
+      resolve with an existing payload. Current state: **both catalogs build** (41,135 bytes each),
+      **every manifest item resolves to an existing payload** (28/28 referenced), integrity clean;
+      drift is the 11 declared files above. This closes when the reconcile runs and the payload
+      decision is made.
+
+## Loose end I introduced, and what it needs
+
+Deleting the `t6-test-client` manifest left **Cyril's Mac mini (`202`) pointing at a manifest that
+no longer exists** — it still carries `ClientIdentifier = t6-test-client` (read on the machine
+2026-09-13). Munki falls back to `site_default`, so it keeps receiving software, but until the
+override is removed it cannot be pilot #2: it resolves to the wrong manifest and would never read
+the `testing` ring. The one-line fix, which is a change to a Mac and therefore Cyril's call:
+
+```bash
+sudo defaults delete /Library/Preferences/ManagedInstalls ClientIdentifier
+```

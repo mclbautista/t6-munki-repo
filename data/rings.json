@@ -16,5 +16,17 @@
       "reachable_for_verification": true,
       "open": "its Munki identity is currently overridden by ClientIdentifier=t6-test-client, a test artifact (ticket 09). Until that is removed this machine resolves to the t6-test-client manifest, not its own, so it cannot serve as a pilot."
     }
+  ],
+  "promotion_exclusions": [
+    {
+      "item": "davinci-resolve-studio",
+      "decided": "Cyril, 2026-09-13",
+      "why": "on the documented deferred list (Munki skill) \u2014 not deployed at T6 now, so it stays in testing and out of production"
+    },
+    {
+      "item": "davinci-resolve-project-server",
+      "decided": "Cyril, 2026-09-13",
+      "why": "same deferred list; it is a companion to studio and moves with it"
+    }
   ]
 }

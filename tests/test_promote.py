@@ -11,9 +11,10 @@ import pytest
 
 from conftest import catalog_array, item
 from munki_fleet.drift import _iter_pkginfos
-from munki_fleet.promote import (PROMOTIONS_PATH, PromotionError, demote, find_pkginfo,
+from munki_fleet.promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions,
+                                 delete_manifest, demote, find_pkginfo,
                                  initial_promotion_plan, load_history, promote,
-                                 set_manifest_catalogs, write_pkginfo_catalogs)
+                                 set_manifest_catalogs, withdraw, write_pkginfo_catalogs)
 
 
 def metadata_tree(root, items=None, manifests=None, catalogs=("testing",)):
@@ -134,6 +135,97 @@ def test_find_pkginfo_reports_where_the_item_lives(tmp_path):
     root = metadata_tree(tmp_path / "src")
     path, pkginfo = find_pkginfo(root, "A", "1.0")
     assert path.endswith("A-0.pkginfo") and pkginfo["name"] == "A"
+
+
+# --- withdrawal: the other ending an item can have ---------------------------------------------
+
+def test_withdrawal_strips_the_item_from_every_manifest_section(tmp_path):
+    root = metadata_tree(tmp_path / "src", items=[item("Keep"), item("Gone")], manifests={
+        "site_default": {"catalogs": ["testing"],
+                         "optional_installs": ["Keep", "Gone", "AlsoGone"]},
+        "all": {"catalogs": ["testing"], "included_manifests": ["site_default"],
+                "managed_installs": ["Keep", "Gone"]},
+    })
+    removed = withdraw(root, ["Gone"], approved_by="Cyril", reason="not deployed at T6")
+    assert removed == ["Gone"]
+
+    def body(name):
+        with open(os.path.join(root, "manifests", name), "rb") as fh:
+            return plistlib.load(fh)
+
+    assert body("site_default")["optional_installs"] == ["Keep", "AlsoGone"], \
+        "only the withdrawn item may leave, and an unrelated string must survive"
+    assert body("all")["managed_installs"] == ["Keep"]
+    assert [p["name"] for _, p in _iter_pkginfos(root)] == ["Keep"], \
+        "the withdrawn pkginfo goes, the other stays"
+
+
+def test_withdrawal_deletes_the_pkginfos_and_records_why(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    removed = withdraw(root, None, approved_by="Cyril", reason="withdrawing per 2026-09-13 decision")
+
+    remaining = [os.path.basename(p) for p, _ in _iter_pkginfos(root)]
+    assert remaining == [], f"expected an empty tree, found {remaining}"
+    lines = open(os.path.join(root, "data", "withdrawals.jsonl")).read().splitlines()
+    assert len(lines) == 2, "one record per removed pkginfo"
+    stored = json.loads(lines[0])
+    for field_ in ("item", "version", "kind", "at", "approved_by", "reason",
+                   "source_path", "source_sha256"):
+        assert field_ in stored, f"the record must carry {field_}"
+    assert stored["kind"] == "pkginfo"
+    assert stored["source_sha256"], "the record must name the bytes it removed"
+
+
+def test_withdrawal_is_refused_without_a_reason(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    with pytest.raises(PromotionError) as excinfo:
+        withdraw(root, None, approved_by="Cyril", reason="  ")
+    assert "why" in str(excinfo.value)
+    assert len(list(_iter_pkginfos(root))) == 2, "a refused withdrawal must change nothing"
+
+
+def test_withdrawal_is_refused_without_an_approver(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    with pytest.raises(PromotionError):
+        withdraw(root, None, approved_by="", reason="cleanup")
+
+
+def test_withdrawal_of_a_named_item_leaves_the_others(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    withdraw(root, ["A"], approved_by="Cyril", reason="withdrawn")
+    assert [p["name"] for _, p in _iter_pkginfos(root)] == ["B"]
+
+
+def test_withdrawal_refuses_an_item_that_is_not_there(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    with pytest.raises(PromotionError) as excinfo:
+        withdraw(root, ["Nonexistent"], approved_by="Cyril", reason="typo")
+    assert "Nonexistent" in str(excinfo.value)
+
+
+def test_deleting_a_manifest_is_recorded_as_its_own_kind(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    delete_manifest(root, "202-Mac-Pro-3")
+    assert not os.path.exists(os.path.join(root, "manifests", "202-Mac-Pro-3"))
+    stored = json.loads(open(os.path.join(root, "data", "withdrawals.jsonl")).read().splitlines()[0])
+    assert stored["kind"] == "manifest" and stored["item"] == "202-Mac-Pro-3"
+    assert stored["source_sha256"], "the record must name the bytes it removed"
+
+
+# --- exclusions are declared, not remembered ----------------------------------------------------
+
+def test_the_declared_exclusions_are_read_from_the_ring_file(tmp_path):
+    root = metadata_tree(tmp_path / "src")
+    os.makedirs(os.path.join(root, "data"), exist_ok=True)
+    with open(os.path.join(root, "data", "rings.json"), "w") as fh:
+        json.dump({"pilots": [{"name": "202-TOC-M4-Max"}],
+                   "promotion_exclusions": [
+                       {"item": "Parked", "why": "on the deferred list", "decided": "Cyril"}],
+                   }, fh)
+    assert declared_exclusions(root) == ["Parked"]
+    plan = initial_promotion_plan(root, pilots=("202-TOC-M4-Max",),
+                                 exclude=declared_exclusions(root))
+    assert [i.name for i in plan.items] == ["A", "B"], "the declared exclusion must apply"
 
 
 # --- the initial promotion: one event, nothing lost ---------------------------------------------

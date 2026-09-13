@@ -58,6 +58,11 @@ Two failures this project exists to prevent, in order:
   shared essentials). Everything else approved for the fleet is optional.
 - **Optional install:** an item a user may install from Managed Software Center. Approved items
   are also listed for managed updates so already-installed copies stay patched.
+- **Repository layout convention:** every pkginfo is
+  `pkgsinfo/<Item>-<version>.pkginfo` — top level, one level deep, one extension. The inherited
+  tree mixed `.pkginfo` and `.plist` and split items into nested `pkgsinfo/apps/**` directories,
+  which made the layout itself a source of duplicate entries. Nothing nests under `pkgsinfo/`
+  now, and `.plist` is not a pkginfo extension here.
 - **Deferred software:** vendor suites explicitly not distributed by Munki (DaVinci Resolve,
   Adobe Creative Cloud, Avid Media Composer, Avid Pro Tools, NTFS for Mac).
 - **Observation:** one deterministic read of one Mac's Munki state, carrying both the source's
@@ -78,6 +83,9 @@ Two failures this project exists to prevent, in order:
 - No LLM writes to the metadata tree, the observation store, the NAS, or a client machine. An
   LLM may render a bounded, read-only summary from the fleet view and nothing else.
 - Munki never distributes the deferred vendor suites, and never without a recorded promotion.
+- A pkginfo lives at `pkgsinfo/<Item>-<version>.pkginfo`. Nested pkginfo directories and `.plist`
+  pkginfos are the inherited layout defect and stay retired; a reintroduction is a review failure,
+  not a style choice.
 - The Mac Mini admin workstation is a fleet member in its own right and is inventoried like any
   other Mac.
 - Adopting an MDM is explicitly out of scope; onboarding stays scripted and documented.

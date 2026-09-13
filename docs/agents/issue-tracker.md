@@ -28,6 +28,10 @@ More than one agent can be working this repository at the same time, and more th
 - **Never `git add -A` or `git add .`.** Stage the paths you changed. A blanket add swept another
   session's in-flight ticket work into an unrelated commit here once already (see the git note on
   that commit), which misattributes the work and puts a half-finished suite in the history.
+- **Check the log before a structural change, and expect overlap.** Two sessions independently
+  flattened the same two pkginfos here on the same afternoon; the second was a no-op only because
+  Git compared content and found nothing to change. A rename, a move, or a layout decision is
+  exactly the kind of change the other session may already have made.
 - **Confirm your own tests before committing, and never through a pipe.** `python3 -m pytest | tail`
   reports the pipe's status, not pytest's; a failing suite was committed and pushed that way.
 - **A failing test in another session's file is not yours to fix mid-flight.** Report it; do not

@@ -30,6 +30,7 @@ from .drift import drift as drift_report
 from .gate import evaluate_gate
 from .promote import (PROMOTIONS_PATH, PromotionError, demote, initial_promotion_plan,
                       load_history, load_pilots, promote)
+from .reconcile import ReconcileError, apply_removals, plan_removals, recorded_hashes
 from .publish import PublishAborted, PublishError, publish, verify_served
 from .targets import SshTarget, TargetError
 
@@ -236,6 +237,47 @@ def cmd_verify(args, deps) -> int:
     return 0 if served_check.ok else 1
 
 
+def _declared_hashes(pairs) -> Dict[str, str]:
+    """`PATH=SHA256` declarations, for files whose expected bytes are known some other way."""
+    out: Dict[str, str] = {}
+    for pair in pairs or []:
+        if "=" not in pair:
+            raise ReconcileError(f"--expect-remove-hash wants PATH=SHA256, got {pair!r}")
+        path, digest = pair.rsplit("=", 1)
+        out[path.strip()] = digest.strip()
+    return out
+
+
+def cmd_reconcile(args, deps: Deps) -> int:
+    """Remove metadata the checkout has retired, with every removal declared and verified."""
+    target = deps.target_factory(args.target)
+    report = drift_report(args.metadata_root, target)
+    paths = plan_removals(report, args.expect_remove_file)
+    expected = recorded_hashes(args.metadata_root)
+    expected.update(_declared_hashes(args.expect_remove_hash))
+
+    if args.dry_run:
+        print(f"target: {report.describe()}")
+        print(f"would remove {len(paths)} file(s) present only on the target:")
+        for path in paths:
+            stat = target.stat(path)
+            digest = expected.get(path)
+            if digest:
+                verdict = "matches the record" if stat and stat.sha256 == digest \
+                    else "DOES NOT MATCH THE RECORD — removal would be refused"
+            else:
+                verdict = "no record to verify against"
+            print(f"  - {path}  {stat.size if stat else 0} bytes  {stat.sha256[:16] if stat else ''}"
+                  f"  ({verdict})")
+        return 0
+    print(f"removing {len(paths)} file(s) the checkout no longer has:")
+    for path, outcome in apply_removals(target, paths, expected):
+        print(f"  {path}: {outcome}")
+    after = drift_report(args.metadata_root, target)
+    print(f"after: {after.describe()}")
+    return 0 if after.ok else 1
+
+
 def cmd_promote(args, deps: Deps) -> int:
     record = promote(args.metadata_root, args.item, args.version, args.approved_by, args.evidence)
     print(f"promoted {record.item} {record.version}: "
@@ -323,6 +365,15 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.add_argument("--exclude", action="append", default=[], metavar="ITEM",
                    help="an item to leave in testing rather than promote (repeatable)")
     p.set_defaults(func=cmd_promotion_plan)
+    p = sub.add_parser("reconcile",
+                       help="remove target-only metadata the checkout has retired (declared)")
+    common(p, with_target=True)
+    p.add_argument("--expect-remove-file", action="append", default=[], metavar="PATH",
+                   help="a path to remove from the target (repeatable; each must be a drift finding)")
+    p.add_argument("--expect-remove-hash", action="append", default=[], metavar="PATH=SHA256",
+                   help="the bytes expected at a removal path, where the withdrawal log has none")
+    p.add_argument("--dry-run", action="store_true")
+    p.set_defaults(func=cmd_reconcile)
     p = sub.add_parser("check", help="drift and integrity against a target (read-only)")
     common(p, with_target=True)
     p.add_argument("--max-list", type=int, default=25, help="entries to print per category")
@@ -338,6 +389,9 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
             for problem in exc.report.rollback_errors:
                 print(f"  ROLLBACK FAILED: {problem}", file=sys.stderr)
         return 4
+    except ReconcileError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 3
     except PromotionError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 3

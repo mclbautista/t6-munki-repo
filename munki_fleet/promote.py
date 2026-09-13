@@ -24,6 +24,8 @@ from .drift import ITEM_EXTENSIONS, _iter_pkginfos, load_manifests
 TESTING = "testing"
 PRODUCTION = "production"
 PROMOTIONS_PATH = os.path.join("data", "promotions.jsonl")
+WITHDRAWALS_PATH = os.path.join("data", "withdrawals.jsonl")
+MANIFEST_DIR = "manifests"
 MANIFEST_IDENTIFIERS = ("hostname", "display_name")
 
 
@@ -51,6 +53,111 @@ class PromotionRecord:
     @classmethod
     def from_json(cls, line: str) -> "PromotionRecord":
         return cls(**json.loads(line))
+
+
+def _manifest_paths(source_root: str) -> List[str]:
+    directory = os.path.join(source_root, MANIFEST_DIR)
+    if not os.path.isdir(directory):
+        return []
+    return sorted(os.path.join(directory, name) for name in os.listdir(directory)
+                  if not name.startswith("."))
+
+
+def remove_from_manifest_sections(path: str, item: str) -> int:
+    """Delete every exact `<string>ITEM</string>` entry from a manifest, in place.
+
+    A text edit, like the catalog list: these files are published, and a plist round-trip would
+    reformat all of them. Whatever it does, the result must still parse as a plist, or nothing is
+    written.
+    """
+    with open(path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    pattern = re.compile(r"\n\t*<string>" + re.escape(item) + r"</string>")
+    found = pattern.findall(text)
+    if not found:
+        return 0
+    candidate = pattern.sub("", text)
+    try:
+        plistlib.loads(candidate.encode("utf-8"))
+    except Exception as exc:                                     # pragma: no cover - safety net
+        raise PromotionError(f"editing {path} for {item} would break the plist: {exc}")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(candidate)
+    return len(found)
+
+
+def _append_withdrawal(source_root: str, record: dict) -> None:
+    path = os.path.join(source_root, WITHDRAWALS_PATH)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def declared_exclusions(source_root: str) -> List[str]:
+    """Items the ring file says are deliberately not promoted yet.
+
+    The deferred items are excluded by decision, not by absence, so the decision lives in the file
+    the plan already reads rather than in whoever remembers to pass a flag.
+    """
+    path = os.path.join(source_root, RINGS_PATH)
+    if not os.path.isfile(path):
+        return []
+    with open(path, "r", encoding="utf-8") as fh:
+        rings = json.load(fh)
+    return [e["item"] for e in rings.get("promotion_exclusions", [])]
+
+
+def withdraw(source_root: str, items, approved_by: str, reason: str,
+             at: Optional[str] = None) -> List[str]:
+    """Take items off the fleet and out of the checkout, recording why and on whose authority.
+
+    Strips the names from every manifest section first and only then deletes the pkginfos: the
+    reverse order would leave a manifest naming an item with no pkginfo, which is a broken publish
+    if it is interrupted. `items=None` withdraws every pkginfo in the tree.
+    """
+    at = at or _now()
+    if not approved_by:
+        raise PromotionError("a withdrawal must record who approved it")
+    if not reason.strip():
+        raise PromotionError("a withdrawal must record why; an unexplained removal is "
+                             "indistinguishable from a mistake")
+    wanted = None if items is None else {str(i) for i in items}
+    targets = [(path, pkginfo) for path, pkginfo in _iter_pkginfos(source_root)
+               if wanted is None or pkginfo.get("name") in wanted]
+    if wanted is not None:
+        missing = wanted - {pkginfo.get("name") for _, pkginfo in targets}
+        if missing:
+            raise PromotionError(f"no pkginfo in the checkout for {', '.join(sorted(missing))}")
+
+    names = sorted({pkginfo.get("name") for _, pkginfo in targets})
+    for manifest in _manifest_paths(source_root):
+        for name in names:
+            remove_from_manifest_sections(manifest, name)
+    for path, pkginfo in targets:
+        digest = sha256_file(path)
+        os.remove(path)
+        _append_withdrawal(source_root, {
+            "item": pkginfo.get("name"), "version": str(pkginfo.get("version")),
+            "kind": "pkginfo", "at": at, "approved_by": approved_by, "reason": reason,
+            "source_path": os.path.relpath(path, source_root), "source_sha256": digest})
+    for directory, _, _ in os.walk(os.path.join(source_root, "pkgsinfo"), topdown=False):
+        if directory != os.path.join(source_root, "pkgsinfo") and not os.listdir(directory):
+            os.rmdir(directory)
+    return names
+
+
+def delete_manifest(source_root: str, name: str, approved_by: str = "", reason: str = "",
+                    at: Optional[str] = None) -> None:
+    """Remove a manifest file outright, for the artifacts that exist only for testing."""
+    path = os.path.join(source_root, MANIFEST_DIR, name)
+    if not os.path.isfile(path):
+        raise PromotionError(f"no manifest named {name!r} in the checkout")
+    digest = sha256_file(path)
+    os.remove(path)
+    _append_withdrawal(source_root, {
+        "item": name, "version": "", "kind": "manifest", "at": at or _now(),
+        "approved_by": approved_by or "Cyril", "reason": reason or "test artifact",
+        "source_path": os.path.relpath(path, source_root), "source_sha256": digest})
 
 
 def _now() -> str:
