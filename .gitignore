@@ -1,0 +1,14 @@
+# Secrets and runtime state — never in Git
+.env
+*.key
+*.pem
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+
+# Local working state
+.scratch/*/tmp/
+.scratch/*/evidence/
+*.sqlite
+*.db
