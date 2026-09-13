@@ -211,10 +211,11 @@ tree, the observation store, the NAS, or a client (ADR 0004).
 
 ### Recorded live state (baseline for this work)
 
-Verified 2026-09-13; the metadata tree (pkgsinfo, manifests, icons — 103 files) was imported into this repository
-under ticket 01 and checksum-verified per file against the NAS, with zero differences and both
-sides' listings committed under `docs/evidence/`: repository live at the NAS Web share and served over HTTP (`catalogs/all`,
-`catalogs/testing`, `manifests/site_default` all return 200); 38 catalog entries over 36 unique
+Verified 2026-09-13; the metadata tree (pkgsinfo, manifests, icons — 103 files) was imported
+into this repository under ticket 01 and checksum-verified per file against the NAS, with zero
+differences and both sides' listings committed under `docs/evidence/`. The repository is live at
+the NAS Web share and served over HTTP (`catalogs/all`, `catalogs/testing`, `manifests/site_default`
+all return 200); 38 catalog entries over 36 unique
 names, all declaring `catalogs: [testing]`; `catalogs/all` and `catalogs/testing` byte-identical;
 28 manifest files including 16 machine manifests that match the role matrix 1:1; 27 top-level
 `.pkginfo` files plus 11 pkginfos imported under a nested `apps` area (and four subdirectories of
