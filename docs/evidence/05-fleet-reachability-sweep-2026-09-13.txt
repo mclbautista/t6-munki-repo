@@ -1,0 +1,54 @@
+# Fleet reachability sweep, 2026-09-13: what answered, and why the rest did not
+
+Evidence for ticket 05's open decision ("the remaining decision: fleet access"). This is a raw
+measurement, not a tool's output to be reproduced: the collector used was a parallel
+implementation of ticket 05 that has since been parked, so treat the numbers below as facts about
+the fleet's reachability rather than as a run to replay.
+
+**Method.** Every target in `data/machines.json` (ticket 04's inventory: 16 machines plus the one
+known-absent machine) was contacted over SSH as user `t6` with a 5-second connect timeout, from
+Cyril's Mac mini. The command shape:
+
+```
+ssh -n -o BatchMode=yes -o ConnectTimeout=5 t6@<address> '<the probe>'
+```
+
+**Result: targeted 17, observed 1, unobserved 16.**
+
+| address | result | what the failure was |
+|---|---|---|
+| 192.168.88.171 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.172 | unreachable | connect to port 22: Connection refused |
+| 192.168.254.106 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.170 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.179 | unreachable | connect to port 22: Connection refused |
+| 192.168.88.174 | unreachable | connect to port 22: Connection refused |
+| 192.168.88.182 | unreachable | `t6@…: Permission denied (publickey,password,keyboard-interactive)` |
+| 192.168.88.180 | unreachable | connect to port 22: Connection refused |
+| 192.168.88.175 | unreachable | connect to port 22: Connection refused |
+| 192.168.88.181 | unreachable | connect to port 22: Connection refused |
+| 192.168.88.190 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.191 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.193 | unreachable | connect to port 22: Connection refused |
+| **192.168.88.151** | unreachable | **`t6@192.168.88.151: Permission denied (publickey,password,keyboard-interactive)`** |
+| 192.168.88.80 | unreachable | connect to port 22: Operation timed out |
+| 192.168.88.100 | unreachable | connect to port 22: Operation timed out |
+| localhost | **observed** | the collector's own machine; resolved manifest `site_default` |
+
+## The two things this settles
+
+1. **The inventory carries an address but no access path.** That is why 15 of 16 remote probes
+   failed: the SSH user differs per machine (and per machine, someone has to know it), so a
+   collector cannot derive access from `data/machines.json` alone. Any fleet-wide sweep needs an
+   access path — an SSH alias, a user, or a different transport — recorded next to the address.
+2. **`192.168.88.151` is the interesting one.** It is reachable from this workstation by its SSH
+   alias (`t6-mac-mini`) but not as user `t6`, so the failure above is about *how* it was reached,
+   not whether it can be. It is also the machine whose Munki state was captured successfully by
+   other means into `tests/fixtures/munki/probe-report-munki6.txt` (Munki 6.6.0.4686, resolving
+   `site_default`) — so at least that machine is observable today, by the right path.
+
+The mixed failure modes are worth noting for what they say about the fleet rather than about the
+attempt: `Connection refused` means the machine is up and simply not accepting SSH;
+`Operation timed out` means nothing answered; `Permission denied` means SSH answered and the
+credentials did not fit. A collector that only recorded "unreachable" would have thrown that
+distinction away.
