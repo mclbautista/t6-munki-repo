@@ -52,9 +52,17 @@
 
 ## The plan, and what it turns up
 
-36 items sit in the testing ring, and all 36 are referenced by some manifest — so "who belongs in
-production" cannot be derived from the repository. It is a policy decision, and it is the approval
-ask below. Beyond the documented 26-item baseline sit ten items:
+**Current plan (after ticket 09's cleanup, 2026-09-13): 26 items to promote, 2 deliberately left in
+testing, 27 manifests to repoint, 1 blocker.** Read-only output:
+`docs/evidence/07-initial-promotion-plan-after-cleanup.txt`. The two parked items are the deferred
+Resolve pair, declared in `data/rings.json` so they cannot be promoted by forgetting a flag.
+
+_What follows was the plan before the cleanup, kept because it is what the decisions were made
+against._
+
+36 items sat in the testing ring, and all 36 were referenced by some manifest — so "who belongs in
+production" could not be derived from the repository. It was a policy decision, and it was the
+approval ask. Beyond the documented 26-item baseline sat ten items:
 
 | item | recommendation |
 |---|---|
@@ -62,20 +70,28 @@ ask below. Beyond the documented 26-item baseline sit ten items:
 | `davinci-resolve-studio`, `davinci-resolve-project-server` | exclude — on the documented deferred list |
 | `Cyberduck`, `Dropbox`, `Firefox`, `MSAutoUpdate`, `MSEdge`, `MSTeams`, `Spotify` | promote or withdraw? not in the documented baseline, all referenced by manifests, no recorded decision |
 
-With the three clear exclusions applied the plan is **33 items and 28 manifests**, captured in
-`docs/evidence/07-initial-promotion-plan.txt` alongside the unfiltered run.
+With the three clear exclusions applied that plan was 33 items and 28 manifests, captured in
+`docs/evidence/07-initial-promotion-plan.txt` alongside the unfiltered run. **Cyril decided
+2026-09-13: withdraw the seven beyond-baseline items, exclude the test artifact and the two
+Resolve items from promotion.** Ticket 09 applied it: 36 → 28 pkginfos, so the promotion list is
+now 26 items.
 
 ## Blockers that must be cleared before the event
 
 1. **`Cyrils-Mac-mini` has no manifest of its own**, so it cannot read `testing` — it would resolve
-   to `site_default` and the pilot ring would have one member, not two. It also currently carries
-   `ClientIdentifier = t6-test-client` (verified on the machine 2026-09-13), which overrides its
-   identity entirely: a test artifact standing in for a pilot.
-2. The plan repoints `t6-test-client`, a manifest that exists only for testing. It should be deleted
-   (ticket 09), not given a catalog.
+   to `site_default` and the pilot ring would have one member, not two. It also carries
+   `ClientIdentifier = t6-test-client` (read on the machine 2026-09-13), which overrides its
+   identity entirely.
+2. ~~The plan repoints `t6-test-client`~~ — **resolved by ticket 09**: the manifest and its test
+   pkginfo are deleted, so there is nothing to repoint.
 
-Both are ticket 09 work, which makes 09 a **dependency of 07's initial event** rather than a
-follow-up — recorded here because the ticket header lists only 02.
+Ticket 09 is a **dependency of 07's initial event**, not a follow-up — recorded here because the
+ticket header lists only 02. Ticket 09 is now implemented: the withdrawn items are gone, the
+deferred pair is parked by declaration, and the manifest count is 27.
+
+**Blocker 1 is still open and is now the only thing standing between the plan and the event.** It is
+the `ClientIdentifier` line in ticket 09's "loose end" section — one command on Cyril's Mac mini,
+and then the machine reports its own hostname manifest.
 
 ## Risks
 

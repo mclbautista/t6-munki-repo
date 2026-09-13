@@ -228,6 +228,22 @@ def test_the_declared_exclusions_are_read_from_the_ring_file(tmp_path):
     assert [i.name for i in plan.items] == ["A", "B"], "the declared exclusion must apply"
 
 
+def test_the_cli_plan_applies_the_declared_exclusions_without_a_flag(tmp_path, capsys):
+    """The declared exclusions have to reach the command, not just exist as a function."""
+    from munki_fleet import cli
+    root = metadata_tree(tmp_path / "src", items=[item("Promote me"), item("Parked")])
+    os.makedirs(os.path.join(root, "data"), exist_ok=True)
+    with open(os.path.join(root, "data", "rings.json"), "w") as fh:
+        json.dump({"pilots": [{"name": "202-TOC-M4-Max"}],
+                   "promotion_exclusions": [{"item": "Parked"}]}, fh)
+    assert cli.main(["promotion-plan", "--metadata-root", root]) == 0
+    printed = capsys.readouterr().out
+    assert "Promote me" in printed
+    assert "Parked" not in printed.split("item(s) to promote")[1], \
+        "a declared exclusion must not appear in the promotion list"
+    assert "deliberately left in testing: Parked" in printed
+
+
 # --- the initial promotion: one event, nothing lost ---------------------------------------------
 
 def test_the_initial_plan_promotes_everything_that_is_live_and_reassigns_the_manifests(tmp_path):

@@ -28,8 +28,8 @@ from .catalogs import CatalogError, build_catalogs
 from .drift import DriftReport, integrity, repo_url
 from .drift import drift as drift_report
 from .gate import evaluate_gate
-from .promote import (PROMOTIONS_PATH, PromotionError, demote, initial_promotion_plan,
-                      load_history, load_pilots, promote)
+from .promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions, demote,
+                      initial_promotion_plan, load_history, load_pilots, promote)
 from .reconcile import ReconcileError, apply_removals, plan_removals, recorded_hashes
 from .publish import PublishAborted, PublishError, publish, verify_served
 from .targets import SshTarget, TargetError
@@ -301,7 +301,8 @@ def cmd_demote(args, deps: Deps) -> int:
 
 def cmd_promotion_plan(args, deps: Deps) -> int:
     pilots = args.pilot or load_pilots(args.metadata_root)
-    plan = initial_promotion_plan(args.metadata_root, pilots, exclude=args.exclude)
+    exclusions = sorted(set(declared_exclusions(args.metadata_root)) | set(args.exclude))
+    plan = initial_promotion_plan(args.metadata_root, pilots, exclude=exclusions)
     print(plan.describe())
     print(f"\n{len(load_history(args.metadata_root))} promotion(s) already on record")
     return 0
