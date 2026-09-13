@@ -19,9 +19,12 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import hashlib
+import json
 import os
+import subprocess
 import sys
 import urllib.request
+from datetime import datetime
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from .catalogs import CatalogError, build_catalogs
@@ -30,6 +33,7 @@ from .drift import drift as drift_report
 from .gate import evaluate_gate
 from .promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions, demote,
                       initial_promotion_plan, load_history, load_pilots, promote)
+from . import probe
 from .payloads import PayloadError, orphan_payloads, remove_payloads
 from .reconcile import ReconcileError, apply_removals, plan_removals, recorded_hashes
 from .publish import PublishAborted, PublishError, publish, verify_served
@@ -249,6 +253,107 @@ def _declared_hashes(pairs) -> Dict[str, str]:
     return out
 
 
+def _inventory_targets(path: str, limit: Optional[int] = None) -> List[dict]:
+    """The machines to probe, taken from the identity inventory rather than typed by hand."""
+    with open(path, encoding="utf-8") as fh:
+        inventory = json.load(fh)
+    targets = []
+    for row in inventory.get("machines", []):
+        host = row.get("munki_name") or row.get("unix_hostname")
+        if not host:
+            continue
+        # The transport needs something that resolves: bare short hostnames are mDNS names on this
+        # network and `ssh 202-TOC-M4-Max` fails DNS outright. The inventory carries the address the
+        # machine was last seen at, so the record keeps the name and the probe travels by address.
+        targets.append({"host": host, "address": row.get("primary_ip"), "serial": row.get("serial"),
+                        "name": row.get("computer_name")})
+    for entry in inventory.get("known_absent") or []:
+        if isinstance(entry, dict) and entry.get("host"):
+            targets.append({"host": entry["host"], "serial": entry.get("serial"),
+                            "name": entry.get("name")})
+    targets.sort(key=lambda t: t["host"])
+    return targets[:limit] if limit else targets
+
+
+def _split_machine(spec: str) -> dict:
+    """`HOST[:SERIAL[:NAME]]`, or `ADDRESS@HOST[:SERIAL[:NAME]]` to separate the two."""
+    parts = spec.split(":")
+    address, _, host = parts[0].partition("@")
+    return {"host": host or address, "address": address, "serial": parts[1] if len(parts) > 1 else None,
+            "name": parts[2] if len(parts) > 2 else (host or address)}
+
+
+def local_runner(host: str, command: str, timeout: Optional[int] = None):
+    """Run the probe on the machine the collector is running on."""
+    completed = subprocess.run(["sh", "-c", command], capture_output=True, timeout=timeout)
+    return completed.returncode, completed.stdout, completed.stderr
+
+
+def cmd_probe(args, deps: Deps) -> int:
+    """Probe machines and append the run to the observation store."""
+    targets = [_split_machine(spec) for spec in args.machine]
+    if args.from_inventory:
+        targets += _inventory_targets(args.from_inventory, args.limit)
+    if not targets:
+        print("error: no targets; pass --machine HOST[:SERIAL] or --from-inventory", file=sys.stderr)
+        return 2
+
+    here = args.local_host or ""
+    build_runner = (lambda host, command, timeout=None: local_runner(host, command, timeout)) \
+        if args.local else None
+
+    def runner(host, command, timeout=None):
+        if here and host == here:
+            return local_runner(host, command, timeout or args.timeout)
+        return probe.default_runner(host, command, timeout or args.timeout)
+
+    run, observations = probe.probe_run(targets, runner, store_path=args.store,
+                                        observer=args.observer, timeout=args.timeout)
+    print(f"run {run.run_id}")
+    print(f"  targeted {run.targeted}, reached {run.reached} "
+          f"(observed {run.observed}, partial {run.partial}), unobserved {run.unobserved}")
+    print(f"  complete: {run.complete}" if run.complete else
+          "  INCOMPLETE: some targets were not observed")
+    for observation in observations:
+        if observation.outcome == "observed":
+            state = observation.state
+            print(f"    {observation.target['host']:28} {observation.machine['serial']:14} "
+                  f"manifest={state['manifest_name']} pending={state['pending_count']} "
+                  f"rejections={len(state['architecture_rejections'])}")
+        else:
+            print(f"    {observation.target['host']:28} {observation.outcome.upper():12} "
+                  f"{observation.reason}: {observation.detail or ''}")
+    print(f"  appended to {args.store}")
+    return 0
+
+
+def cmd_observations(args, deps: Deps) -> int:
+    """The latest reading per machine, with its age (read-only)."""
+    store = probe.ObservationStore(args.store)
+    records = store.read()
+    if not records:
+        print(f"{args.store} holds no observations")
+        return 0
+    now = args.now or datetime.now().astimezone().isoformat(timespec="seconds")
+    readings = probe.latest_per_machine(records, now=now, max_age=args.max_age)
+    runs = store.runs()
+    print(f"{len(records)} records, {len(runs)} run(s); latest observed {runs[-1]['observed_at']}"
+          if runs else f"{len(records)} records")
+    print(f"max age {args.max_age}s; now {now}")
+    for key, entry in sorted(readings.items()):
+        observation = entry["observation"]
+        age = entry["age_seconds"]
+        verdict = "STALE" if entry["stale"] else "current"
+        if observation["outcome"] == "observed":
+            state = observation["state"]
+            print(f"  {key:14} {verdict:8} age={age:>7}s  {observation['target']['host']:26} "
+                  f"manifest={state['manifest_name']} pending={state['pending_count']}")
+        else:
+            print(f"  {key:14} {verdict:8} age={age:>7}s  {observation['target']['host']:26} "
+                  f"{observation['outcome']}: {observation.get('reason')}")
+    return 0
+
+
 def cmd_payload_orphans(args, deps: Deps) -> int:
     """Payloads on the target that no pkginfo in the checkout references (read-only)."""
     target = deps.target_factory(args.target)
@@ -396,6 +501,28 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.add_argument("--exclude", action="append", default=[], metavar="ITEM",
                    help="an item to leave in testing rather than promote (repeatable)")
     p.set_defaults(func=cmd_promotion_plan)
+    p = sub.add_parser("probe", help="probe machines and append to the observation store")
+    p.add_argument("--store", required=True,
+                   help="the observation store to append to (required: fleet state is never "
+                        "written somewhere unintended)")
+    p.add_argument("--machine", action="append", default=[],
+                   metavar="ADDRESS@HOST[:SERIAL[:NAME]]",
+                   help="a machine to probe (repeatable); put the resolvable address first, e.g. "
+                        "192.168.88.182@202-TOC-M4-Max:RW3HL9FL4M")
+    p.add_argument("--from-inventory", default=None, metavar="PATH",
+                   help="probe the machines in an identity inventory, e.g. data/machines.json")
+    p.add_argument("--limit", type=int, default=None, help="probe at most this many targets")
+    p.add_argument("--observer", default=None, help="who is observing (default: this tool)")
+    p.add_argument("--local-host", default=None, metavar="HOST",
+                   help="probe this target by running locally instead of over ssh")
+    p.add_argument("--local", action="store_true", help="run every probe locally")
+    p.add_argument("--timeout", type=int, default=None)
+    p.set_defaults(func=cmd_probe)
+    p = sub.add_parser("observations", help="latest reading per machine, with age (read-only)")
+    p.add_argument("--store", required=True)
+    p.add_argument("--max-age", type=int, default=3600, help="seconds before a reading is stale")
+    p.add_argument("--now", default=None, help="treat this as now (for tests and replays)")
+    p.set_defaults(func=cmd_observations)
     p = sub.add_parser("payload-orphans",
                        help="payloads no pkginfo references any more (read-only)")
     common(p, with_target=True)

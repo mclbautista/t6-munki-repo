@@ -1,0 +1,537 @@
+munki-fleet-probe/1
+munki_tools=yes
+report_present=yes
+report_mtime=1789298823
+log_present=yes
+log_mtime=1789298823
+<<<REPORT>>>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AvailableDiskSpace</key>
+	<integer>12906992</integer>
+	<key>Conditions</key>
+	<dict>
+		<key>arch</key>
+		<string>arm64</string>
+		<key>board_id</key>
+		<string>&lt;none&gt;</string>
+		<key>catalogs</key>
+		<array>
+			<string>testing</string>
+		</array>
+		<key>date</key>
+		<date>2026-09-13T19:26:24Z</date>
+		<key>device_id</key>
+		<string>J773gAP</string>
+		<key>hostname</key>
+		<string>Cyrils-Mac-mini.local</string>
+		<key>ibridge_model_name</key>
+		<string>NO IBRIDGE CHIP</string>
+		<key>ipv4_address</key>
+		<array>
+			<string>192.168.0.107</string>
+			<string>192.168.88.202</string>
+			<string>100.123.216.92</string>
+		</array>
+		<key>ipv6_address</key>
+		<array>
+			<string>fd7a:115c:a1e0::5f01:d8be</string>
+		</array>
+		<key>machine_model</key>
+		<string>Mac16,10</string>
+		<key>machine_type</key>
+		<string>desktop</string>
+		<key>munki_version</key>
+		<string>7.3.0.5808</string>
+		<key>os_build_last_component</key>
+		<string>83</string>
+		<key>os_build_number</key>
+		<string>25G83</string>
+		<key>os_vers</key>
+		<string>26.6.2</string>
+		<key>os_vers_major</key>
+		<integer>26</integer>
+		<key>os_vers_minor</key>
+		<integer>6</integer>
+		<key>os_vers_patch</key>
+		<integer>2</integer>
+		<key>product_name</key>
+		<string>Mac mini (2024)</string>
+		<key>serial_number</key>
+		<string>RWJ57V9PW4</string>
+	</dict>
+	<key>ConsoleUser</key>
+	<string>cyrilbautista</string>
+	<key>EndTime</key>
+	<date>2026-09-13T11:27:03Z</date>
+	<key>InstalledItems</key>
+	<array/>
+	<key>ItemsToInstall</key>
+	<array/>
+	<key>ItemsToRemove</key>
+	<array/>
+	<key>MachineInfo</key>
+	<dict>
+		<key>arch</key>
+		<string>arm64</string>
+		<key>board_id</key>
+		<string>&lt;none&gt;</string>
+		<key>device_id</key>
+		<string>J773gAP</string>
+		<key>hostname</key>
+		<string>Cyrils-Mac-mini.local</string>
+		<key>ibridge_model_name</key>
+		<string>NO IBRIDGE CHIP</string>
+		<key>ipv4_address</key>
+		<array>
+			<string>192.168.0.107</string>
+			<string>192.168.88.202</string>
+			<string>100.123.216.92</string>
+		</array>
+		<key>ipv6_address</key>
+		<array>
+			<string>fd7a:115c:a1e0::5f01:d8be</string>
+		</array>
+		<key>machine_model</key>
+		<string>Mac16,10</string>
+		<key>munki_version</key>
+		<string>7.3.0.5808</string>
+		<key>os_build_number</key>
+		<string>25G83</string>
+		<key>os_vers</key>
+		<string>26.6.2</string>
+		<key>product_name</key>
+		<string>Mac mini (2024)</string>
+		<key>serial_number</key>
+		<string>RWJ57V9PW4</string>
+	</dict>
+	<key>ManagedInstallVersion</key>
+	<string>7.3.0.5808</string>
+	<key>ManagedInstalls</key>
+	<array/>
+	<key>ManifestName</key>
+	<string>site_default</string>
+	<key>ProblemInstalls</key>
+	<array/>
+	<key>RemovedItems</key>
+	<array/>
+	<key>RunType</key>
+	<string>auto</string>
+	<key>StartTime</key>
+	<date>2026-09-13T11:26:23Z</date>
+	<key>Warnings</key>
+	<array>
+		<string>WARNING: Spotlight search for applications terminated due to excessive time. Possible causes: Spotlight indexing is turned off for a volume; Spotlight is reindexing a volume.</string>
+	</array>
+	<key>managed_installs_list</key>
+	<array/>
+	<key>managed_uninstalls_list</key>
+	<array/>
+	<key>managed_updates_list</key>
+	<array/>
+</dict>
+</plist>
+
+<<<LOG>>>
+2026-09-13 16:24:24.108+08:00 Downloading iTerm2-3.7.1.dmg from iTerm2-3.7.1.dmg
+2026-09-13 16:24:24.108+08:00         Cached item is current.
+2026-09-13 16:24:24.109+08:00 Need to install Keka
+2026-09-13 16:24:24.109+08:00 Downloading Keka-1.6.7.dmg from Keka-1.6.7.dmg
+2026-09-13 16:24:24.109+08:00         Cached item is current.
+2026-09-13 16:24:24.109+08:00 Need to install LucidLink
+2026-09-13 16:24:24.110+08:00 Downloading LucidLink-3.9.8795.pkg from LucidLink-3.9.8795.pkg
+2026-09-13 16:24:24.110+08:00         Cached item is current.
+2026-09-13 16:24:24.111+08:00 Need to install MediaInfo
+2026-09-13 16:24:24.111+08:00 Downloading MediaInfo-26.05.dmg from MediaInfo-26.05.dmg
+2026-09-13 16:24:24.111+08:00         Cached item is current.
+2026-09-13 16:24:24.112+08:00 Notion version 7.33.0 (or newer) is already installed.
+2026-09-13 16:24:24.113+08:00 Need to install OnyX
+2026-09-13 16:24:24.113+08:00 Downloading OnyX-5.0.3.dmg from OnyX-5.0.3.dmg
+2026-09-13 16:24:24.113+08:00         Cached item is current.
+2026-09-13 16:24:24.113+08:00 QfinderPro version 1.0 (or newer) is already installed.
+2026-09-13 16:24:24.113+08:00 Need to install RemoteDesktop
+2026-09-13 16:24:24.114+08:00 Downloading Remote_Desktop-11.4.0.pkg from Remote_Desktop-11.4.0.pkg
+2026-09-13 16:24:24.114+08:00         Cached item is current.
+2026-09-13 16:24:24.114+08:00 Need to install RemotePC
+2026-09-13 16:24:24.115+08:00 Downloading RemotePC-7.0.dmg from RemotePC-7.0.dmg
+2026-09-13 16:24:24.116+08:00         Cached item is current.
+2026-09-13 16:24:24.116+08:00 Need to install ShutterEncoder
+2026-09-13 16:24:24.117+08:00 Downloading Shutter_Encoder-20.3.pkg from Shutter_Encoder-20.3.pkg
+2026-09-13 16:24:24.117+08:00         Cached item is current.
+2026-09-13 16:24:24.118+08:00 Need to install Soundly
+2026-09-13 16:24:24.118+08:00 Downloading Soundly-2026.07.43.dmg from Soundly-2026.07.43.dmg
+2026-09-13 16:24:24.119+08:00         Cached item is current.
+2026-09-13 16:24:24.119+08:00 Need to install TeamViewer
+2026-09-13 16:24:24.119+08:00 Downloading TeamViewer-1.0.dmg from TeamViewer-1.0.dmg
+2026-09-13 16:24:24.120+08:00         Cached item is current.
+2026-09-13 16:24:24.120+08:00 Telegram version 12.10 (or newer) is already installed.
+2026-09-13 16:24:24.121+08:00 VLC version 3.0.23 (or newer) is already installed.
+2026-09-13 16:24:24.121+08:00 Need to install Zoom
+2026-09-13 16:24:24.122+08:00 Downloading Zoom-7.1.5.84650.pkg from Zoom-7.1.5.84650.pkg
+2026-09-13 16:24:24.122+08:00         Cached item is current.
+2026-09-13 16:24:24.123+08:00 **Checking for removals**
+2026-09-13 16:24:24.123+08:00 **Checking for managed updates**
+2026-09-13 16:24:24.314+08:00     Getting client resources...
+2026-09-13 16:24:24.323+08:00     Getting client resources...
+2026-09-13 16:24:59.033+08:00 WARNING: Spotlight search for applications terminated due to excessive time. Possible causes: Spotlight indexing is turned off for a volume; Spotlight is reindexing a volume.
+2026-09-13 16:25:02.536+08:00 No change in InstallInfo.
+2026-09-13 16:25:02.537+08:00 ###    End managed software check    ###
+2026-09-13 16:25:02.537+08:00 Allowing idle sleep
+2026-09-13 16:25:02.538+08:00 
+2026-09-13 16:25:02.539+08:00 The following items will be installed or upgraded:
+2026-09-13 16:25:02.539+08:00     + Stow-0.6.47
+2026-09-13 16:25:02.539+08:00         
+2026-09-13 16:25:02.539+08:00     + HandBrake-1.11.2
+2026-09-13 16:25:02.539+08:00         
+2026-09-13 16:25:02.539+08:00     + iTerm2-3.7.1
+2026-09-13 16:25:02.540+08:00         
+2026-09-13 16:25:02.540+08:00     + Keka-1.6.7
+2026-09-13 16:25:02.540+08:00         
+2026-09-13 16:25:02.540+08:00     + LucidLink-3.9.8795
+2026-09-13 16:25:02.540+08:00         
+2026-09-13 16:25:02.540+08:00     + MediaInfo-26.05
+2026-09-13 16:25:02.541+08:00         
+2026-09-13 16:25:02.541+08:00     + OnyX-5.0.3
+2026-09-13 16:25:02.541+08:00         
+2026-09-13 16:25:02.541+08:00     + RemoteDesktop-11.4.0
+2026-09-13 16:25:02.541+08:00         
+2026-09-13 16:25:02.542+08:00     + RemotePC-7.0
+2026-09-13 16:25:02.542+08:00         
+2026-09-13 16:25:02.542+08:00     + ShutterEncoder-20.3
+2026-09-13 16:25:02.542+08:00         
+2026-09-13 16:25:02.542+08:00     + Soundly-2026.07.43
+2026-09-13 16:25:02.543+08:00         
+2026-09-13 16:25:02.543+08:00     + TeamViewer-1.0
+2026-09-13 16:25:02.543+08:00         
+2026-09-13 16:25:02.543+08:00     + Zoom-7.1.5.84650
+2026-09-13 16:25:02.543+08:00         
+2026-09-13 16:25:02.593+08:00 ### Beginning unattended installer session ###
+2026-09-13 16:25:02.593+08:00 Preventing idle sleep
+2026-09-13 16:25:02.594+08:00 Processing installs
+2026-09-13 16:25:02.594+08:00 Skipping install of Stow because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.594+08:00 Skipping install of HandBrake because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.594+08:00 Skipping install of iTerm2 because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.595+08:00 Skipping install of Keka because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.595+08:00 Skipping install of LucidLink because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.595+08:00 Skipping install of MediaInfo because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.595+08:00 Skipping install of OnyX because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.595+08:00 Skipping install of RemoteDesktop because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.596+08:00 Skipping install of RemotePC because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.596+08:00 Skipping install of ShutterEncoder because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.596+08:00 Skipping install of Soundly because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.596+08:00 Skipping install of TeamViewer because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.596+08:00 Skipping install of Zoom because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 16:25:02.597+08:00 ###    End unattended installer session    ###
+2026-09-13 16:25:02.598+08:00 Allowing idle sleep
+2026-09-13 16:25:02.600+08:00 Finishing...
+2026-09-13 16:25:02.603+08:00 Saving application inventory...
+2026-09-13 16:25:02.608+08:00 ### Ending managedsoftwareupdate run ###
+2026-09-13 16:25:02.609+08:00 Skipping user notification
+2026-09-13 16:25:02.610+08:00 Last notification was 2026-09-12 23:11:12+08:00 and notification interval is 1 day(s).
+2026-09-13 17:25:02.756+08:00 ### Starting managedsoftwareupdate run: auto ###
+2026-09-13 17:25:02.756+08:00 Starting...
+2026-09-13 17:25:03.145+08:00 ### Beginning managed software check ###
+2026-09-13 17:25:03.145+08:00 Checking for available updates...
+2026-09-13 17:25:03.146+08:00 Getting manifest t6-test-client...
+2026-09-13 17:25:03.164+08:00 Retrieved manifest t6-test-client
+2026-09-13 17:25:03.165+08:00 Using primary manifest: t6-test-client
+2026-09-13 17:25:03.207+08:00 Preventing idle sleep
+2026-09-13 17:25:03.207+08:00 **Checking for installs**
+2026-09-13 17:25:03.207+08:00 Getting catalog testing...
+2026-09-13 17:25:03.386+08:00 Getting manifest all...
+2026-09-13 17:25:03.391+08:00 Retrieved manifest all
+2026-09-13 17:25:03.392+08:00 Getting manifest site_default...
+2026-09-13 17:25:03.396+08:00 Retrieved manifest site_default
+2026-09-13 17:25:03.397+08:00 AnyDesk version 9.6.0 (or newer) is already installed.
+2026-09-13 17:25:03.398+08:00 AppCleaner version 3.6.8 (or newer) is already installed.
+2026-09-13 17:25:03.551+08:00 CineCred version 0.0 (or newer) is already installed.
+2026-09-13 17:25:03.552+08:00 Need to install Stow
+2026-09-13 17:25:03.552+08:00 Downloading Stow-0.6.47.dmg from Stow-0.6.47.dmg
+2026-09-13 17:25:03.552+08:00         Cached item is current.
+2026-09-13 17:25:03.555+08:00 DiskCatalogMaker version 9.3.1 (or newer) is already installed.
+2026-09-13 17:25:03.555+08:00 FrameioDrive version 1.12.0 (or newer) is already installed.
+2026-09-13 17:25:03.555+08:00 FrameioTransfer version 1.12.0 (or newer) is already installed.
+2026-09-13 17:25:03.556+08:00 FreeFileSync version 14.12 (or newer) is already installed.
+2026-09-13 17:25:03.556+08:00 GoogleChrome version 153.0.8010.37 (or newer) is already installed.
+2026-09-13 17:25:03.557+08:00 Need to install HandBrake
+2026-09-13 17:25:03.557+08:00 Downloading HandBrake-1.11.2.dmg from HandBrake-1.11.2.dmg
+2026-09-13 17:25:03.558+08:00         Cached item is current.
+2026-09-13 17:25:03.559+08:00 WARNING: Rejected item IBMAsperaConnect, version 4.2.19.956-HEAD with supported architectures ["x86_64"]. Our architecture is arm64.
+2026-09-13 17:25:03.559+08:00 WARNING: Could not process item IBMAsperaConnect for install. No pkginfo found in catalogs: ["testing"]
+2026-09-13 17:25:03.560+08:00 Need to install iTerm2
+2026-09-13 17:25:03.560+08:00 Downloading iTerm2-3.7.1.dmg from iTerm2-3.7.1.dmg
+2026-09-13 17:25:03.561+08:00         Cached item is current.
+2026-09-13 17:25:03.562+08:00 Need to install Keka
+2026-09-13 17:25:03.562+08:00 Downloading Keka-1.6.7.dmg from Keka-1.6.7.dmg
+2026-09-13 17:25:03.563+08:00         Cached item is current.
+2026-09-13 17:25:03.563+08:00 Need to install LucidLink
+2026-09-13 17:25:03.563+08:00 Downloading LucidLink-3.9.8795.pkg from LucidLink-3.9.8795.pkg
+2026-09-13 17:25:03.563+08:00         Cached item is current.
+2026-09-13 17:25:03.564+08:00 Need to install MediaInfo
+2026-09-13 17:25:03.564+08:00 Downloading MediaInfo-26.05.dmg from MediaInfo-26.05.dmg
+2026-09-13 17:25:03.565+08:00         Cached item is current.
+2026-09-13 17:25:03.565+08:00 Notion version 7.33.0 (or newer) is already installed.
+2026-09-13 17:25:03.566+08:00 Need to install OnyX
+2026-09-13 17:25:03.566+08:00 Downloading OnyX-5.0.3.dmg from OnyX-5.0.3.dmg
+2026-09-13 17:25:03.566+08:00         Cached item is current.
+2026-09-13 17:25:03.566+08:00 QfinderPro version 1.0 (or newer) is already installed.
+2026-09-13 17:25:03.567+08:00 Need to install RemoteDesktop
+2026-09-13 17:25:03.567+08:00 Downloading Remote_Desktop-11.4.0.pkg from Remote_Desktop-11.4.0.pkg
+2026-09-13 17:25:03.567+08:00         Cached item is current.
+2026-09-13 17:25:03.567+08:00 Need to install RemotePC
+2026-09-13 17:25:03.568+08:00 Downloading RemotePC-7.0.dmg from RemotePC-7.0.dmg
+2026-09-13 17:25:03.568+08:00         Cached item is current.
+2026-09-13 17:25:03.568+08:00 Need to install ShutterEncoder
+2026-09-13 17:25:03.568+08:00 Downloading Shutter_Encoder-20.3.pkg from Shutter_Encoder-20.3.pkg
+2026-09-13 17:25:03.569+08:00         Cached item is current.
+2026-09-13 17:25:03.570+08:00 Need to install Soundly
+2026-09-13 17:25:03.571+08:00 Downloading Soundly-2026.07.43.dmg from Soundly-2026.07.43.dmg
+2026-09-13 17:25:03.571+08:00         Cached item is current.
+2026-09-13 17:25:03.571+08:00 Need to install TeamViewer
+2026-09-13 17:25:03.572+08:00 Downloading TeamViewer-1.0.dmg from TeamViewer-1.0.dmg
+2026-09-13 17:25:03.572+08:00         Cached item is current.
+2026-09-13 17:25:03.573+08:00 Telegram version 12.10 (or newer) is already installed.
+2026-09-13 17:25:03.574+08:00 VLC version 3.0.23 (or newer) is already installed.
+2026-09-13 17:25:03.574+08:00 Need to install Zoom
+2026-09-13 17:25:03.574+08:00 Downloading Zoom-7.1.5.84650.pkg from Zoom-7.1.5.84650.pkg
+2026-09-13 17:25:03.575+08:00         Cached item is current.
+2026-09-13 17:25:03.575+08:00 **Checking for removals**
+2026-09-13 17:25:03.575+08:00 **Checking for managed updates**
+2026-09-13 17:25:03.767+08:00     Getting client resources...
+2026-09-13 17:25:03.779+08:00     Getting client resources...
+2026-09-13 17:25:38.557+08:00 WARNING: Spotlight search for applications terminated due to excessive time. Possible causes: Spotlight indexing is turned off for a volume; Spotlight is reindexing a volume.
+2026-09-13 17:25:42.373+08:00 No change in InstallInfo.
+2026-09-13 17:25:42.374+08:00 ###    End managed software check    ###
+2026-09-13 17:25:42.374+08:00 Allowing idle sleep
+2026-09-13 17:25:42.375+08:00 
+2026-09-13 17:25:42.375+08:00 The following items will be installed or upgraded:
+2026-09-13 17:25:42.376+08:00     + Stow-0.6.47
+2026-09-13 17:25:42.376+08:00         
+2026-09-13 17:25:42.376+08:00     + HandBrake-1.11.2
+2026-09-13 17:25:42.376+08:00         
+2026-09-13 17:25:42.376+08:00     + iTerm2-3.7.1
+2026-09-13 17:25:42.376+08:00         
+2026-09-13 17:25:42.377+08:00     + Keka-1.6.7
+2026-09-13 17:25:42.377+08:00         
+2026-09-13 17:25:42.377+08:00     + LucidLink-3.9.8795
+2026-09-13 17:25:42.377+08:00         
+2026-09-13 17:25:42.378+08:00     + MediaInfo-26.05
+2026-09-13 17:25:42.378+08:00         
+2026-09-13 17:25:42.378+08:00     + OnyX-5.0.3
+2026-09-13 17:25:42.378+08:00         
+2026-09-13 17:25:42.378+08:00     + RemoteDesktop-11.4.0
+2026-09-13 17:25:42.379+08:00         
+2026-09-13 17:25:42.379+08:00     + RemotePC-7.0
+2026-09-13 17:25:42.380+08:00         
+2026-09-13 17:25:42.380+08:00     + ShutterEncoder-20.3
+2026-09-13 17:25:42.381+08:00         
+2026-09-13 17:25:42.381+08:00     + Soundly-2026.07.43
+2026-09-13 17:25:42.381+08:00         
+2026-09-13 17:25:42.381+08:00     + TeamViewer-1.0
+2026-09-13 17:25:42.381+08:00         
+2026-09-13 17:25:42.382+08:00     + Zoom-7.1.5.84650
+2026-09-13 17:25:42.382+08:00         
+2026-09-13 17:25:42.420+08:00 ### Beginning unattended installer session ###
+2026-09-13 17:25:42.421+08:00 Preventing idle sleep
+2026-09-13 17:25:42.423+08:00 Processing installs
+2026-09-13 17:25:42.423+08:00 Skipping install of Stow because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.424+08:00 Skipping install of HandBrake because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.424+08:00 Skipping install of iTerm2 because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.424+08:00 Skipping install of Keka because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.424+08:00 Skipping install of LucidLink because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of MediaInfo because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of OnyX because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of RemoteDesktop because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of RemotePC because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of ShutterEncoder because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.425+08:00 Skipping install of Soundly because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.426+08:00 Skipping install of TeamViewer because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.426+08:00 Skipping install of Zoom because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 17:25:42.427+08:00 ###    End unattended installer session    ###
+2026-09-13 17:25:42.428+08:00 Allowing idle sleep
+2026-09-13 17:25:42.431+08:00 Finishing...
+2026-09-13 17:25:42.434+08:00 Saving application inventory...
+2026-09-13 17:25:42.441+08:00 ### Ending managedsoftwareupdate run ###
+2026-09-13 17:25:42.443+08:00 MSCAllowNotificationWindow is not enabled
+2026-09-13 17:25:42.443+08:00 Notifying user of available updates.
+2026-09-13 17:25:42.444+08:00 LastNotifiedDate was 2026-09-12 23:11:12+08:00
+2026-09-13 18:25:43.646+08:00 ### Starting managedsoftwareupdate run: auto ###
+2026-09-13 18:25:43.647+08:00 Starting...
+2026-09-13 18:25:44.044+08:00 ### Beginning managed software check ###
+2026-09-13 18:25:44.044+08:00 Checking for available updates...
+2026-09-13 18:25:44.046+08:00 Getting manifest t6-test-client...
+2026-09-13 18:25:44.261+08:00 Retrieved manifest t6-test-client
+2026-09-13 18:25:44.261+08:00 Using primary manifest: t6-test-client
+2026-09-13 18:25:44.277+08:00 Preventing idle sleep
+2026-09-13 18:25:44.278+08:00 **Checking for installs**
+2026-09-13 18:25:44.278+08:00 Getting catalog testing...
+2026-09-13 18:25:44.455+08:00     Retrieving catalog testing...
+2026-09-13 18:25:44.466+08:00 Getting manifest all...
+2026-09-13 18:25:44.470+08:00 Retrieved manifest all
+2026-09-13 18:25:44.471+08:00 Getting manifest site_default...
+2026-09-13 18:25:44.475+08:00 Retrieved manifest site_default
+2026-09-13 18:25:44.480+08:00 AnyDesk version 9.6.0 (or newer) is already installed.
+2026-09-13 18:25:44.481+08:00 AppCleaner version 3.6.8 (or newer) is already installed.
+2026-09-13 18:25:44.621+08:00 CineCred version 0.0 (or newer) is already installed.
+2026-09-13 18:25:44.621+08:00 Need to install Stow
+2026-09-13 18:25:44.622+08:00 Downloading Stow-0.6.47.dmg from Stow-0.6.47.dmg
+2026-09-13 18:25:44.622+08:00         Cached item is current.
+2026-09-13 18:25:44.623+08:00 DiskCatalogMaker version 9.3.1 (or newer) is already installed.
+2026-09-13 18:25:44.623+08:00 FrameioDrive version 1.12.0 (or newer) is already installed.
+2026-09-13 18:25:44.624+08:00 FrameioTransfer version 1.12.0 (or newer) is already installed.
+2026-09-13 18:25:44.624+08:00 FreeFileSync version 14.12 (or newer) is already installed.
+2026-09-13 18:25:44.625+08:00 GoogleChrome version 153.0.8010.37 (or newer) is already installed.
+2026-09-13 18:25:44.626+08:00 Need to install HandBrake
+2026-09-13 18:25:44.626+08:00 Downloading HandBrake-1.11.2.dmg from HandBrake-1.11.2.dmg
+2026-09-13 18:25:44.626+08:00         Cached item is current.
+2026-09-13 18:25:44.627+08:00 WARNING: Rejected item IBMAsperaConnect, version 4.2.19.956-HEAD with supported architectures ["x86_64"]. Our architecture is arm64.
+2026-09-13 18:25:44.627+08:00 WARNING: Could not process item IBMAsperaConnect for install. No pkginfo found in catalogs: ["testing"]
+2026-09-13 18:25:44.628+08:00 Need to install iTerm2
+2026-09-13 18:25:44.628+08:00 Downloading iTerm2-3.7.1.dmg from iTerm2-3.7.1.dmg
+2026-09-13 18:25:44.628+08:00         Cached item is current.
+2026-09-13 18:25:44.630+08:00 Need to install Keka
+2026-09-13 18:25:44.630+08:00 Downloading Keka-1.6.7.dmg from Keka-1.6.7.dmg
+2026-09-13 18:25:44.630+08:00         Cached item is current.
+2026-09-13 18:25:44.630+08:00 Need to install LucidLink
+2026-09-13 18:25:44.631+08:00 Downloading LucidLink-3.9.8795.pkg from LucidLink-3.9.8795.pkg
+2026-09-13 18:25:44.631+08:00         Cached item is current.
+2026-09-13 18:25:44.632+08:00 Need to install MediaInfo
+2026-09-13 18:25:44.632+08:00 Downloading MediaInfo-26.05.dmg from MediaInfo-26.05.dmg
+2026-09-13 18:25:44.632+08:00         Cached item is current.
+2026-09-13 18:25:44.633+08:00 Notion version 7.33.0 (or newer) is already installed.
+2026-09-13 18:25:44.633+08:00 Need to install OnyX
+2026-09-13 18:25:44.634+08:00 Downloading OnyX-5.0.3.dmg from OnyX-5.0.3.dmg
+2026-09-13 18:25:44.634+08:00         Cached item is current.
+2026-09-13 18:25:44.634+08:00 QfinderPro version 1.0 (or newer) is already installed.
+2026-09-13 18:25:44.634+08:00 Need to install RemoteDesktop
+2026-09-13 18:25:44.634+08:00 Downloading Remote_Desktop-11.4.0.pkg from Remote_Desktop-11.4.0.pkg
+2026-09-13 18:25:44.635+08:00         Cached item is current.
+2026-09-13 18:25:44.635+08:00 Need to install RemotePC
+2026-09-13 18:25:44.635+08:00 Downloading RemotePC-7.0.dmg from RemotePC-7.0.dmg
+2026-09-13 18:25:44.635+08:00         Cached item is current.
+2026-09-13 18:25:44.636+08:00 Need to install ShutterEncoder
+2026-09-13 18:25:44.636+08:00 Downloading Shutter_Encoder-20.3.pkg from Shutter_Encoder-20.3.pkg
+2026-09-13 18:25:44.636+08:00         Cached item is current.
+2026-09-13 18:25:44.637+08:00 Need to install Soundly
+2026-09-13 18:25:44.637+08:00 Downloading Soundly-2026.07.43.dmg from Soundly-2026.07.43.dmg
+2026-09-13 18:25:44.637+08:00         Cached item is current.
+2026-09-13 18:25:44.638+08:00 Need to install TeamViewer
+2026-09-13 18:25:44.638+08:00 Downloading TeamViewer-1.0.dmg from TeamViewer-1.0.dmg
+2026-09-13 18:25:44.638+08:00         Cached item is current.
+2026-09-13 18:25:44.639+08:00 Telegram version 12.10 (or newer) is already installed.
+2026-09-13 18:25:44.640+08:00 VLC version 3.0.23 (or newer) is already installed.
+2026-09-13 18:25:44.640+08:00 Need to install Zoom
+2026-09-13 18:25:44.640+08:00 Downloading Zoom-7.1.5.84650.pkg from Zoom-7.1.5.84650.pkg
+2026-09-13 18:25:44.641+08:00         Cached item is current.
+2026-09-13 18:25:44.641+08:00 **Checking for removals**
+2026-09-13 18:25:44.641+08:00 **Checking for managed updates**
+2026-09-13 18:25:44.851+08:00     Getting client resources...
+2026-09-13 18:25:44.854+08:00     Getting client resources...
+2026-09-13 18:26:19.648+08:00 WARNING: Spotlight search for applications terminated due to excessive time. Possible causes: Spotlight indexing is turned off for a volume; Spotlight is reindexing a volume.
+2026-09-13 18:26:23.216+08:00 ###    End managed software check    ###
+2026-09-13 18:26:23.217+08:00 Allowing idle sleep
+2026-09-13 18:26:23.217+08:00 
+2026-09-13 18:26:23.218+08:00 The following items will be installed or upgraded:
+2026-09-13 18:26:23.218+08:00     + Stow-0.6.47
+2026-09-13 18:26:23.218+08:00         
+2026-09-13 18:26:23.218+08:00     + HandBrake-1.11.2
+2026-09-13 18:26:23.218+08:00         
+2026-09-13 18:26:23.218+08:00     + iTerm2-3.7.1
+2026-09-13 18:26:23.219+08:00         
+2026-09-13 18:26:23.219+08:00     + Keka-1.6.7
+2026-09-13 18:26:23.219+08:00         
+2026-09-13 18:26:23.219+08:00     + LucidLink-3.9.8795
+2026-09-13 18:26:23.219+08:00         
+2026-09-13 18:26:23.219+08:00     + MediaInfo-26.05
+2026-09-13 18:26:23.220+08:00         
+2026-09-13 18:26:23.220+08:00     + OnyX-5.0.3
+2026-09-13 18:26:23.220+08:00         
+2026-09-13 18:26:23.220+08:00     + RemoteDesktop-11.4.0
+2026-09-13 18:26:23.220+08:00         
+2026-09-13 18:26:23.220+08:00     + RemotePC-7.0
+2026-09-13 18:26:23.221+08:00         
+2026-09-13 18:26:23.221+08:00     + ShutterEncoder-20.3
+2026-09-13 18:26:23.221+08:00         
+2026-09-13 18:26:23.221+08:00     + Soundly-2026.07.43
+2026-09-13 18:26:23.221+08:00         
+2026-09-13 18:26:23.221+08:00     + TeamViewer-1.0
+2026-09-13 18:26:23.221+08:00         
+2026-09-13 18:26:23.222+08:00     + Zoom-7.1.5.84650
+2026-09-13 18:26:23.222+08:00         
+2026-09-13 18:26:23.238+08:00 ### Beginning unattended installer session ###
+2026-09-13 18:26:23.238+08:00 Preventing idle sleep
+2026-09-13 18:26:23.239+08:00 Processing installs
+2026-09-13 18:26:23.239+08:00 Skipping install of Stow because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.240+08:00 Skipping install of HandBrake because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.240+08:00 Skipping install of iTerm2 because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.240+08:00 Skipping install of Keka because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.240+08:00 Skipping install of LucidLink because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of MediaInfo because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of OnyX because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of RemoteDesktop because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of RemotePC because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of ShutterEncoder because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.241+08:00 Skipping install of Soundly because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.242+08:00 Skipping install of TeamViewer because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.242+08:00 Skipping install of Zoom because it's not unattended, and we can only do unattended installs at this time.
+2026-09-13 18:26:23.243+08:00 ###    End unattended installer session    ###
+2026-09-13 18:26:23.243+08:00 Allowing idle sleep
+2026-09-13 18:26:23.245+08:00 Finishing...
+2026-09-13 18:26:23.247+08:00 Saving application inventory...
+2026-09-13 18:26:23.253+08:00 ### Ending managedsoftwareupdate run ###
+2026-09-13 18:26:23.253+08:00 Skipping user notification
+2026-09-13 18:26:23.254+08:00 Last notification was 2026-09-13 17:25:42+08:00 and notification interval is 1 day(s).
+2026-09-13 19:26:23.317+08:00 ### Starting managedsoftwareupdate run: auto ###
+2026-09-13 19:26:23.318+08:00 Starting...
+2026-09-13 19:26:23.709+08:00 ### Beginning managed software check ###
+2026-09-13 19:26:23.710+08:00 Checking for available updates...
+2026-09-13 19:26:23.710+08:00 No client identifier specified. Trying default manifest resolution...
+2026-09-13 19:26:23.710+08:00 Requesting manifest Cyrils-Mac-mini.local...
+2026-09-13 19:26:23.711+08:00 Getting manifest Cyrils-Mac-mini.local...
+2026-09-13 19:26:23.734+08:00     Retrieving list of software for this machine...
+2026-09-13 19:26:23.742+08:00 Manifest Cyrils-Mac-mini.local not found...
+2026-09-13 19:26:23.742+08:00 Requesting manifest Cyrils-Mac-mini...
+2026-09-13 19:26:23.742+08:00 Getting manifest Cyrils-Mac-mini...
+2026-09-13 19:26:23.744+08:00     Retrieving list of software for this machine...
+2026-09-13 19:26:23.744+08:00 Manifest Cyrils-Mac-mini not found...
+2026-09-13 19:26:23.745+08:00 Requesting manifest RWJ57V9PW4...
+2026-09-13 19:26:23.745+08:00 Getting manifest RWJ57V9PW4...
+2026-09-13 19:26:23.746+08:00     Retrieving list of software for this machine...
+2026-09-13 19:26:23.746+08:00 Manifest RWJ57V9PW4 not found...
+2026-09-13 19:26:23.747+08:00 Requesting manifest site_default...
+2026-09-13 19:26:23.747+08:00 Getting manifest site_default...
+2026-09-13 19:26:23.749+08:00     Retrieving list of software for this machine...
+2026-09-13 19:26:23.751+08:00 Retrieved manifest site_default
+2026-09-13 19:26:23.751+08:00 Using primary manifest: site_default
+2026-09-13 19:26:23.802+08:00 Preventing idle sleep
+2026-09-13 19:26:23.803+08:00 **Checking for installs**
+2026-09-13 19:26:23.803+08:00 Getting catalog testing...
+2026-09-13 19:26:23.979+08:00     Retrieving catalog testing...
+2026-09-13 19:26:23.987+08:00 **Checking for removals**
+2026-09-13 19:26:23.988+08:00 **Checking for managed updates**
+2026-09-13 19:26:24.001+08:00     Getting icon AnyDesk.png for AnyDesk...
+2026-09-13 19:26:24.010+08:00     Getting icon GoogleChrome.png for Google Chrome...
+2026-09-13 19:26:24.017+08:00     Getting icon VLC.png for VLC Media Player...
+2026-09-13 19:26:24.032+08:00     Getting client resources...
+2026-09-13 19:26:24.034+08:00     Getting client resources...
+2026-09-13 19:26:58.776+08:00 WARNING: Spotlight search for applications terminated due to excessive time. Possible causes: Spotlight indexing is turned off for a volume; Spotlight is reindexing a volume.
+2026-09-13 19:27:02.772+08:00 Removing Remote_Desktop-11.4.0.pkg from cache
+2026-09-13 19:27:02.788+08:00 Removing iTerm2-3.7.1.dmg from cache
+2026-09-13 19:27:02.802+08:00 Removing OnyX-5.0.3.dmg from cache
+2026-09-13 19:27:02.805+08:00 Removing Zoom-7.1.5.84650.pkg from cache
+2026-09-13 19:27:02.852+08:00 Removing Keka-1.6.7.dmg from cache
+2026-09-13 19:27:02.857+08:00 Removing LucidLink-3.9.8795.pkg from cache
+2026-09-13 19:27:02.918+08:00 Removing HandBrake-1.11.2.dmg from cache
+2026-09-13 19:27:02.930+08:00 Removing MediaInfo-26.05.dmg from cache
+2026-09-13 19:27:02.931+08:00 Removing TeamViewer-1.0.dmg from cache
+2026-09-13 19:27:03.021+08:00 Removing Stow-0.6.47.dmg from cache
+2026-09-13 19:27:03.029+08:00 Removing Shutter_Encoder-20.3.pkg from cache
+2026-09-13 19:27:03.048+08:00 Removing RemotePC-7.0.dmg from cache
+2026-09-13 19:27:03.057+08:00 Removing Soundly-2026.07.43.dmg from cache
+2026-09-13 19:27:03.069+08:00 ###    End managed software check    ###
+2026-09-13 19:27:03.069+08:00 Allowing idle sleep
+2026-09-13 19:27:03.072+08:00 Finishing...
+2026-09-13 19:27:03.088+08:00 Saving application inventory...
+2026-09-13 19:27:03.094+08:00 ### Ending managedsoftwareupdate run ###

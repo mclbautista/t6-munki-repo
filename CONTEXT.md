@@ -67,8 +67,14 @@ Two failures this project exists to prevent, in order:
   now, and `.plist` is not a pkginfo extension here.
 - **Deferred software:** vendor suites explicitly not distributed by Munki (DaVinci Resolve,
   Adobe Creative Cloud, Avid Media Composer, Avid Pro Tools, NTFS for Mac).
+- **Probe:** the read-only client-side script (`munki_fleet/probe_client.sh`) that reports one
+  machine's Munki state. One artefact, run over ssh or locally; it writes nothing and needs no root.
+- **Collector:** the deterministic writer that runs the probe over a set of machines and appends the
+  result to the observation store (ADR 0004). `munki_fleet.cli probe`.
 - **Observation:** one deterministic read of one Mac's Munki state, carrying both the source's
-  own timestamps and the observation timestamp.
+  own timestamps and the observation timestamp. Outcomes: `observed` (a report was read),
+  `partial` (reached, but no usable state — no Munki tools, no report, unreadable report),
+  `unobserved` (not reached). Only `observed` carries state, and nothing else may read as healthy.
 - **Observation store:** the append-only record of observations on the Mac Mini. Single writer.
 - **Fleet view:** a derived, read-only projection of the observation store. Never authoritative.
 - **Staleness:** the age of an observation. Stale observations are always qualified as stale,

@@ -1,0 +1,83 @@
+Observation run, 2026-09-13 19:34 PST
+git: 035e4a0   observer: hermes-agent   store: ~/.munki-fleet/observations.jsonl
+
+== probe three machines: this one locally, two over ssh ==
+run 2026-09-13T19:34:59+08:00/ba4fdd2a
+  targeted 3, reached 1 (observed 1, partial 0), unobserved 2
+  INCOMPLETE: some targets were not observed
+    Cyrils-Mac-mini              RWJ57V9PW4     manifest=site_default pending=0 rejections=2
+    202-TOC-M4-Max               UNOBSERVED   unreachable: cyrilbautista@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).
+    Sixto-5                      UNOBSERVED   unreachable: cyrilbautista@192.168.88.151: Permission denied (publickey,password,keyboard-interactive).
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+== the same store, read as if it were two hours later ==
+4 records, 1 run(s); latest observed 2026-09-13T19:34:59+08:00
+max age 3600s; now 2026-09-13T21:34:59+08:00
+  C07D317NPJJ7   STALE    age=   7200s  Sixto-5                    unobserved: unreachable
+  RW3HL9FL4M     STALE    age=   7200s  202-TOC-M4-Max             unobserved: unreachable
+  RWJ57V9PW4     STALE    age=   7200s  Cyrils-Mac-mini            manifest=site_default pending=0
+
+== the observed record in full ==
+{
+  "detail": null,
+  "kind": "observation",
+  "machine": {
+    "arch": "arm64",
+    "hostname": "Cyrils-Mac-mini.local",
+    "model": "Mac16,10",
+    "munki_version": "7.3.0.5808",
+    "os_build": "25G83",
+    "os_vers": "26.6.2",
+    "serial": "RWJ57V9PW4"
+  },
+  "observed_at": "2026-09-13T19:34:59+08:00",
+  "observer": "hermes-agent",
+  "outcome": "observed",
+  "problems": [],
+  "reason": null,
+  "run_id": "2026-09-13T19:34:59+08:00/ba4fdd2a",
+  "source": {
+    "age_seconds": 476,
+    "log_mtime": 1789298823,
+    "report_mtime": 1789298823,
+    "timestamp": "2026-09-13 19:26:23.317+08:00"
+  },
+  "state": {
+    "architecture_rejections": [
+      {
+        "item": "IBMAsperaConnect",
+        "machine_arch": "arm64",
+        "supported": "[\"x86_64\"]",
+        "timestamp": "2026-09-13 17:25:03.559+08:00",
+        "version": "4.2.19.956-HEAD"
+      },
+      {
+        "item": "IBMAsperaConnect",
+        "machine_arch": "arm64",
+        "supported": "[\"x86_64\"]",
+        "timestamp": "2026-09-13 18:25:44.627+08:00",
+        "version": "4.2.19.956-HEAD"
+      }
+    ],
+    "errors": [],
+    "last_check": {
+      "log_run_ended": "2026-09-13 19:27:03.094+08:00",
+      "log_run_started": "2026-09-13 19:26:23.317+08:00",
+      "report_ended": "2026-09-13 11:27:03",
+      "report_mtime": 1789298823,
+      "report_started": "2026-09-13 11:26:23",
+      "run_kind": "auto",
+      "timestamp": "2026-09-13 19:26:23.317+08:00"
+    },
+    "manifest_lookups": [
+      "Manifest Cyrils-Mac-mini.local not found...",
+      "Manifest Cyrils-Mac-mini not found...",
+      "Manifest RWJ57V9PW4 not found..."
+    ],
+    "manifest_name": "site_default",
+    "munki_version": "7.3.0.5808",
+    "pending_count": 0,
+    "pending_items": [],
+    "problem_installs": [],
+    "run_type": "auto",
+    "so
