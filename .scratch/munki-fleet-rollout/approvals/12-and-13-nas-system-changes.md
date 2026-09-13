@@ -114,14 +114,24 @@ Every Munki client's check-in (16 inventoried Macs plus any un-inventoried one, 
 
 ## The decision, in one pass
 
-| # | decision | recommendation |
-|---|---|---|
-| 12A | snapshot schedule on the `Web` volume (daily, bounded retention, explicit snapshot space) | approve, with the retention number you want |
-| 12B | off-NAS copy target for the metadata | HBS job **and** a pushed Git history |
-| 12C | where the restore drill restores to, and the payload classification's off-NAS rule | drill on the second device; classify before copying |
-| 13A | install QuFirewall on the NAS | approve, or choose network segregation instead |
-| 13B | the allowlist: one fleet subnet, or the Wi-Fi subnet too | one subnet, after moving `201 Bay 03` back to the wired path |
-| 13C | how the negative case is verified (or recorded as unverified) | decide the source now; record "unverified" rather than claim |
-| 13D | `myQNAPcloud` status verified as part of the evidence | yes |
+Decided by Cyril on 2026-09-13. Recorded here as the decision of record; the work proceeds ticket by ticket, each with its own verification read back.
 
-Say which of these you approve or reject and the work can proceed ticket by ticket, each with its own verification read back. Nothing above is executed, and the two tickets keep their `ready-for-agent` status until you decide.
+| # | decision | outcome |
+|---|---|---|
+| 12A | snapshot schedule on the `Web` volume (daily, bounded retention, explicit snapshot space) | **approved as recommended** |
+| 12B | off-NAS copy target for the metadata | **approved as recommended** — an HBS job *and* a pushed Git history |
+| 12C | where the restore drill restores to, and the payload classification's off-NAS rule | **approved as recommended** — drill on the second device, classify before copying |
+| 13A | install QuFirewall on the NAS | **network segregation chosen instead** — no firewall app is to be installed; the restriction comes from where clients can reach the NAS, not from a rule on it |
+| 13B | the allowlist: one fleet subnet, or the Wi-Fi subnets too | **one subnet** — `192.168.88.0/24`; the two Wi-Fi ranges are treated as a network-path defect to fix, per the recommendation above |
+| 13C | how the negative case is verified (or recorded as unverified) | **Cyril decides the source; asked 2026-09-13** — pending his answer, recorded below when it lands |
+| 13D | `myQNAPcloud` status verified as part of the evidence | **to be verified with Cyril** — pending, recorded below when it lands |
+
+### What 13A's answer changes
+
+Choosing network segregation over a firewall means the restriction is a property of the **path**, not of a rule set on the NAS:
+
+- Nothing is installed on the NAS, so there is no new service, no default-deny posture to survive, and nothing to roll back on the NAS itself.
+- The repository's reachability becomes a function of the client network: a client that can route to `192.168.88.188:80` is allowed by construction. Whatever segments the network (the Unifi switch, the Deco mesh, or a new VLAN) is where the work lands, and that is a network change with its own blast radius — every client on the affected segment, not just Munki.
+- It changes what the ticket can *prove*: with no rule to point at, the evidence is a routing/segment fact ("a device outside the allowed path cannot reach the endpoint, because there is no route") rather than a firewall refusal. The ticket's own wording allows that — *"If no such source can be used, the ticket records that the negative case was not verified by us and states exactly what remains unverified, rather than claiming it."*
+- It also means the five other things that share port 80 (the whole `Web` share) are **not** restricted by this work. That is a deliberate narrowing to record, not an oversight: the metadata path is the one that must not be reachable from outside the fleet.
+
