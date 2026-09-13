@@ -188,31 +188,31 @@
       "subject": "T6-MacBook-M4-Max"
     },
     {
-      "detail": "a machine manifest exists, but no machine in the export answers to it",
+      "detail": "a machine manifest exists but no machine in the export answers to it; the recorded role matrix places it in 'warroom', so the Mac exists",
       "kind": "manifest-without-machine",
-      "proposed": "confirm whether the machine still exists; if it does, it needs an inventory record, and if it does not, retire the manifest",
+      "proposed": "get its identity into an inventory record (its serial is not in the export) rather than retiring the manifest",
       "subject": "202B-Mac-Studio"
     },
     {
-      "detail": "a machine manifest exists, but no machine in the export answers to it",
+      "detail": "a machine manifest exists but no machine in the export answers to it; the recorded role matrix places it in 'coordination-admin', so the Mac exists",
       "kind": "manifest-without-machine",
-      "proposed": "confirm whether the machine still exists; if it does, it needs an inventory record, and if it does not, retire the manifest",
+      "proposed": "get its identity into an inventory record (its serial is not in the export) rather than retiring the manifest",
       "subject": "Angels-iMac"
     },
     {
-      "detail": "an inventoried machine has no machine manifest, so it resolves site_default rather than its own configuration",
+      "detail": "an inventoried machine has no machine manifest, so it resolves site_default rather than its own configuration; the recorded role matrix places it in 'client-facing'",
       "kind": "machine-without-manifest",
-      "proposed": "add a machine manifest named for its Munki HostName and place it in exactly one role group",
+      "proposed": "add a machine manifest named for its Munki HostName ('303A-Mac-Mini-M4-Pro') including the role group 'client-facing'",
       "subject": "303A-Mac-Mini-M4-Pro"
     },
     {
-      "detail": "an inventoried machine has no machine manifest, so it resolves site_default rather than its own configuration",
+      "detail": "an inventoried machine has no machine manifest, so it resolves site_default rather than its own configuration; the recorded role matrix places it in 'coordination-admin'",
       "kind": "machine-without-manifest",
-      "proposed": "add a machine manifest named for its Munki HostName and place it in exactly one role group",
+      "proposed": "add a machine manifest named for its Munki HostName ('Sixto-5') including the role group 'coordination-admin'",
       "subject": "Sixto-5"
     },
     {
-      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.",
+      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.; the recorded role matrix places it in 'production'",
       "kind": "needs-record",
       "proposed": "create an inventory record; this module will not invent one",
       "subject": "Cyrils-Mac-mini"
@@ -222,12 +222,13 @@
   "known_absent": [
     {
       "architecture": "arm64",
-      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.",
+      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202.; the recorded role matrix places it in 'production'",
       "hardware_uuid": "B30D55C8-679C-56E2-9654-16CBFD4A905D",
       "model_identifier": "Mac16,10",
       "name": "Cyrils-Mac-mini",
       "os_version": "26.6.2 (25G83)",
       "probe_hostname": "Cyrils-Mac-mini",
+      "role_group_recorded": "production",
       "serial": "RWJ57V9PW4"
     }
   ],
@@ -247,7 +248,8 @@
       "os_version": "macOS 26.1 (25B78)",
       "primary_ip": "192.168.88.171",
       "primary_mac": "94:F6:D6:F3:E0:8D",
-      "role": "sound",
+      "role_from_manifest": "sound",
+      "role_recorded": "sound",
       "serial": "C02C71SCK7GF",
       "unix_hostname": "201-Bay-01-Mac-Pro-111",
       "wifi_mac": "F8:FF:C2:3F:A1:62"
@@ -267,7 +269,8 @@
       "os_version": "macOS 26.1 (25B78)",
       "primary_ip": "192.168.88.172",
       "primary_mac": "9C:76:0E:32:E5:C9",
-      "role": "client-facing",
+      "role_from_manifest": "client-facing",
+      "role_recorded": "client-facing",
       "serial": "GK7RW3463R",
       "unix_hostname": "201-Bay-02-M1-Max",
       "wifi_mac": "9C:76:0E:34:65:64"
@@ -287,7 +290,8 @@
       "os_version": "macOS 26.1 (25B78)",
       "primary_ip": "192.168.254.106",
       "primary_mac": "9C:76:0E:2E:2C:BF",
-      "role": "client-facing",
+      "role_from_manifest": "client-facing",
+      "role_recorded": "client-facing",
       "serial": "KL6G9VMQVP",
       "unix_hostname": "201-Bay-03-M1-Ultra-2805",
       "wifi_mac": "9C:76:0E:2E:2C:BF"
@@ -307,7 +311,8 @@
       "os_version": "macOS 14.7.8 (23H730)",
       "primary_ip": "192.168.88.170",
       "primary_mac": "9C:76:0E:6B:F6:CC",
-      "role": "client-facing",
+      "role_from_manifest": "client-facing",
+      "role_recorded": "client-facing",
       "serial": "J4X5JTVXDD",
       "unix_hostname": "201-Viewing-Room-1309",
       "wifi_mac": "9C:76:0E:71:37:48"
@@ -327,7 +332,8 @@
       "os_version": "macOS 26.0.1 (25A362)",
       "primary_ip": "192.168.88.179",
       "primary_mac": "A4:FC:14:04:F0:E7",
-      "role": "online",
+      "role_from_manifest": "online",
+      "role_recorded": "online",
       "serial": "J90PHXGC5V",
       "unix_hostname": "202-Jason-M2-Max",
       "wifi_mac": "A4:FC:14:01:2E:32"
@@ -347,7 +353,8 @@
       "os_version": "macOS 15.6.1 (24G90)",
       "primary_ip": "192.168.88.174",
       "primary_mac": "94:F6:D6:F3:E5:87",
-      "role": "toc",
+      "role_from_manifest": "toc",
+      "role_recorded": "toc",
       "serial": "C02C71SDK7GF",
       "unix_hostname": "202-Mac-Pro-3",
       "wifi_mac": "F8:FF:C2:3F:36:A4"
@@ -367,7 +374,8 @@
       "os_version": "macOS 26.2 (25C56)",
       "primary_ip": "192.168.88.182",
       "primary_mac": "1C:1D:D3:F0:F3:F2",
-      "role": "toc",
+      "role_from_manifest": "toc",
+      "role_recorded": "toc",
       "serial": "RW3HL9FL4M",
       "unix_hostname": "202-TOC-M4-Max",
       "wifi_mac": "1C:1D:D3:E9:85:A5"
@@ -387,7 +395,8 @@
       "os_version": "macOS 26.1 (25B78)",
       "primary_ip": "192.168.88.180",
       "primary_mac": "A4:FC:14:04:E0:91",
-      "role": "online",
+      "role_from_manifest": "online",
+      "role_recorded": "online",
       "serial": "R6WV6DCVVH",
       "unix_hostname": "202-Tim-M2-Max-9",
       "wifi_mac": "A4:FC:14:00:EF:9A"
@@ -407,7 +416,8 @@
       "os_version": "macOS 26.6.2 (25G83)",
       "primary_ip": "192.168.88.175",
       "primary_mac": "D0:11:E5:0B:9B:90",
-      "role": "warroom",
+      "role_from_manifest": "warroom",
+      "role_recorded": "warroom",
       "serial": "X904F44LHX",
       "unix_hostname": "202A-Mac-Mini-M4",
       "wifi_mac": "D0:11:E5:12:A1:7C"
@@ -427,7 +437,8 @@
       "os_version": "macOS 26.3.1 (25D2128)",
       "primary_ip": "192.168.88.181",
       "primary_mac": "9C:76:0E:6A:B3:25",
-      "role": "online",
+      "role_from_manifest": "online",
+      "role_recorded": "online",
       "serial": "PM4PWN40R0",
       "unix_hostname": "202C-Studio-M1-Ultra",
       "wifi_mac": "9C:76:0E:6B:17:C2"
@@ -447,7 +458,8 @@
       "os_version": "macOS 15.3.1 (24D70)",
       "primary_ip": "192.168.88.190",
       "primary_mac": "D0:11:E5:00:42:5F",
-      "role": null,
+      "role_from_manifest": null,
+      "role_recorded": "client-facing",
       "serial": "HPXH7XG2DD",
       "unix_hostname": "303A-Mac-Mini-M4-Pro",
       "wifi_mac": "D0:11:E5:11:06:BC"
@@ -467,7 +479,8 @@
       "os_version": "macOS 26.1 (25B78)",
       "primary_ip": "192.168.88.191",
       "primary_mac": "3C:7D:0A:0C:27:B0",
-      "role": "interns-temporary",
+      "role_from_manifest": "interns-temporary",
+      "role_recorded": "interns-temporary",
       "serial": "C02DX110PN5V",
       "unix_hostname": "303B-iMac",
       "wifi_mac": "14:7D:DA:DC:4B:66"
@@ -487,7 +500,8 @@
       "os_version": "macOS 26.5.1 (25F80)",
       "primary_ip": "192.168.88.193",
       "primary_mac": "A4:FC:14:27:12:CB",
-      "role": "client-facing",
+      "role_from_manifest": "client-facing",
+      "role_recorded": "client-facing",
       "serial": "PKXTGR769Q",
       "unix_hostname": "303D-Mac-Studio-M2",
       "wifi_mac": "A4:FC:14:23:D1:33"
@@ -507,7 +521,8 @@
       "os_version": "macOS 15.7.1 (24G231)",
       "primary_ip": "192.168.88.151",
       "primary_mac": "14:9D:99:7B:CA:14",
-      "role": null,
+      "role_from_manifest": null,
+      "role_recorded": "coordination-admin",
       "serial": "C07D317NPJJ7",
       "unix_hostname": "Sixto-5",
       "wifi_mac": "3C:22:FB:AA:30:3A"
@@ -527,7 +542,8 @@
       "os_version": "macOS 14.6.1 (23G93)",
       "primary_ip": "192.168.88.80",
       "primary_mac": "60:3E:5F:4E:79:14",
-      "role": "dit",
+      "role_from_manifest": "dit",
+      "role_recorded": "dit",
       "serial": "K267DWDMWX",
       "unix_hostname": "T6-MacBook-M3-Pro",
       "wifi_mac": "60:3E:5F:4E:79:14"
@@ -547,7 +563,8 @@
       "os_version": "macOS 15.4.1 (24E263)",
       "primary_ip": "192.168.88.100",
       "primary_mac": "84:2F:57:61:52:F2",
-      "role": "dit",
+      "role_from_manifest": "dit",
+      "role_recorded": "dit",
       "serial": "GYC39Q30PJ",
       "unix_hostname": "T6-MacBook-M4-Max",
       "wifi_mac": "84:2F:57:61:52:F2"

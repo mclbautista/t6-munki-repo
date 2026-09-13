@@ -14,7 +14,7 @@
 - `tests/test_identity.py` — 36 tests against a trimmed ARD export fixture and a manifest tree generated per test.
 - `tests/fixtures/ard/ard_system_overview_sample.txt` — the fixture, in the report's own format including its `Date Collected` comma quirk.
 - `data/machines.json` — the inventory ticket 05 reads: 16 rows, 36 findings, `schema_version: 1`, and a provenance label on every field that could come from more than one source.
-- Evidence inputs, so the artifact is reproducible from the repository: `docs/evidence/04-ard-system-overview-2026-09-13.txt` (the export itself), `docs/evidence/04-probes-2026-09-13.json` (the two machines that could be probed directly), `docs/evidence/04-bays-projection-2026-09-13.json` (the `bays` projection as read; identity columns only), and `docs/evidence/04-uuid-source-check-2026-09-13.txt` (the check that ARD's own UUID is not the hardware UUID, with its commands).
+- Evidence and decision inputs, so the artifact is reproducible from the repository: `docs/evidence/04-ard-system-overview-2026-09-13.txt` (the export itself), `docs/evidence/04-probes-2026-09-13.json` (the two machines that could be probed directly), `docs/evidence/04-bays-projection-2026-09-13.json` (the `bays` projection as read; identity columns only), `docs/evidence/04-uuid-source-check-2026-09-13.txt` (the check that ARD's own UUID is not the hardware UUID, with its commands), and **`docs/role-matrix.csv`** (the recorded role matrix, filled in by Cyril on 2026-09-13).
 - Entry point, and the run that produced the committed artifact:
 
   ```
@@ -23,6 +23,7 @@
     --metadata-root . \
     --probes docs/evidence/04-probes-2026-09-13.json \
     --bays docs/evidence/04-bays-projection-2026-09-13.json \
+    --role-matrix docs/role-matrix.csv \
     --known-absent "Cyrils-Mac-mini:Cyril's Mac mini is a fleet member (ADR 0004 names it among the
       three machines this project has touched) but has no row in the ARD export. Probed locally
       2026-09-13: serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, LAN 192.168.88.202." \
@@ -30,7 +31,11 @@
 
   → machines=16 manifests=16 export_date=2026-09-13 18:37
     probed uuid 1 | candidate uuid 10 | no uuid 5
+    role matrix: 19 rows recorded
     orphan manifests 2 | unmanaged machines 2 | unassigned 0 | known absent 1
+    findings: 36 — uuid-unverified 10, bays-difference 7, uuid-unavailable 5, bays-missing 5,
+              name-difference 4, machine-without-manifest 2, manifest-without-machine 2,
+              needs-record 1; role-mismatch 0, role-matrix-unknown-machine 0
   ```
 
 ## Acceptance criteria
@@ -56,7 +61,7 @@
 - [x] Machines known to exist but absent from the engineering export are reported as needing a record, never guessed.
   - `Cyrils-Mac-mini` — a structured entry, not prose: serial `RWJ57V9PW4`, hardware UUID `B30D55C8-679C-56E2-9654-16CBFD4A905D`, `Mac16,10` (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202, LocalHostName `Cyrils-Mac-mini`, `HostName` unset. The operational database also knows this machine (a `bays` row named "Cyril Machine" at 192.168.88.202) — noted as corroboration, not as a source.
   - The rule is general: **any probe whose serial has no export row is reported** as needing a record, so a machine that answers a probe but is missing from the export cannot hide.
-  - **Reported as leads, not as rows** (weak evidence, for a human to confirm): ARD's own screen-sharing alias list holds 35 names, and five distinct machines appear there that are not in the export — `202B iMac`, `303B Chad M1 Ultra`, `MacBook Air`, `Wesley's Mac mini`, `t6's iMac`. Most of the 26 non-matching names are duplicate aliases of machines that *are* in the export ("Sixto (2)" beside "Sixto (3)", "201 Bay 01 Mac Pro (9)" beside "(63)"). A stale alias is not proof a machine exists, so none became a row. `202B iMac` is worth a second look because the repository has a `202B-Mac-Studio` manifest with **no machine at all** — one of the two is wrong, and a probe settles which.
+  - **Reported as leads, then closed by a human.** ARD's screen-sharing alias list holds 35 names, five of which appear in no export row: `202B iMac`, `303B Chad M1 Ultra`, `MacBook Air`, `Wesley's Mac mini`, `t6's iMac`. Most of the 26 non-matching names are duplicate aliases of machines that *are* in the export ("Sixto (2)" beside "Sixto (3)", "201 Bay 01 Mac Pro (9)" beside "(63)"). **Cyril, 2026-09-13: those five machines no longer exist.** They are not inventory records, and the alias list in ARD is stale. The one open question this raised — whether `202B-Mac-Studio` is real or the "202B iMac" alias is — was settled the other way: the Mac Studio exists, in `warroom`.
 - [x] The inventory is stored in a form the observer (ticket 05) reads as its identity input, and the T6 operational Bays records are reconciled against it as a projection whose differences are reported, not silently applied.
   - `data/machines.json` — one row per machine, keyed on **serial**; `munki_name` is the **manifest** name or null; `unix_hostname` is the ARD spelling; `architecture` + `architecture_source`; `hardware_uuid` + `hardware_uuid_source`; `hardware_uuid_candidate` + `hardware_uuid_candidate_source`; addresses; OS; the row's own collection date. Ticket 05 targets machines by serial, and the known-absent machine carries its serial too.
   - The projection is read as an input file (`--bays`), never written to: **7 `bays-difference`** findings (address or name disagreements, each citing the Notion record URL where the projection has one) and **5 `bays-missing`**.
@@ -81,13 +86,20 @@ Munki resolves a machine's manifest from `HostName`/`LocalHostName`, while the A
 
 ## Finding: there is no recorded role matrix
 
-The criterion says the inventory is "cross-checked against the role matrix", and `CONTEXT.md` defines the role matrix as "the assignment of each Mac to one role group, **recorded in the specification**". The specification records no per-machine assignment. So the only checkable source is the manifests themselves, and this ticket derives each machine's role from its own manifest — which means **a manifest that names the wrong role group cannot be detected here**. What detects it is the probe (ticket 05) and a resolution check (ticket 06), both of which ask the machine what it actually resolved. Recorded as a finding about the ticket's own premise rather than papered over.
+**Resolved 2026-09-13 — the matrix is now recorded and the check is real (see below). This is how it stood when the ticket was written.** The criterion says the inventory is "cross-checked against the role matrix", and `CONTEXT.md` defines the role matrix as "the assignment of each Mac to one role group, **recorded in the specification**". The specification records no per-machine assignment. So the only checkable source is the manifests themselves, and this ticket derives each machine's role from its own manifest — which means **a manifest that names the wrong role group cannot be detected here**. What detects it is the probe (ticket 05) and a resolution check (ticket 06), both of which ask the machine what it actually resolved. Recorded as a finding about the ticket's own premise rather than papered over.
 
 Related, and for a human to settle: `CONTEXT.md` enumerates **eight** role groups; the spec and the manifest tree have **nine** (`production` is the extra). The code follows the spec, and `production` is used by no machine — **Cyril's decision, 2026-09-13: it exists and is intentionally unassigned for now.**
 
-### The matrix, as a file to fill in
+### Resolved: the matrix is now recorded, and it is a real check
 
-`docs/role-matrix.csv` was generated from this ticket's artifact: 19 rows (the 16 inventoried machines, the two manifests no machine answers to, and Cyril's Mac mini), each pre-filled with the role group its manifest names today, plus a `notes` column for the five rows that need a human answer. Five rows have no role to pre-fill: `303A-Mac-Mini-M4-Pro` and `Sixto-5` (no manifest), `202B-Mac-Studio` and `Angels-iMac` (manifest, no machine — the row asks whether the Mac exists), and Cyril's Mac mini (neither). Once filled, this becomes the recorded matrix and can be wired into the identity tool as a real cross-check: a manifest whose role group disagrees with the recorded matrix becomes a finding instead of being invisible.
+`docs/role-matrix.csv` was generated from this ticket's artifact (19 rows: the 16 inventoried machines, the two manifests no machine answers to, and Cyril's Mac mini), **filled in by Cyril on 2026-09-13** with `confirmed_by` / `confirmed_on`, and is now a tool input (`--role-matrix`). What it changed:
+
+- **`role-mismatch` found nothing — the manifest tree agrees with the recorded matrix for all 14 machines that have a manifest.** That is the point: the agreement is now *checked* rather than assumed, because the matrix is the first source of a machine's role that does not come from the manifest tree itself.
+- **Two manifests no machine answers to are confirmed real.** `202B-Mac-Studio` (warroom) and `Angels-iMac` (coordination-admin): Cyril confirmed both Macs exist, so their finding now says they need an inventory record — the serial is not in the export — rather than asking whether to retire them.
+- **Two machines with no manifest now have an instruction rather than a complaint**: the matrix places `303A-Mac-Mini-M4-Pro` in `client-facing` and `Sixto-5` (the admin workstation) in `coordination-admin`, so each needs a machine manifest named for its Munki HostName including that group.
+- **Cyril's Mac mini is recorded as `production`**, and that role travels with its `needs-record` entry.
+- New kinds and their counts today: `role-mismatch` 0, `role-matrix-unknown-machine` 0 (a matrix row that matches no manifest, no machine and no known-absent entry would be reported; nothing does).
+- The matrix is validated rather than trusted: a role group that is not one of the nine is refused, a role with no machine name is refused, and a row left unanswered makes no claim.
 
 ## Finding: ADR 0004 states the export carries a hardware UUID, and it does not
 
@@ -105,7 +117,12 @@ ADR 0004 says identity comes from the ARD export "(machine name, serial number, 
 | `name-difference` | 4 | inventory hostname differs from the manifest name (folding matched them) |
 | `machine-without-manifest` | 2 | resolves `site_default` instead of its own configuration |
 | `manifest-without-machine` | 2 | a manifest nothing answers to |
-| `needs-record` | 1 | exists, absent from the export (Cyril's Mac mini) |
+| `needs-record` | 1 | exists, absent from the export (Cyril's Mac mini) — now carrying its recorded role |
+
+Two further kinds exist to check the recorded role matrix and report **0** today, which is the result
+rather than the absence of a check: `role-mismatch` (a manifest whose role group disagrees with the
+matrix — none do; the tree agrees with Cyril's answers for all 14 machines that have a manifest) and
+`role-matrix-unknown-machine` (a matrix row that matches no manifest, machine or known-absent entry).
 
 ## Deliberately not done
 

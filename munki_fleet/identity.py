@@ -9,6 +9,10 @@ Three sources, each with its own authority, and they do not agree:
   the machine itself* (ticket 05's probe). Where a probe exists, it wins.
 * **The T6 operational database's `bays` records are a projection** (ADR 0004), read
   here only to be *reconciled*: differences are reported, never applied.
+* The **recorded role matrix** (`docs/role-matrix.csv`) is the outside check on the
+  manifest tree. Without it a machine's role is the role group its own manifest names —
+  derived from the same tree it would be checked against — so a manifest naming the
+  wrong role group is invisible. With it, a disagreement is a finding.
 * Because of those two rules, a projection UUID **never occupies the authoritative
   field**. `hardware_uuid` is filled only by a probe and is otherwise null, so a
   consumer that reads `hardware_uuid` alone cannot pick up the forbidden source. A
@@ -36,6 +40,7 @@ input, not a call.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import pathlib
 import plistlib
@@ -53,6 +58,7 @@ __all__ = [
     "IdentityReport",
     "parse_ard_export",
     "load_manifests",
+    "load_role_matrix",
     "normalise_name",
     "infer_architecture",
     "build_report",
@@ -145,7 +151,8 @@ class MachineRow:
     unix_hostname: str
     munki_name: Optional[str]  # the manifest name, or null: never the ARD hostname
     manifest: Optional[str]
-    role: Optional[str]
+    role_from_manifest: Optional[str]  # what the manifest names today
+    role_recorded: Optional[str]       # what the role matrix records, if it covers it
     model: str
     architecture: Optional[str]
     architecture_source: str
@@ -166,7 +173,8 @@ class MachineRow:
             "unix_hostname": self.unix_hostname,
             "munki_name": self.munki_name,
             "manifest": self.manifest,
-            "role": self.role,
+            "role_from_manifest": self.role_from_manifest,
+            "role_recorded": self.role_recorded,
             "model": self.model,
             "architecture": self.architecture,
             "architecture_source": self.architecture_source,
@@ -193,6 +201,7 @@ class KnownAbsentMachine:
     name: str
     detail: str
     probe: Optional[ProbeRecord] = None
+    role_group_recorded: Optional[str] = None
 
     @property
     def serial(self) -> Optional[str]:
@@ -209,6 +218,7 @@ class KnownAbsentMachine:
             "probe_hostname": self.probe.hostname if self.probe else None,
             "model_identifier": self.probe.model_identifier if self.probe else None,
             "os_version": self.probe.os_version if self.probe else None,
+            "role_group_recorded": self.role_group_recorded,
         }
 
 
@@ -380,6 +390,36 @@ def load_manifests(metadata_root,
     return machine_roles, by_role
 
 
+def load_role_matrix(path) -> Dict[str, str]:
+    """The recorded role matrix: Munki short hostname -> role group.
+
+    This is the check that comes from *outside* the manifest tree, so a manifest naming
+    the wrong role group can be caught. Two rules keep it honest: a row with no role
+    group is a question rather than a decision and makes no claim, and a role group that
+    is not one of the nine is refused rather than silently ignored.
+    """
+    with pathlib.Path(path).open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    matrix: Dict[str, str] = {}
+    for row in rows:
+        name = (row.get("munki_short_hostname") or "").strip()
+        role = (row.get("role_group") or "").strip()
+        if not name and not role:
+            continue  # a blank filler row
+        if not name:
+            raise ValueError("the role matrix gives role %r to no Munki short hostname" % role)
+        if not role:
+            continue  # not decided yet: nothing to check against
+        if role not in ROLE_GROUPS:
+            raise ValueError("the role matrix gives %r the role %r, which is not one of the nine: %s"
+                             % (name, role, ", ".join(ROLE_GROUPS)))
+        if name in matrix and matrix[name] != role:
+            raise ValueError("the role matrix gives %r two roles: %r and %r"
+                             % (name, matrix[name], role))
+        matrix[name] = role
+    return matrix
+
+
 def normalise_name(name: str) -> str:
     """A comparison key: case, spaces and ARD's numeric suffix are not identity.
 
@@ -420,6 +460,7 @@ def build_report(
     *,
     probes: Sequence[ProbeRecord] = (),
     bays: Sequence[BaysRecord] = (),
+    role_matrix: Optional[Dict[str, str]] = None,
     known_absent: Sequence[str] = (),
     source: str = "",
     export_date: str = "",
@@ -437,6 +478,10 @@ def build_report(
                 bays_exact.setdefault(value, bays_row)
                 bays_folded.setdefault(normalise_name(value), bays_row)
     probes_by_serial = {p.serial: p for p in probes if p.serial}
+    role_matrix = dict(role_matrix or {})
+    role_matrix_exact = {name: role for name, role in role_matrix.items()}
+    role_matrix_folded = {normalise_name(name): role for name, role in role_matrix.items()}
+    matched_matrix_names = set()
 
     rows: List[MachineRow] = []
     findings: List[Finding] = []
@@ -459,6 +504,16 @@ def build_report(
                              "rename the manifest; do not add a second manifest",
                 ))
         role = manifests.get(manifest) if manifest else None
+        # The matrix is matched by the same rule as every other source, against every
+        # name this machine is known by: its manifest, its ARD hostname, its compute name.
+        recorded_role = _first_match(
+            tuple(value for value in (manifest, record.unix_hostname, record.computer) if value),
+            role_matrix_exact, role_matrix_folded)
+        if recorded_role:
+            for candidate in (manifest, record.unix_hostname, record.computer):
+                if candidate and (candidate in role_matrix_exact
+                                  or normalise_name(candidate) in role_matrix_folded):
+                    matched_matrix_names.add(normalise_name(candidate))
 
         probe = probes_by_serial.get(record.serial)
         bays_row = _first_match((record.unix_hostname, record.computer), bays_exact, bays_folded)
@@ -498,6 +553,17 @@ def build_report(
                     proposed="record it from the machine's own probe (ticket 05); identity for "
                              "delivery purposes keys on the serial, which is present",
                 ))
+
+        if manifest is not None and role and recorded_role and role != recorded_role:
+            findings.append(Finding(
+                kind="role-mismatch",
+                subject=manifest,
+                detail="the manifest names the role group %r while the recorded role matrix says %r"
+                       % (role, recorded_role),
+                proposed="correct the manifest to the recorded role group, or correct the role "
+                         "matrix if the matrix is what is out of date — the matrix is the decision "
+                         "of record, so changing it is Cyril's call",
+            ))
 
         if manifest is not None and not role:
             # Only a manifest can be unassigned: a machine with no manifest at all is
@@ -548,7 +614,8 @@ def build_report(
             unix_hostname=record.unix_hostname,
             munki_name=manifest,
             manifest=manifest,
-            role=role,
+            role_from_manifest=role,
+            role_recorded=recorded_role,
             model=record.model,
             architecture=architecture,
             architecture_source=architecture_source,
@@ -566,23 +633,40 @@ def build_report(
 
     orphan_manifests = tuple(sorted(set(manifests) - matched_manifests))
     for name in orphan_manifests:
-        findings.append(Finding(
-            kind="manifest-without-machine",
-            subject=name,
-            detail="a machine manifest exists, but no machine in the export answers to it",
-            proposed="confirm whether the machine still exists; if it does, it needs an "
-                     "inventory record, and if it does not, retire the manifest",
-        ))
+        # The matrix can settle what the export could not: if a human recorded a role for
+        # this name, the Mac exists and what it lacks is an inventory record, not a role.
+        recorded_for_manifest = _first_match(
+            (name,), role_matrix_exact, role_matrix_folded)
+        if recorded_for_manifest:
+            matched_matrix_names.add(normalise_name(name))
+            detail = ("a machine manifest exists but no machine in the export answers to it; the "
+                      "recorded role matrix places it in %r, so the Mac exists"
+                      % recorded_for_manifest)
+            proposed = ("get its identity into an inventory record (its serial is not in the export) "
+                        "rather than retiring the manifest")
+        else:
+            detail = "a machine manifest exists, but no machine in the export answers to it"
+            proposed = ("confirm whether the machine still exists; if it does, it needs an "
+                        "inventory record, and if it does not, retire the manifest")
+        findings.append(Finding(kind="manifest-without-machine", subject=name,
+                                detail=detail, proposed=proposed))
     unmanaged_machines = tuple(sorted(row.unix_hostname for row in rows if row.manifest is None))
     for name in unmanaged_machines:
-        findings.append(Finding(
-            kind="machine-without-manifest",
-            subject=name,
-            detail="an inventoried machine has no machine manifest, so it resolves "
-                   "site_default rather than its own configuration",
-            proposed="add a machine manifest named for its Munki HostName and place it in "
-                     "exactly one role group",
-        ))
+        machine = next(row for row in rows if row.unix_hostname == name)
+        if machine.role_recorded:
+            # The matrix turns a vague finding into an instruction: this role group, this name.
+            detail = ("an inventoried machine has no machine manifest, so it resolves site_default "
+                      "rather than its own configuration; the recorded role matrix places it in %r"
+                      % machine.role_recorded)
+            proposed = ("add a machine manifest named for its Munki HostName (%r) including the "
+                        "role group %r" % (name, machine.role_recorded))
+        else:
+            detail = ("an inventoried machine has no machine manifest, so it resolves site_default "
+                      "rather than its own configuration")
+            proposed = ("add a machine manifest named for its Munki HostName and place it in "
+                        "exactly one role group")
+        findings.append(Finding(kind="machine-without-manifest", subject=name,
+                                detail=detail, proposed=proposed))
     unassigned = tuple(sorted(name for name, role in manifests.items() if role is None))
 
     # Machines with no row in the export. Declared by the caller, and enriched from any
@@ -598,11 +682,22 @@ def build_report(
                     normalise_name(candidate_probe.hostname) == normalise_name(head):
                 probe = candidate_probe
                 break
-        absent.append(KnownAbsentMachine(name=head.strip(), detail=tail.strip(), probe=probe))
+        recorded_for_absent = _first_match(
+            tuple(value for value in (head.strip(), probe.hostname if probe else None) if value),
+            role_matrix_exact, role_matrix_folded)
+        for candidate in (head.strip(), probe.hostname if probe else None):
+            if candidate and (candidate in role_matrix_exact
+                              or normalise_name(candidate) in role_matrix_folded):
+                matched_matrix_names.add(normalise_name(candidate))
+        detail = tail.strip() or "known to exist but absent from the engineering export"
+        if recorded_for_absent:
+            detail += "; the recorded role matrix places it in %r" % recorded_for_absent
+        absent.append(KnownAbsentMachine(name=head.strip(), detail=detail, probe=probe,
+                                         role_group_recorded=recorded_for_absent))
         findings.append(Finding(
             kind="needs-record",
             subject=head.strip(),
-            detail=tail.strip() or "known to exist but absent from the engineering export",
+            detail=detail,
             proposed="create an inventory record; this module will not invent one",
         ))
     declared = {normalise_name(entry.name) for entry in absent}
@@ -622,6 +717,18 @@ def build_report(
             detail="probed as serial %s, absent from the engineering export" % probe.serial,
             proposed="create an inventory record; this module will not invent one",
         ))
+
+    for matrix_name, matrix_role in sorted(role_matrix.items()):
+        if normalise_name(matrix_name) not in matched_matrix_names:
+            findings.append(Finding(
+                kind="role-matrix-unknown-machine",
+                subject=matrix_name,
+                detail="the recorded role matrix gives %r the role %r, but no machine in the "
+                       "inventory or in the export answers to that name"
+                       % (matrix_name, matrix_role),
+                proposed="check the spelling against the machine's Munki HostName, or remove the "
+                         "row if the machine no longer exists",
+            ))
 
     return IdentityReport(
         source=source,
@@ -684,6 +791,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--metadata-root", default=".", help="the metadata checkout root")
     parser.add_argument("--probes", default=None, help="probe results as JSON (optional)")
     parser.add_argument("--bays", default=None, help="bays rows as JSON (optional, read-only)")
+    parser.add_argument("--role-matrix", default=None,
+                        help="the recorded role matrix (docs/role-matrix.csv); optional, and the "
+                             "only check on a machine's role that does not come from the manifest "
+                             "tree itself")
     parser.add_argument("--site-manifest", action="append", default=[], metavar="NAME",
                         help="a manifest that is not a machine (repeatable); a manifest added "
                              "to the tree for another purpose is named here rather than "
@@ -698,11 +809,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     records, export_date = parse_ard_export(args.ard_export)
     manifests, by_role = load_manifests(args.metadata_root,
                                        extra_non_machine=args.site_manifest)
+    try:
+        role_matrix = load_role_matrix(args.role_matrix) if args.role_matrix else {}
+    except ValueError as exc:
+        print("role matrix refused: %s" % exc)
+        return 2
     report = build_report(
         records,
         manifests,
         probes=load_probes(args.probes) if args.probes else (),
         bays=load_bays(args.bays) if args.bays else (),
+        role_matrix=role_matrix,
         known_absent=args.known_absent,
         source=str(args.ard_export),
         export_date=export_date,
@@ -718,6 +835,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                  sum(1 for r in report.rows if r.hardware_uuid_candidate),
                  sum(1 for r in report.rows if r.hardware_uuid is None
                      and not r.hardware_uuid_candidate)))
+        if role_matrix:
+            print("  role matrix: %d rows recorded" % len(role_matrix))
         print("  orphan manifests %d | unmanaged machines %d | unassigned %d | known absent %d"
               % (len(report.orphan_manifests), len(report.unmanaged_machines),
                  len(report.unassigned_roles), len(report.known_absent)))

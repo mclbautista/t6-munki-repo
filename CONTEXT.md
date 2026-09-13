@@ -38,14 +38,14 @@ Two failures this project exists to prevent, in order:
   manifest. A machine manifest is named exactly the Mac's Munki short hostname.
 - **Role group:** a manifest per fleet role (`toc`, `online`, `warroom`, `client-facing`,
   `dit`, `sound`, `interns-temporary`, `coordination-admin`, `production`). Carries role extras
-  only. `production` exists and is **intentionally unassigned for now** (Cyril, 2026-09-13), so a
-  role group with no machines is a deliberate state, not a missing assignment.
-- **Role matrix:** the assignment of each Mac to one role group. Being recorded in
-  `docs/role-matrix.csv` — 19 rows generated from the identity inventory (ticket 04), pre-filled with
-  the role group each manifest names today, for Cyril to correct and return (2026-09-13). Until it is
-  filled in, a machine's role is the role group its own manifest names, derived from the same tree it
-  would be checked against, so a manifest naming the wrong role group is undetectable there — the
-  probe (ticket 05) and a resolution check (ticket 06) are what catch it.
+  only. `production` currently holds Cyril's Mac mini (recorded 2026-09-13); a role group with no
+  machines is a deliberate state, not a missing assignment.
+- **Role matrix:** the assignment of each Mac to one role group, recorded in
+  `docs/role-matrix.csv` — 19 rows, filled in by Cyril on 2026-09-13, each with `confirmed_by` and
+  `confirmed_on`. It is the one check on a machine's role that does **not** come from the manifest
+  tree: the identity tool reads it (`--role-matrix`) and reports a manifest whose role group
+  disagrees with it as `role-mismatch`. It also settles machines the export cannot see — a role
+  recorded for a name with no machine row means the Mac exists and needs an inventory record.
 - **Ring:** a stage an item passes through before fleet-wide availability. `testing` → **pilot**
   (`202-TOC-M4-Max`, Cyril's Mac mini) → `production`.
 - **Promotion:** the recorded act of moving an item from `testing` to `production`.
