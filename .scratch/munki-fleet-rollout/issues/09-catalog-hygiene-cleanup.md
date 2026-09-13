@@ -92,9 +92,18 @@
       `Telegram-1.0.dmg` 124.7 MB (a stray beside the live 12.10), MSAutoUpdate 4.5 MB,
       `.DS_Store`. Of 39 payloads / 13.0 GB, **28 remain referenced**. Cyril approved the
       withdrawals, not the payload deletions, so they stay until that is decided.
-- [ ] **CORRECTED — the stale NAS path is a configured share, and it is not empty.** Read from the
-      NAS itself: share `MunkiRepo`, **volume 7** (ZFS22), not hidden, **allocated 284,240 bytes**,
-      6 directories, 2 files, and `guest` has **read-only** access. Its removal leaves the fleet
+- [x] The share is **removed** — done by Cyril in the WebUI on 2026-09-13, and read back:
+      `MunkiRepo` is gone from the share list (7 → 6 shares), no `[MunkiRepo]` section remains in
+      `/etc/config/smb.conf`, and the directory is gone. **The fleet is unaffected**, verified:
+      `catalogs/all`, `manifests/all` and `manifests/site_default` all still serve HTTP 200, because
+      the served URL comes from the `Web` share on volume 8, not from this one.
+- [~] **What the read-back also found, and it was not asked for: volume 7 is gone too** — the volume
+      that hosted the share, not just the share on it (`/share/ZFS22_DATA` no longer exists, and
+      `list_storages` shows volumes 2, 3, 4, 5, 6 and 8 with no 7). Nothing of value was on it (the
+      hollow skeleton was 284,240 bytes) and nothing mounts it, so there is no impact to fix. Recorded
+      because it was more than the criterion described, in case that was not the intent. The
+      **original description, corrected earlier in this ticket**, was: share `MunkiRepo`, volume 7
+      (ZFS22), not hidden, allocated 284,240 bytes, 6 directories, 2 files, `guest` read-only. Its removal leaves the fleet
       untouched: nothing mounts it (`/etc/fstab` on the Mac Mini mounts the `Web` share), Munki's
       `SoftwareRepoURL` is `http://192.168.88.188/MunkiRepo` served from `Web`, and `munkiimport`
       uses `file:///Users/t6/Mnt/Web/MunkiRepo` — all verified 2026-09-13. The ticket
@@ -107,11 +116,18 @@
       directories (`catalogs/ icons/ manifests/`, 2026-09-10) beside the live `MunkiRepo/`.
       **Removal is a NAS share-configuration change and a WebUI action** — the QNAP MCP exposes no
       share-deletion tool, and the NAS shell is read-only by design. **Awaiting Cyril.**
-- [ ] After cleanup the drift check reports clean — **blocked by another session's in-flight work,
-      not by this ticket.** It reported `0/0/0/0` immediately after the reconcile; it now reports two
-      *missing-on-target* findings, `manifests/303A-Mac-Mini-M4-Pro` and `manifests/Sixto-5`, which
-      that session committed (`c29821b`) to give the two manifest-less machines their own manifests.
-      Publishing them is their declared change to make, not mine to sweep up. Everything this ticket
+- [ ] After cleanup the drift check reports clean — **three findings remain, and none of them is
+      this ticket's.** Re-verified 2026-09-13 after the share removal: `missing on the target 2,
+      only on the target 0, differing 1`, integrity clean. They are:
+
+      | finding | what it is | why it is not published |
+      |---|---|---|
+      | `manifests/303A-Mac-Mini-M4-Pro`, `manifests/Sixto-5` (missing) | another session's manifests giving the two manifest-less machines their own (`c29821b`) | ticket 06's approval gate: Cyril must approve what the admin workstation receives first |
+      | `manifests/all` (differing) | this project's suspension of the forced core (ticket 08) | a publish is all-or-nothing, so it cannot go out without the two above |
+
+      A single publish carrying all three lands them together, and that is the safe order: the
+      suspension lands *with* those two manifests, so those machines inherit 0 forced / 26 optional
+      rather than force-installing up to 26 items as their first resolution. Everything this ticket
       owns is clean. both catalogs build, and every manifest's items
       resolve with an existing payload. Current state: **both catalogs build** (41,135 bytes each),
       **every manifest item resolves to an existing payload** (28/28 referenced), integrity clean;

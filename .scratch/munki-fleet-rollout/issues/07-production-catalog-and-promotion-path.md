@@ -6,7 +6,11 @@
 
 **Approval gate:** Cyril approves the initial promotion into `production`, since that is the event which makes items fleet-wide.
 
-**Status:** ready-for-agent
+**Status:** ready-for-human — implemented (mechanism, tests, evidence); the initial promotion it
+describes awaits Cyril's approval.
+
+*(was `ready-for-agent`: stale. The body has described the implementation since the ticket was
+worked; the status was never moved.)*
 
 **Notes:** This is the ticket that turns "everything is production by accident" into "everything is production by decision".
 
