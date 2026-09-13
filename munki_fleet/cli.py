@@ -25,6 +25,8 @@ import urllib.request
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from .catalogs import CatalogError, build_catalogs
+from .drift import DriftReport, integrity, repo_url
+from .drift import drift as drift_report
 from .gate import evaluate_gate
 from .publish import PublishAborted, PublishError, publish, verify_served
 from .targets import SshTarget, TargetError
@@ -110,6 +112,35 @@ def http_sha256(url: str) -> str:
         return hashlib.sha256(response.read()).hexdigest()
 
 
+def cmd_check(args, deps) -> int:
+    """Drift and integrity in one pass: is the target what the checkout says, and would an
+    install from it work? Read-only, no credentials, non-zero exit on any finding."""
+    target = deps.target_factory(args.target)
+    drift = drift_report(args.metadata_root, target)
+    print(f"drift: {drift.describe()}")
+    for label, entries in (("only on the target", drift.missing_in_checkout),
+                           ("missing on the target", drift.missing_on_target),
+                           ("differing", drift.differing)):
+        for entry in entries[: args.max_list]:
+            print(f"  {label}: {entry}")
+        if len(entries) > args.max_list:
+            print(f"  {label}: … and {len(entries) - args.max_list} more")
+
+    report = integrity(args.metadata_root, target)
+    print(f"integrity: {report.describe()}")
+    by_kind = {}
+    for finding in report.findings:
+        by_kind.setdefault(finding.kind, []).append(finding)
+    for kind, findings in sorted(by_kind.items()):
+        print(f"  {kind} ({len(findings)}):")
+        for finding in findings[: args.max_list]:
+            where = f" [wanted by {', '.join(finding.manifests)}]" if finding.manifests else ""
+            print(f"    {finding.subject}: {finding.detail}{where}")
+        if len(findings) > args.max_list:
+            print(f"    … and {len(findings) - args.max_list} more")
+    return 0 if (drift.ok and report.ok) else 1
+
+
 def cmd_files(args, deps) -> int:
     for path in tracked_paths(args.metadata_root):
         print(path)
@@ -189,7 +220,7 @@ def cmd_verify(args, deps) -> int:
             with open(os.path.join(args.metadata_root, relpath), "rb") as fh:
                 local = hashlib.sha256(fh.read()).hexdigest()
             try:
-                remote = http_sha256(f"{args.http_base.rstrip('/')}/{relpath}")
+                remote = http_sha256(repo_url(args.http_base, relpath))
             except Exception as exc:
                 bad.append((relpath, f"unreachable: {exc}"))
                 continue
@@ -237,6 +268,10 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.set_defaults(func=cmd_publish)
     p = sub.add_parser("verify"); common(p, with_target=True, with_http=True)
     p.set_defaults(func=cmd_verify)
+    p = sub.add_parser("check", help="drift and integrity against a target (read-only)")
+    common(p, with_target=True)
+    p.add_argument("--max-list", type=int, default=25, help="entries to print per category")
+    p.set_defaults(func=cmd_check)
 
     args = parser.parse_args(argv)
     try:

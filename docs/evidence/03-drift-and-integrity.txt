@@ -1,0 +1,50 @@
+# Ticket 03 — drift and integrity against the live repository
+
+Read-only. Command (no interactive credentials; it uses the existing key-based `t6-nas` SSH alias):
+
+    python3 -m munki_fleet.cli check --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo
+
+## Result (2026-09-13), exit code 1
+
+    drift: missing on the target 0, only on the target 1, differing 0
+      only on the target: pkgsinfo/apps/firefox/Firefox-155.0.1.plist
+    integrity: duplicate_name 2
+      duplicate_name (2):
+        GoogleChrome: 2 entries share this name in catalogs/all; Munki takes the first, so which
+                      installer a client receives depends on build order
+        GoogleChrome: 2 entries share this name in catalogs/testing; Munki takes the first, …
+
+    real 5.7s
+
+Exit code measured without a pipe: `exit=1`.
+
+## What this establishes
+
+- **No payload is missing.** Every item referenced by any machine manifest resolves through its
+  catalog chain to a pkginfo and a payload that exists on the NAS. This is the first time that has
+  been checkable at all, and it holds.
+- **Catalog membership is consistent.** Every pkginfo that declares a catalog appears in it, and
+  nothing appears in a catalog without declaring it.
+- **No manifest chain is broken.** Every `included_manifests` reference resolves.
+- **Drift is exactly one file**, and it is the retired Firefox duplicate pkginfo: it was removed
+  from the checkout when Cyril chose the `.pkg`, and the publish therefore did not remove it from
+  the NAS. Reconciling it means deleting it on the NAS, which is a deletion and needs approval —
+  deliberately left so the deletion happens through this detecting path rather than by hand.
+- **The one real defect left in the repository is the GoogleChrome duplicate**, which carries the
+  same ordering hazard the Firefox pair did (its order happens to match under both tool versions
+  today, and nothing guarantees that).
+
+## A design fault this ticket found and fixed
+
+The first live run **timed out**: checking payload existence called a hash of the file, and the
+repository holds a 6.87 GB DaVinci Resolve payload. Existence is the question; hashing it is not the
+answer. The target gained `exists()`, which asks the remote whether the path is present without
+reading it, and the run went from a 60-second timeout to 5.7 seconds. A test asserts that payload
+checks issue no `sha256sum`.
+
+## Also fixed here
+
+HTTP verification had been failing for one file:
+`manifests/303B iMac: unreachable: URL can't contain control characters`. A published manifest is
+literally named `303B iMac`, and the URL was built by string concatenation. URLs are now
+percent-encoded by one shared helper, and `verify` reports **104/104 match** over HTTP.

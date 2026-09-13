@@ -55,6 +55,14 @@ class Target:
         """Delete a file from the target. Used to undo a write that created one."""
         self._remove(relpath)
 
+    def list_files(self, dirs) -> list:
+        """Every file under the given top-level directories, as relative paths."""
+        raise NotImplementedError
+
+    def exists(self, relpath: str) -> bool:
+        """Whether a path is present. Deliberately does not read it: a payload can be gigabytes."""
+        raise NotImplementedError
+
     # --- the invariant -------------------------------------------------------
     def temp_name(self, relpath: str, data: bytes) -> str:
         return f"{relpath}.{sha256_bytes(data)[:12]}.tmp"
@@ -114,6 +122,22 @@ class LocalDirTarget(Target):
         full = self._full(relpath)
         if os.path.exists(full):
             os.remove(full)
+
+    def exists(self, relpath: str) -> bool:
+        return os.path.isfile(self._full(relpath))
+
+    def list_files(self, dirs) -> list:
+        out = []
+        for d in dirs:
+            base = self._full(d)
+            if not os.path.isdir(base):
+                continue
+            for dirpath, _, files in os.walk(base):
+                for f in files:
+                    if f.startswith(".") or f.endswith(".tmp"):
+                        continue
+                    out.append(os.path.relpath(os.path.join(dirpath, f), self.root))
+        return sorted(out)
 
 
 def default_ssh_runner(host: str, timeout: int = 60):
@@ -190,3 +214,20 @@ class SshTarget(Target):
 
     def _remove(self, relpath: str) -> None:
         self._command(f"rm -f {shlex.quote(self._abs(relpath))}")
+
+    def exists(self, relpath: str) -> bool:
+        out = self._command(
+            f"if [ -f {shlex.quote(self._abs(relpath))} ]; then echo PRESENT; else echo MISSING; fi"
+        ).decode("utf-8", "replace")
+        return out.startswith("PRESENT")
+
+    def list_files(self, dirs) -> list:
+        """List files under the given directories on the remote host."""
+        dirs_arg = " ".join(shlex.quote(self._abs(d)) for d in dirs)
+        out = self._command(f"find {dirs_arg} -type f 2>/dev/null").decode("utf-8", "replace")
+        return sorted(
+            os.path.relpath(line.strip(), self.root)
+            for line in out.splitlines()
+            if line.strip() and not os.path.basename(line.strip()).startswith(".")
+            and not line.strip().endswith(".tmp")
+        )

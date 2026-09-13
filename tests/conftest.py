@@ -111,6 +111,16 @@ class FakeSsh:
             return 0, b"", b""
         if tokens[:1] == ["cat"]:
             return 0, self.files[tokens[1]], b""
+        if tokens[:1] == ["find"] and "-type" in tokens:
+            roots = [t for t in tokens[1:] if t.startswith("/")]
+            found = sorted(
+                quoted for path in self.files
+                for quoted in [path]
+                if any(path.startswith(r.rstrip("/") + "/") for r in roots)
+            )
+            return 0, ("\n".join(found) + ("\n" if found else "")).encode(), b""
+        if tokens[:3] == ["if", "[", "-f"] and "PRESENT" in command:
+            return 0, (b"PRESENT" if tokens[3] in self.files else b"MISSING"), b""
         if tokens[:3] == ["if", "[", "-f"]:
             path = tokens[3]
             if path not in self.files:
