@@ -1,0 +1,117 @@
+# Approval packet: tickets 12 and 13 (the two NAS system changes)
+
+**For:** Cyril's decision, one pass. **Nothing in this packet has been executed.** Every fact below is a
+read-only observation taken on 2026-09-13 between 18:35 and 18:45 PST, with the command or tool that
+produced it, so each can be re-checked before you decide.
+
+Tickets 12 and 13 are the only two in the set whose blocker graph is satisfied and whose work is a
+**change to the NAS** rather than to this repository. Both therefore carry the same gate:
+
+> **12:** "Configuring NAS snapshots and backup jobs is a system change on the NAS and requires Cyril's
+> approval before execution."
+> **13:** "Changing the NAS firewall is a system change and requires Cyril's approval before execution."
+
+Everything else in the set is either in flight elsewhere or waiting on these two.
+
+---
+
+## Current state (verified today, read-only)
+
+| fact | value | source |
+|---|---|---|
+| NAS | `192.168.88.188`, QuTS 6.0 | repo `CONTEXT.md`, `curl` below |
+| Storage pool | one pool, **RAID 6** over 8 x 16 TB Seagate HDDs (14.55 TB usable each), `pool_capacity` 84.25 TB, **freesize 23.06 TB** | `list_storages` |
+| Repository volume | the **`Web` share, volume 8** (thin), 13.0 GB used of 25.6 TB, 75 dirs / 193 files | `list_shared_folder`, `get_shared_folder` |
+| Served path | `/Web/MunkiRepo` → `catalogs`, `pkgsinfo`, `icons`, `manifests`, **`pkgs`**; owner `t6-sixto`, group `everyone`, mode `770`, ACL enabled | `list_files` |
+| Endpoint | **plain HTTP on port 80, no authentication**: `GET http://192.168.88.188/MunkiRepo/catalogs/all` → `200` (60,092 bytes); `manifests/all` → `200`; directory listings → `403` | `curl` |
+| File-layer permission | `Web` share is `admin` RW + `administrators` RW — admin-only over SMB, **world-readable over HTTP** | `get_shared_folder` |
+| Backup jobs | **0** — no HBS job exists for anything (`total: 0`) | `hbs_list_jobs` |
+| Snapshot Manager | **installed** (2.0.0.0607) | `appcenter_list_apps` |
+| HBS 3 | installed (26.4.4.788) | `appcenter_list_apps` |
+| **QuFirewall** | **NOT installed** — no firewall app at all | `appcenter_list_apps` |
+| myQNAPcloud | installed **and enabled** — a remote-access surface that bears on 13's "never internet-reachable" claim | `appcenter_list_apps` |
+| Metadata checkout (Git) | 9.3 MB total: `.git` 4.5 MB, `icons` 3.6 MB, `pkgsinfo` 152 KB, `catalogs` 120 KB, `manifests` 112 KB; 38 pkginfo files, 28 manifest files | `du`, `find` |
+| Payloads | **not in Git** — `pkgs/` exists only on the NAS | `ls` |
+
+A second observation, relevant to both: `catalogs` and `pkgsinfo` on the NAS carry mtime **2026-09-13 18:32:09**, i.e. something wrote them minutes ago. That is ticket 02's publish path in flight from another session (that session's working tree holds `munki_fleet/` + tests). It means **the served tree changes under us** while these two tickets are decided; a restore drill or a firewall test must record the checksum it saw, not "the current tree".
+
+---
+
+## Ticket 12 — snapshots, an off-NAS copy, and a proven restore
+
+### What would be configured
+
+**12A. A snapshot schedule on the `Web` volume (volume 8).** QTS takes snapshots per volume; `Snapshot Manager` is installed and there is none today.
+- Proposal to approve: **daily snapshot, retention bounded (e.g. 7 daily kept)**, with the *guaranteed snapshot space* set explicitly rather than left at whatever default. Ticket 12 requires the policy be recorded: frequency, retention, what is covered.
+- Why bounded and small: the repository volume holds 13.0 GB today, so even a fortnight of daily snapshots is a few hundred GB against **23.06 TB free** in the pool. The failure mode to avoid is an unbounded schedule quietly consuming pool space that `1.Projects` / `02.Project` also depend on — those two shares are 56% and 67% full of 22 TB and 55 TB volumes.
+- Blast radius: **pool space only.** Snapshots are invisible to clients; they do not change what Munki serves. Deleting one is irreversible, so the retention number is the real decision.
+
+**12B. The off-NAS copy of the metadata — needs your choice of target, because "a second device" is ambiguous here.**
+
+| option | what it means | cost / risk |
+|---|---|---|
+| **(i) HBS job: NAS → Mac Mini** (`t6-mac-mini`) | replicates `catalogs`, `manifests`, `pkgsinfo`, `icons` off the NAS entirely; the Mac Mini is already the admin/orchestration host | needs an HBS job + credentials; Mac Mini has ~295 GB free of 1 TB, and the metadata is **under 15 MB**, so size is a non-issue |
+| **(ii) Git is already off-NAS** | the checkout on the admin workstation carries the whole metadata history — 9.3 MB, 4.5 MB of it `.git` | arguably already satisfies "not only on the NAS", but it is the *same workstation* that publishes; a workstation loss loses the working copy but not the history if it is also pushed |
+| **(iii) both** | HBS job for the served tree **and** `git push` of the checkout | the honest belt-and-braces; more moving parts |
+
+**Recommendation: (iii)**, because the two cover different failure modes — (i) restores what the NAS *served*, (ii) restores the *history of how it got there*, and neither is sufficient alone for a wrong-delete.
+
+**12C. Payload classification and the restore drill.** Payloads (~13 GB, only on the NAS, not in Git) are the part whose acquisition may not be repeatable. Ticket 12 requires each classified **re-fetchable** or **non-reproducible**, and each non-reproducible one either copied off-NAS **or** given a recorded exclusion reason. The drill then has to be *performed*: restore metadata from the backup, verify payload checksums, rebuild catalogs and compare to what the NAS serves.
+- Decision needed: **where the drill restores to** — a scratch path on the NAS (fast, exercises the same volume) or off-NAS (exercises the whole path). The ticket's point is that the procedure be followed under pressure, so the drill target should be the *second* device, not the volume being protected.
+
+### Rollback
+- 12A: delete the schedule (snapshots already taken remain until deleted individually); worst case a mistaken retention setting costs pool space, which is recoverable by deleting snapshots.
+- 12B: stop/delete the HBS job; nothing on the source side is modified by a copy job **provided** it is configured one-way (NAS → Mac Mini) and not as a sync that can delete.
+- 12C: a drill writes only to the chosen scratch/second device; no client is touched.
+
+### Verification (what would be reported back)
+Schedule and retention read back from Snapshot Manager; the HBS job's first run status; the drill's restore output with checksums and the catalog comparison against the live `all` catalog checksum recorded that day.
+
+---
+
+## Ticket 13 — restrict the endpoint to the fleet
+
+### The finding that changes this ticket's shape
+
+**There is no firewall on the NAS to configure.** No QuFirewall (or equivalent) is installed — the app list is 19 apps and none of them is a firewall. QTS's built-in Security Center is policy *levels*, not a port allowlist. So ticket 13 is not "add a rule"; it is **"install and enable a firewall on the NAS, then add a rule"**, and that first step has its own risk: QuFirewall's default posture can cut off access paths, and the NAS is currently reachable by everything on the LAN.
+
+Second finding: **the repository's port is port 80, shared with everything else the NAS serves over HTTP.** The repo is an unauthenticated plain-HTTP path (`/MunkiRepo/...` → 200) whose file-layer ACL is admin-only — i.e. the HTTP path is the only access control on the metadata today. That is exactly the residual risk ADR 0007 records, and it also defines the blast radius: a rule for "the repository's port" is a rule for **the whole Web share and any other HTTP service on 80**. Admin UI on 8080 did not answer from the admin workstation during this check (`curl --max-time 5` → no response), so an accidental HTTP lockout would not necessarily leave that fallback.
+
+### What would be configured, in order
+
+1. **Install QuFirewall** (App Center) — a system change; the packet treats this as decision **13A**.
+2. **Allowlist rule** permitting `TCP 80` only from the fleet's own addresses — decision **13B**, and the substantive one, because of a real ambiguity found in the machine inventory: every Mac is on `192.168.88.0/24` **except one**. `201 Bay 03 M1 Ultra` reports primary address `192.168.254.106` over **AirPort** (Wi-Fi) in the ARD System Overview Report of 9/13/26. So:
+   - allow `192.168.88.0/24` only → **that machine's Munki check-ins break** until it is back on the wired path;
+   - allow both `192.168.88.0/24` and `192.168.254.0/24` → keeps it working, and widens the allowlist to whatever else lives on that subnet.
+   - Recommendation: decide deliberately — either fix that machine's network path first (it belongs on the wired 88.x network as a studio machine) and allowlist the single fleet subnet, or accept both subnets in writing. Do not let it be decided by accident.
+3. **Keep a second access path open before applying** (SSH to the NAS, or a console session), so a mis-scoped rule cannot lock administration out along with the clients.
+4. **The negative case — decision 13C.** The ticket requires "a refused connection from an address outside the allowlist", with the source recorded, *or* an explicit statement that the negative case was not verified by us and exactly what remains unverified. Options: a phone on cellular (only proves anything if the NAS is otherwise routable from outside — if there is no inbound route, the traffic never reaches the firewall and the test proves nothing), a machine on a different VLAN, or the honest statement. This one cannot be faked in a report.
+5. **The internet-reachability claim needs one more check: `myQNAPcloud` is installed and enabled.** Its status (registered/active, and whether it exposes anything) should be verified as part of 13's evidence, because the ticket's own words are "the evidence that this restriction is what stands between the repository and the wider network is stated explicitly, including that the repository must never be internet-reachable." A remote-access app left enabled weakens that sentence even if no firewall rule is missing.
+
+### Rollback
+Remove the allowlist rule (or disable QuFirewall) — the connection returns to today's state; the SSH/console path kept open in step 3 is what makes this survivable. Recommended: if QuFirewall supports a monitor/log-only mode, run the rule set in that mode first and read the log for a working day before enforcing it.
+
+### Blast radius summary
+Every Munki client's check-in (16 inventoried Macs plus any un-inventoried one, which is the ticket-04 gap), any other HTTP service on the NAS, and administration itself if step 3 is skipped. Nothing on the clients is modified — the failure mode is *denied fetches*, not damage.
+
+---
+
+## What I could not read (so the numbers above are proposals, not current config)
+
+- **Snapshot schedule / retention / guaranteed snapshot space**: not exposed by the read-only storage tools available to me; ticket 12's own record says no snapshot existed as of 2026-09-13, which is consistent with what I can see (nothing in the volume listing). Read it in Snapshot Manager before approving the retention number.
+- **Firewall state**: nothing to read — the app is absent, which is the finding.
+- **QuFirewall's rule model on QuTS 6.0** (whether it supports log-only staging, and whether its rules are per-interface): not verified. Worth a look at the App Center description before 13A.
+
+## The decision, in one pass
+
+| # | decision | recommendation |
+|---|---|---|
+| 12A | snapshot schedule on the `Web` volume (daily, bounded retention, explicit snapshot space) | approve, with the retention number you want |
+| 12B | off-NAS copy target for the metadata | HBS job **and** a pushed Git history |
+| 12C | where the restore drill restores to, and the payload classification's off-NAS rule | drill on the second device; classify before copying |
+| 13A | install QuFirewall on the NAS | approve, or choose network segregation instead |
+| 13B | the allowlist: one fleet subnet, or the Wi-Fi subnet too | one subnet, after moving `201 Bay 03` back to the wired path |
+| 13C | how the negative case is verified (or recorded as unverified) | decide the source now; record "unverified" rather than claim |
+| 13D | `myQNAPcloud` status verified as part of the evidence | yes |
+
+Say which of these you approve or reject and the work can proceed ticket by ticket, each with its own verification read back. Nothing above is executed, and the two tickets keep their `ready-for-agent` status until you decide.
