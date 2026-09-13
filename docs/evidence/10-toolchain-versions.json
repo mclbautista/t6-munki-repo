@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-09-13T19:48:01+08:00",
+  "relationship": {
+    "aligned": false,
+    "builders": [
+      {
+        "command": "/usr/local/munki/makecatalogs --version",
+        "host": "local",
+        "tool": "makecatalogs",
+        "version": "7.3.0.5808"
+      },
+      {
+        "command": "/usr/local/munki/makecatalogs --version",
+        "host": "t6-mac-mini",
+        "tool": "makecatalogs",
+        "version": "6.6.0.4686"
+      }
+    ],
+    "clients": [
+      {
+        "host": "Cyrils-Mac-mini",
+        "munki_version": "7.3.0.5808",
+        "observed_at": "2026-09-13T19:39:19+08:00",
+        "serial": "RWJ57V9PW4"
+      }
+    ],
+    "findings": [
+      "t6-mac-mini builds with Munki 6.6.0.4686 while RWJ57V9PW4 runs 7.3.0.5808: the builder is a major version behind a client, so a rebuild can reorder entries the client is already being served"
+    ]
+  },
+  "versions": [
+    {
+      "command": "/usr/local/munki/makecatalogs --version",
+      "host": "local",
+      "tool": "makecatalogs",
+      "version": "7.3.0.5808"
+    },
+    {
+      "command": "/usr/local/munki/managedsoftwareupdate --version",
+      "host": "local",
+      "tool": "managedsoftwareupdate",
+      "version": "7.3.0.5808"
+    },
+    {
+      "command": "/usr/local/munki/munkiimport --version",
+      "host": "local",
+      "tool": "munkiimport",
+      "version": "7.3.0.5808"
+    },
+    {
+      "command": "/usr/local/munki/makecatalogs --version",
+      "host": "t6-mac-mini",
+      "tool": "makecatalogs",
+      "version": "6.6.0.4686"
+    },
+    {
+      "command": "/usr/local/munki/managedsoftwareupdate --version",
+      "host": "t6-mac-mini",
+      "tool": "managedsoftwareupdate",
+      "version": "6.6.0.4686"
+    },
+    {
+      "command": "/usr/local/munki/munkiimport --version",
+      "host": "t6-mac-mini",
+      "tool": "munkiimport",
+      "version": "6.6.0.4686"
+    }
+  ]
+}

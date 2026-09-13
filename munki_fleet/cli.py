@@ -33,7 +33,7 @@ from .drift import drift as drift_report
 from .gate import evaluate_gate
 from .promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions, demote,
                       initial_promotion_plan, load_history, load_pilots, promote)
-from . import probe
+from . import probe, toolchain
 from .payloads import PayloadError, orphan_payloads, remove_payloads
 from .reconcile import ReconcileError, apply_removals, plan_removals, recorded_hashes
 from .publish import PublishAborted, PublishError, publish, verify_served
@@ -295,6 +295,94 @@ def local_runner(host: str, command: str, timeout: Optional[int] = None):
     return completed.returncode, completed.stdout, completed.stderr
 
 
+def _read_build_versions(host: str, timeout: Optional[int]) -> List:
+    """Tool versions on a build host, read by running the tools there. Never guessed."""
+    if host in ("local", "localhost", ""):
+        return toolchain.read_versions(lambda h, c, t: local_runner(h, c, t), "local")
+    return toolchain.read_versions(probe.default_runner, host)
+
+
+def cmd_toolchain(args, deps: Deps) -> int:
+    """The version relationship between the tools that build catalogs and the clients that read them."""
+    builders = []
+    for host in (args.build_host or ["local"]):
+        builders += _read_build_versions(host, args.timeout)
+    clients = toolchain.client_versions(args.store)
+    relationship = toolchain.relationship(builders, clients)
+
+    print("build hosts:")
+    for version in builders:
+        print(f"  {version.host:16} {version.tool:24} {version.version}")
+    print(f"clients observed: {len(clients)}")
+    for client in clients:
+        print(f"  {client['serial']:14} {client.get('host') or '?':18} "
+              f"{client['munki_version']:14} observed {client['observed_at']}")
+    if not clients:
+        print("  (no client version is available until a probe run reaches one: see ticket 05)")
+    print()
+    if relationship.findings:
+        for finding in relationship.findings:
+            print(f"  FINDING: {finding}")
+    else:
+        print("  aligned: the catalog builder and every observed client are on the same major version")
+
+    if args.record:
+        payload = {"recorded_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                   "relationship": relationship.to_json(),
+                   "versions": [v.to_json() for v in builders]}
+        with open(args.record, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, sort_keys=True)
+        print(f"\nrecorded in {args.record}")
+    return 0 if relationship.aligned else 1
+
+
+def cmd_catalog_compare(args, deps: Deps) -> int:
+    """Byte-compare a fresh build against a pre-image, and explain every difference by item."""
+    if bool(args.before) == bool(args.before_target):
+        print("error: pass exactly one of --before DIR or --before-target SPEC", file=sys.stderr)
+        return 2
+
+    if args.before:
+        base = args.before
+        if not os.path.isdir(base):
+            print(f"error: {base} is not a directory of catalogs", file=sys.stderr)
+            return 2
+        names = sorted(os.listdir(base))
+
+        def before_callable(name):
+            path = os.path.join(base, name)
+            if not os.path.isfile(path):
+                return None
+            with open(path, "rb") as fh:
+                return fh.read()
+    else:
+        target = deps.target_factory(args.before_target)
+        names = sorted({os.path.basename(p) for p in target.list_files(["."])})
+
+        def before_callable(name):
+            if name not in names:
+                return None
+            return target.read(name)
+
+    build = build_catalogs(args.metadata_root, runner=deps.catalog_runner)
+    results = toolchain.compare_build_to(before_callable, build, sorted(set(names) | set(build.catalogs)))
+
+    differing = []
+    for name, entry in sorted(results.items()):
+        head = "identical" if entry["identical"] else "BYTES DIFFER"
+        print(f"  catalogs/{name}: {head}")
+        if entry["identical"]:
+            continue
+        differing.append(name)
+        print(f"    before {entry['before_sha256'][:16] if entry['before_sha256'] else 'absent'}"
+              f"   after {entry['after_sha256'][:16] if entry['after_sha256'] else 'absent'}")
+        if entry["item_diff"]:
+            print(f"    item-level: {entry['item_diff']}")
+        print(f"    {entry['explanation']}")
+    print(f"\n{len(results) - len(differing)}/{len(results)} catalog(s) identical")
+    return 0 if not differing else 1
+
+
 def cmd_probe(args, deps: Deps) -> int:
     """Probe machines and append the run to the observation store."""
     targets = [_split_machine(spec) for spec in args.machine]
@@ -517,6 +605,24 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.add_argument("--exclude", action="append", default=[], metavar="ITEM",
                    help="an item to leave in testing rather than promote (repeatable)")
     p.set_defaults(func=cmd_promotion_plan)
+    p = sub.add_parser("toolchain",
+                       help="the version relationship between catalog builders and clients")
+    p.add_argument("--store", default=None,
+                   help="the observation store to read client versions from (ticket 05)")
+    p.add_argument("--build-host", action="append", default=[],
+                   help="a machine that builds catalogs (repeatable; 'local' for this machine)")
+    p.add_argument("--record", default=None, metavar="PATH",
+                   help="also write the relationship as JSON here")
+    p.add_argument("--timeout", type=int, default=30)
+    p.set_defaults(func=cmd_toolchain)
+    p = sub.add_parser("catalog-compare",
+                       help="byte-compare a fresh build against a pre-image, explained per item")
+    p.add_argument("--before", default=None, metavar="DIR",
+                   help="a local directory of catalogs to compare against")
+    p.add_argument("--before-target", default=None, metavar="SPEC",
+                   help="a target directory to read the pre-image catalogs from")
+    common(p)
+    p.set_defaults(func=cmd_catalog_compare)
     p = sub.add_parser("probe", help="probe machines and append to the observation store")
     p.add_argument("--store", required=True,
                    help="the observation store to append to (required: fleet state is never "
