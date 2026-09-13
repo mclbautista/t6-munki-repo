@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**Claimed by:** hermes-desktop (Cyril's Mac mini, /Users/cyrilbautista/Projects/t6-munki-repo) 2026-09-14T07:45+08:00
+
 **Notes:** Freshness is part of the alert: failing to observe the fleet is itself an actionable condition, and a stale observation must never be alerted on as if it were current.
 
 ## Acceptance criteria
