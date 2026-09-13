@@ -78,6 +78,8 @@ Two failures this project exists to prevent, in order:
 - Durable decisions go in `docs/adr/`. Specifications go in `docs/specs/`.
 - Prefer tests at module public seams with deterministic fixtures; never unit-test against the
   live NAS or a live Mac.
-- Live verification evidence belongs in the ticket that claims the result.
+- Live verification evidence belongs in the ticket that claims the result; artifacts that are data
+  rather than prose (checksum listings, captured output) live under `docs/evidence/` and are cited
+  by the ticket.
 - Secrets stay out of Git; operational credentials come from the approved credential mechanism
   at execution time.

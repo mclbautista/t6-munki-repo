@@ -16,6 +16,14 @@ agent may do without approval are ADRs, not conventions.
 Specifications live in `docs/specs/`. They are the implementation authority for the scope they
 describe. A specification that contradicts an ADR is wrong; fix the specification.
 
+## Verification evidence
+
+Reproducible verification artifacts that are data rather than prose — checksum listings, captured
+command output, exports — are committed under `docs/evidence/`, named `<ticket-number>-<description>`.
+The ticket cites them by path and still records, in its own words, the command, the system it ran
+against, and what it returned. Evidence files are append-only records of what a check produced at a
+point in time; they are not edited to match a later state.
+
 ## Agent behaviour
 
 - Read `CONTEXT.md`, the relevant ADRs, and the applicable specification before implementing.

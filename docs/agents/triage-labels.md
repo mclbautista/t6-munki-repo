@@ -8,9 +8,14 @@ This repository uses these canonical local ticket states:
 | `needs-info` | Blocked on missing evidence, decision, or reproduction |
 | `ready-for-agent` | Scope and acceptance criteria are clear for implementation |
 | `ready-for-human` | Requires Cyril's product, credential, or operational decision |
+| `done` | Completed and verified: every acceptance criterion checked with evidence recorded in the ticket |
 | `wontfix` | Explicitly outside the current plan |
 
 Use one state per ticket. Category labels, when needed, are `bug` and `enhancement`.
+
+`done` is terminal: a completed ticket leaves the frontier, so a `done` ticket must not still carry
+`ready-for-agent`. Marking a ticket `done` requires its verification evidence to be in the ticket
+(the command, the system it ran against, and what it returned) — not merely a ticked box.
 
 ## Approval gate
 

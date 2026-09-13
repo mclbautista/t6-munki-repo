@@ -211,11 +211,14 @@ tree, the observation store, the NAS, or a client (ADR 0004).
 
 ### Recorded live state (baseline for this work)
 
-Verified 2026-09-13; metadata imported into this repository under ticket 01 and checksum-verified
-call-by-call against the NAS (103 files, zero differences): repository live at the NAS Web share and served over HTTP (`catalogs/all`,
+Verified 2026-09-13; the metadata tree (pkgsinfo, manifests, icons — 103 files) was imported into this repository
+under ticket 01 and checksum-verified per file against the NAS, with zero differences and both
+sides' listings committed under `docs/evidence/`: repository live at the NAS Web share and served over HTTP (`catalogs/all`,
 `catalogs/testing`, `manifests/site_default` all return 200); 38 catalog entries over 36 unique
 names, all declaring `catalogs: [testing]`; `catalogs/all` and `catalogs/testing` byte-identical;
-28 manifest files including 16 machine manifests matching the role matrix; 27 top-level `.pkginfo` files plus 11 imported under a nested `apps` area (and four subdirectories of it) using a `.plist` extension; 13 GB of payloads; 36 icons;
+28 manifest files including 16 machine manifests that match the role matrix 1:1; 27 top-level
+`.pkginfo` files plus 11 pkginfos imported under a nested `apps` area (and four subdirectories of
+it) using a `.plist` extension; 13 GB of payloads; 36 icon PNGs plus `icons/_icon_hashes.plist`;
 duplicate name+version entries for two browsers; admin tools at Munki 6.6.0.4686 against clients
 at 7.3.0.5808; NAS backup jobs zero; snapshots none; admin mount absent.
 
