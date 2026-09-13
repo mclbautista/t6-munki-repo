@@ -32,6 +32,12 @@ More than one agent can be working this repository at the same time, and more th
   flattened the same two pkginfos here on the same afternoon; the second was a no-op only because
   Git compared content and found nothing to change. A rename, a move, or a layout decision is
   exactly the kind of change the other session may already have made.
+- **The tests are now a gate, not a habit.** `.githooks/pre-commit` runs the suite and refuses a
+  red commit; `git config core.hooksPath .githooks` is set in this checkout, so it applies to every
+  session working this tree. It exists because the rule below was written down and then broken twice
+  in one afternoon: `python3 -m pytest | tail` reports the *pipe's* status, not pytest's, so a
+  failing suite was committed and pushed both times. Bypass deliberately with
+  `SKIP_TESTS=1 git commit ...` and say why in the message; never use it to land a red suite.
 - **Confirm your own tests before committing, and never through a pipe.** `python3 -m pytest | tail`
   reports the pipe's status, not pytest's; a failing suite was committed and pushed that way.
 - **A failing test in another session's file is not yours to fix mid-flight.** Report it; do not

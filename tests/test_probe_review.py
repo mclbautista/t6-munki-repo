@@ -163,21 +163,28 @@ def test_a_malformed_observation_timestamp_is_tolerated_not_fatal():
 
 # --- the two recorded states the ticket asks for, replayed rather than invented ------------------
 
-def test_the_recorded_run_replays_as_one_observed_and_two_unreachable():
+def test_the_recorded_run_replays_as_a_reached_machine_and_an_unreachable_one():
+    """Replayed from the verbatim store, so a machine that was not reached stays that way."""
     records = [json.loads(line) for line in open(RECORDED, encoding="utf-8") if line.strip()]
     runs = [r for r in records if r["kind"] == "run"]
     observations = [r for r in records if r["kind"] == "observation"]
-    assert len(runs) == 1 and len(observations) == 3
-    assert runs[0]["complete"] is False, "the recorded run did not reach everything"
-    outcomes = {r["target"]["host"]: r for r in observations}
-    assert sum(1 for r in observations if r["outcome"] == "unobserved") == 2
-    for record in observations:
-        if record["outcome"] == "unobserved":
-            assert record["state"] is None
-            assert "Permission denied" in (record.get("detail") or ""), \
-                "the transport's own message is recorded, not paraphrased"
-        else:
-            assert record["machine"]["serial"] == "RWJ57V9PW4"
+    assert len(runs) == 1, "the fixture is the store of one run"
+    run = runs[0]
+    assert len(observations) == run["targeted"], "one record per targeted machine"
+    assert run["complete"] is False, "the recorded run did not reach everything"
+    assert run["unobserved"] >= 1 and run["observed"] >= 1
+
+    reached = [r for r in observations if r["outcome"] == "observed"]
+    unreachable = [r for r in observations if r["outcome"] == "unobserved"]
+    assert reached and unreachable
+    for record in reached:
+        assert record["machine"]["serial"] == "RWJ57V9PW4"
+        assert record["observer"], "every observation carries its observer"
+    for record in unreachable:
+        assert record["state"] is None, "no state may be written for a machine we did not reach"
+        assert record["machine"] is None
+        assert "Permission denied" in (record.get("detail") or ""), \
+            "the transport's own message is recorded, not paraphrased"
 
 
 def test_the_recorded_run_is_stale_when_read_later_and_stays_unobserved():

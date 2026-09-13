@@ -1,0 +1,27 @@
+#!/bin/sh
+# Refuse a commit whose test suite is red.
+#
+# Written after the same mistake was made twice in one session: pytest piped through `tail`, whose
+# exit status is the pipe's, not pytest's - so a failing suite was committed and pushed both times.
+# A rule in a document did not stop it; this does.
+#
+# Escape hatch, for work in progress:  SKIP_TESTS=1 git commit ...
+# Do not use it to land a red suite. If you need it, say why in the commit message.
+set -e
+if [ "${SKIP_TESTS:-}" = "1" ]; then
+  echo "pre-commit: tests skipped (SKIP_TESTS=1)"
+  exit 0
+fi
+cd "$(git rev-parse --show-toplevel)"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-commit: no python3 to run the suite with" >&2
+  exit 1
+fi
+output=$(python3 -m pytest -q 2>&1) || {
+  echo "$output" | tail -25 >&2
+  echo "" >&2
+  echo "pre-commit: the suite is red, so this commit is refused." >&2
+  echo "Fix it, or bypass deliberately with: SKIP_TESTS=1 git commit ..." >&2
+  exit 1
+}
+echo "pre-commit: $(echo "$output" | tail -1)"
