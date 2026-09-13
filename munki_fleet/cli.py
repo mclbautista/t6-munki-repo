@@ -118,9 +118,10 @@ def cmd_check(args, deps) -> int:
     target = deps.target_factory(args.target)
     drift = drift_report(args.metadata_root, target)
     print(f"drift: {drift.describe()}")
-    for label, entries in (("only on the target", drift.missing_in_checkout),
+    for label, entries in (("only on the target", drift.only_on_target),
                            ("missing on the target", drift.missing_on_target),
-                           ("differing", drift.differing)):
+                           ("differing", drift.differing),
+                           ("unreadable", drift.unreadable)):
         for entry in entries[: args.max_list]:
             print(f"  {label}: {entry}")
         if len(entries) > args.max_list:

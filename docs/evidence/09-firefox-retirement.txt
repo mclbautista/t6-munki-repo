@@ -1,0 +1,53 @@
+# Ticket 09 — retiring the duplicate Firefox pkginfo: what was verified
+
+## The change
+
+Two complete pkginfos existed for Firefox 155.0.1:
+
+    pkgsinfo/apps/firefox/Firefox-155.0.1.plist       -> apps/firefox/Firefox-155.0.1.dmg  copy_from_dmg, one installs entry
+    pkgsinfo/apps/firefox/Firefox-155.0.1__1.plist    -> apps/firefox/Firefox-155.0.1.pkg  one receipts entry (org.mozilla.firefox)
+
+On Cyril's decision the **`.dmg` pkginfo was retired** (removed from the checkout; retained in git
+history and as `docs/evidence/09-retired-Firefox-155.0.1.dmg.plist`). The `.pkg` pkginfo survives.
+
+## Verified: the served catalog entry is the one that survives
+
+The pre-image of the catalog the NAS served before any of today's changes is committed here at
+`docs/evidence/09-catalog-before-firefox-retirement/all` (and `testing`), so this comparison can be
+re-derived from a clone rather than taken on trust:
+
+    pre-image catalogs/all          sha256 fabda778b3f6bd4218b36e454e88240446a86f6c38f8847b3c82f4c9e0d5ab39
+    rebuilt catalogs/all            sha256 c34583a30e8bf56d092d78a3b65df2cf8c2ce39b3b3cbb6e197431e92d835a20
+    served catalogs/all             sha256 c34583a30e8bf56d092d78a3b65df2cf8c2ce39b3b3cbb6e197431e92d835a20   (identical to the rebuild at time of writing)
+
+    entries before: 38   (Firefox entries: 2)
+    entries after : 37   (Firefox entries: 1)
+
+    Firefox first match before: Firefox-155.0.1.pkg  installer_item_hash d2379ea8797f1f4b30051b921dd1f96de9937b50308dd91505e628c037af9f30
+    Firefox only entry after  : Firefox-155.0.1.pkg  installer_item_hash d2379ea8797f1f4b30051b921dd1f96de9937b50308dd91505e628c037af9f30
+
+    the two entries are byte-identical: True
+
+Munki takes the first entry matching a name, and that entry is the same dict before and after — so
+the installer a client is offered does not change.
+
+## Not claimed, and why
+
+- **"The surviving entry's payload and hash is the one that is actually installed"** — the original
+  wording of ticket 09's criterion — is **not verified**. Checked on 2026-09-13: the pilot
+  `202-TOC-M4-Max` has Firefox.app at version **154.0** and **no `org.mozilla.firefox` receipt**, so
+  neither pkginfo's install path is what put Firefox on that machine. What can be said is narrower:
+  the entry clients are *offered* is unchanged.
+- **Clients do not necessarily behave identically in every respect.** Both entries install Firefox
+  155.0.1, but they differ in how Munki detects the installed state (`installs` with an app-version
+  check versus a `receipts` check). Retiring one of them removes an ambiguity; it is not a
+  no-op in the detection path, which is exactly why the duplicate was a defect.
+
+## What the client saw
+
+The pilot's own check-only log (ticket 02's evidence) recorded the ambiguity while it existed:
+
+    466: * Processing manifest item Firefox for optional install
+    468: Considering 2 items with name Firefox from catalog testing
+    469: Considering item Firefox, version 155.0.1 with minimum os version required 10.15.0
+    482: Adding Firefox to the optional install list

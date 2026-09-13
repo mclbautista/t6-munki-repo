@@ -110,6 +110,8 @@ class FakeSsh:
             self.files[tokens[3]] = self.files.pop(tokens[2])
             return 0, b"", b""
         if tokens[:1] == ["cat"]:
+            if tokens[1] not in self.files:
+                return 1, b"", b"cat: No such file or directory"
             return 0, self.files[tokens[1]], b""
         if tokens[:1] == ["find"] and "-type" in tokens:
             roots = [t for t in tokens[1:] if t.startswith("/")]

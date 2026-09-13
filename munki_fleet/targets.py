@@ -101,13 +101,19 @@ class LocalDirTarget(Target):
         full = self._full(relpath)
         if not os.path.isfile(full):
             return None
-        with open(full, "rb") as fh:
-            data = fh.read()
+        try:
+            with open(full, "rb") as fh:
+                data = fh.read()
+        except OSError as exc:
+            raise TargetError(f"could not read {relpath}: {exc}") from exc
         return FileStat(sha256=sha256_bytes(data), size=len(data))
 
     def read(self, relpath: str) -> bytes:
-        with open(self._full(relpath), "rb") as fh:
-            return fh.read()
+        try:
+            with open(self._full(relpath), "rb") as fh:
+                return fh.read()
+        except OSError as exc:
+            raise TargetError(f"could not read {relpath}: {exc}") from exc
 
     def _put(self, relpath: str, data: bytes) -> None:
         full = self._full(relpath)

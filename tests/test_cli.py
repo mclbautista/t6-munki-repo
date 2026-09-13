@@ -13,11 +13,17 @@ from munki_fleet.targets import LocalDirTarget
 
 
 def make_tree(root, catalog_items, manifest=b"manifest"):
-    """A minimal metadata checkout: one pkginfo, one manifest, one icon hash file."""
+    """A minimal but *valid* metadata checkout: real pkginfos, a manifest, catalogs, an icon file."""
+    import plistlib
     root = str(root)
-    write_file(root, "pkgsinfo/A-1.0.pkginfo", b"<plist/>")
+    for entry in catalog_items:
+        pkginfo = dict(entry)
+        pkginfo.setdefault("installer_item_location", f"{entry['name']}.dmg")
+        write_file(root, f"pkgsinfo/{entry['name']}.pkginfo", plistlib.dumps(pkginfo))
     write_file(root, "manifests/site_default", manifest)
-    write_file(root, "icons/_icon_hashes.plist", b"<plist/>")
+    write_file(root, "catalogs/all", catalog_array(catalog_items))
+    write_file(root, "catalogs/testing", catalog_array(catalog_items))
+    write_file(root, "icons/_icon_hashes.plist", plistlib.dumps({}))
     return root
 
 
@@ -103,6 +109,36 @@ def test_an_unreadable_target_is_refused(tmp_path):
                 catalog_runner=catalog_runner({"all": [item("A")], "testing": [item("A")]}))
     code = main(["publish", "--metadata-root", source, "--target", "fake:/repo"], deps=deps)
     assert code == 3
+
+
+def test_check_reports_findings_and_exits_non_zero(tmp_path, capsys):
+    """`check` is the drift+integrity entry point; a renamed field once crashed it unnoticed."""
+    source = make_tree(tmp_path / "src", [item("A")])
+    target = seeded_target(source, tmp_path / "tgt", [item("A")])
+    write_file(target.root, "manifests/extra", b"published but not in the checkout")
+    deps = Deps(target_factory=lambda spec: target,
+                catalog_runner=catalog_runner({"all": [item("A")], "testing": [item("A")]}))
+
+    code = main(["check", "--metadata-root", source, "--target", "fake:/repo"], deps=deps)
+
+    out = capsys.readouterr().out
+    assert code == 1, out
+    assert "only on the target: manifests/extra" in out
+    assert "drift:" in out and "integrity:" in out
+
+
+def test_check_reports_clean_on_a_consistent_tree(tmp_path, capsys):
+    source = make_tree(tmp_path / "src", [item("A")])
+    target = seeded_target(source, tmp_path / "tgt", [item("A")])
+    write_file(target.root, "pkgs/A.dmg", b"payload")
+    deps = Deps(target_factory=lambda spec: target,
+                catalog_runner=catalog_runner({"all": [item("A")], "testing": [item("A")]}))
+
+    code = main(["check", "--metadata-root", source, "--target", "fake:/repo"], deps=deps)
+
+    captured = capsys.readouterr()
+    assert code == 0, captured.out + captured.err
+    assert "no integrity findings" in captured.out
 
 
 def test_dry_run_reports_without_publishing(tmp_path):

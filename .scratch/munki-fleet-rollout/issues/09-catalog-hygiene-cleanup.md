@@ -31,17 +31,27 @@
 
 ## Acceptance criteria
 
-- [x] Duplicate name+version catalog entries are eliminated (the Firefox pair must resolve to exactly
-      one entry, so a rebuild can no longer reorder them) → **Firefox done 2026-09-13** on Cyril's
-      decision to keep the `.pkg`: `apps/firefox/Firefox-155.0.1.plist` (the `.dmg`, `copy_from_dmg`)
-      was retired, `apps/firefox/Firefox-155.0.1__1.plist` (the `.pkg`, one receipt) survives.
-      Verified behaviour-preserving: the entry clients receive is byte-identical to what they were
-      already getting, and a publish now passes the gate with no declarations at all. **GoogleChrome
-      remains duplicated** and still needs the same decision.
-- [ ] The retired pkginfo is deleted from the NAS as well as the checkout — it is still served at
-      `pkgsinfo/apps/firefox/Firefox-155.0.1.plist`, which is exactly the NAS-only drift ticket 03
-      will report. Left deliberately so 03 has a real case to detect and so the deletion happens
-      through the reconciling path rather than by hand., with the surviving entry's payload and hash the one that is actually installed.
+- [ ] Duplicate name+version catalog entries are eliminated, with the surviving entry's payload and
+      hash the one that is actually installed.
+      → **Firefox: done 2026-09-13.** On Cyril's decision the `.dmg` pkginfo
+      (`apps/firefox/Firefox-155.0.1.plist`) was retired and the `.pkg`
+      (`apps/firefox/Firefox-155.0.1__1.plist`) survives. **Verified:** the surviving entry is
+      byte-identical to the entry the fleet was already being served (Munki takes the first match),
+      so the installer clients are offered does not change — re-derivable from the committed
+      pre-image at `docs/evidence/09-catalog-before-firefox-retirement/`. **Not verified:** the
+      "actually installed" half of this criterion. The pilot `202-TOC-M4-Max` runs Firefox 154.0
+      with no `org.mozilla.firefox` receipt, so neither pkginfo's install path put Firefox there.
+      Both entries install 155.0.1 and differ in detection mechanics (`installs` vs `receipts`), so
+      retiring one removes an ambiguity rather than being a no-op. Details:
+      `docs/evidence/09-firefox-retirement.txt`.
+      **GoogleChrome remains duplicated and still needs the same decision**, which is why this
+      criterion is unticked.
+- [x] The retired pkginfo is **_detected_** as NAS-only drift. Ticket 03's live run reports exactly
+      one drift finding: `pkgsinfo/apps/firefox/Firefox-155.0.1.plist`, present on the NAS and not in
+      the checkout, still served over HTTP. It was left deliberately so the detection had a real case
+      and so the deletion happens through the reconciling path rather than by hand.
+- [ ] The retired pkginfo is **_deleted_** from the NAS. This is a deletion on the NAS and needs
+      Cyril's approval; the check that detects it exists, the reconciler that removes it does not., with the surviving entry's payload and hash the one that is actually installed.
 - [ ] The test artifact item is removed from every manifest section, and its pkginfo is retired from the repository.
 - [ ] Deferred vendor suites are removed from `site_default`'s optional list and appear in no manifest section.
 - [ ] The staged-but-unmanaged nested `apps` area is resolved: each item is either fully imported into the standard layout or withdrawn, and the decision for each is recorded.

@@ -1,0 +1,8 @@
+drift: missing on the target 0, only on the target 1, differing 0, unreadable 0
+  only on the target: pkgsinfo/apps/firefox/Firefox-155.0.1.plist
+integrity: duplicate_name 2 (membership checked against the served catalogs)
+  duplicate_name (2):
+    GoogleChrome: 2 entries share this name in catalogs/all; Munki takes the first, so which installer a client receives depends on build order
+    GoogleChrome: 2 entries share this name in catalogs/testing; Munki takes the first, so which installer a client receives depends on build order
+
+# Measured without a pipe: exit=1 (findings present)
