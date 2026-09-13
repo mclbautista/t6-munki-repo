@@ -224,7 +224,7 @@
       "subject": "Sixto-5"
     },
     {
-      "detail": "Cyril's Mac mini exists and is a fleet member (ADR 0004 lists it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202, LocalHostName Cyrils-Mac-mini, HostName unset.",
+      "detail": "Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202.",
       "kind": "needs-record",
       "proposed": "create an inventory record; this module will not invent one",
       "subject": "Cyrils-Mac-mini"
@@ -232,7 +232,7 @@
   ],
   "identity_source": "docs/evidence/04-ard-system-overview-2026-09-13.txt",
   "known_absent": [
-    "Cyrils-Mac-mini:Cyril's Mac mini exists and is a fleet member (ADR 0004 lists it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202, LocalHostName Cyrils-Mac-mini, HostName unset."
+    "Cyrils-Mac-mini:Cyril's Mac mini is a fleet member (ADR 0004 names it among the three machines this project has touched) but has no row in the ARD export. Probed locally 2026-09-13: serial RWJ57V9PW4, hardware UUID B30D55C8-679C-56E2-9654-16CBFD4A905D, Mac16,10 (arm64), macOS 26.6.2 (25G83), LAN 192.168.88.202."
   ],
   "machines": [
     {

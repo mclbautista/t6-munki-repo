@@ -168,9 +168,19 @@ class TestManifestReconciliation:
             {"202B-Mac-Studio", "201-Bay-03-M1-Ultra"}
 
     def test_a_manifest_naming_no_role_group_is_reported_as_unassigned(self, tmp_path):
-        rep = report(tmp_path)
-        assert rep.unassigned_roles == ("201-Bay-03-M1-Ultra",)
-        assert [f.subject for f in kinds(rep, "role-unassigned")] == ["201-Bay-03-M1-Ultra"]
+        # The fixture's unassigned manifest has no machine row of its own, so the
+        # machine-level finding is exercised here with a machine that does exist.
+        metadata = fake_metadata_tree(tmp_path / "metadata")
+        write_manifest(metadata, "orphan-mini", ["all"], "Orphan mini")  # no role group
+        manifests, _ = load_manifests(metadata)
+        machine = ArdRecord(computer="Orphan mini", unix_hostname="orphan-mini", serial="S1",
+                            model="Mac mini", os_version="", primary_ip="", primary_mac="",
+                            wifi_mac="", cpu_speed="3.2 GHz", processor_count="6", memory="16 GB",
+                            collected_at="9/13/26 12:00 AM")
+        rep = build_report([machine], manifests, source="fixture", export_date=EXPORT_DATE)
+        assert rep.unassigned_roles == ("201-Bay-03-M1-Ultra", "orphan-mini")
+        # only the unassigned manifest that has a machine produces a machine finding
+        assert [f.subject for f in kinds(rep, "role-unassigned")] == ["orphan-mini"]
 
     def test_a_machine_with_no_manifest_is_not_also_called_unassigned(self, tmp_path):
         # One defect, one finding: no manifest and an unassigned manifest are different.
@@ -262,7 +272,7 @@ class TestSerialisationAndCli:
                    for m in payload["machines"])
         assert {f["kind"] for f in payload["findings"]} >= {
             "uuid-unavailable", "machine-without-manifest", "manifest-without-machine",
-            "name-difference", "bays-missing", "role-unassigned", "stale-collection"}
+            "name-difference", "bays-missing", "stale-collection"}
 
     def test_the_same_inputs_produce_the_same_bytes(self, tmp_path):
         assert report_to_json(report(tmp_path)) == report_to_json(report(tmp_path))

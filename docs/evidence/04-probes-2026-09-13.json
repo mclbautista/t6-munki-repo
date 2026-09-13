@@ -1,0 +1,20 @@
+{
+  "machines": [
+    {
+      "serial": "RWJ57V9PW4",
+      "hardware_uuid": "B30D55C8-679C-56E2-9654-16CBFD4A905D",
+      "architecture": "arm64",
+      "hostname": "Cyrils-Mac-mini",
+      "model_identifier": "Mac16,10",
+      "os_version": "26.6.2 (25G83)"
+    },
+    {
+      "serial": "C07D317NPJJ7",
+      "hardware_uuid": "CB3D4672-22E7-573F-9CD2-5F1D2A6BEC0F",
+      "architecture": "x86_64",
+      "hostname": "Sixto-5",
+      "model_identifier": "Macmini8,1",
+      "os_version": "15.7.1 (24G231)"
+    }
+  ]
+}

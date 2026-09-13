@@ -1,0 +1,332 @@
+[
+  {
+    "device_uuid": "B81809A7-8F34-5973-BD62-CBDC7C34D84E",
+    "hardware_uuid": null,
+    "hostname": "202 Jason M2 Max",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.179",
+    "name": "202 Jason M2 Max",
+    "notion_last_edited_time": "2025-12-12T11:58:00.000Z",
+    "notion_url": "https://app.notion.com/p/202-Jason-M2-Max-c0fb1dd0554f435dba31ca99ac9d055c"
+  },
+  {
+    "device_uuid": "CE2BF97E-C174-5356-AD9E-184EA23522D9",
+    "hardware_uuid": null,
+    "hostname": "202 Mac Pro",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.174",
+    "name": "202 Mac Pro",
+    "notion_last_edited_time": "2025-12-12T11:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/202-Mac-Pro-9bf9088badc5474e9f99a442c374634c"
+  },
+  {
+    "device_uuid": "B393E619-D093-5769-A19A-7C2670C32B49",
+    "hardware_uuid": "B393E619-D093-5769-A19A-7C2670C32B49",
+    "hostname": "202 TOC M4 Max",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.182",
+    "name": "202 TOC M4 Max",
+    "notion_last_edited_time": "2026-09-11T19:28:00.000Z",
+    "notion_url": "https://app.notion.com/p/202-TOC-M4-Max-382fb4d59e5980e9b161f4a52551edce"
+  },
+  {
+    "device_uuid": "B92E7EF4-2F7F-5030-8139-4A992F76D072",
+    "hardware_uuid": null,
+    "hostname": "202 Tim M2 Max",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.180",
+    "name": "202 Tim M2 Max",
+    "notion_last_edited_time": "2025-12-17T04:48:00.000Z",
+    "notion_url": "https://app.notion.com/p/202-Tim-M2-Max-9df0feb6f64443238b570108d63b4190"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "202A iMac",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.176",
+    "name": "202A iMac",
+    "notion_last_edited_time": "2025-10-29T18:09:00.000Z",
+    "notion_url": "https://app.notion.com/p/202A-iMac-fb45403090dd42deb16b80fc499cd18c"
+  },
+  {
+    "device_uuid": "F2E90DC7-264E-5805-BFFB-BB8EF164A373",
+    "hardware_uuid": null,
+    "hostname": "202B Mac Studio",
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "202B Mac Studio",
+    "notion_last_edited_time": "2026-05-20T04:49:00.000Z",
+    "notion_url": "https://app.notion.com/p/202B-Mac-Studio-366fb4d59e5980e5b41ec63f01b87a13"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": "F9D06A97-54A7-4807-B818-B7E00688ED8B",
+    "hostname": "202C Studio M1 Ultra",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.181",
+    "name": "202C Studio M1 Ultra",
+    "notion_last_edited_time": "2026-09-11T19:47:00.000Z",
+    "notion_url": "https://app.notion.com/p/202C-Studio-M1-Ultra-3d8fb4d59e59812d98ccc3ef32d59fec"
+  },
+  {
+    "device_uuid": "34FAF46A-C4DD-58B9-B55C-9E5035DD1CE0",
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.178",
+    "name": "202C iMac",
+    "notion_last_edited_time": "2025-12-12T11:53:00.000Z",
+    "notion_url": "https://app.notion.com/p/202C-iMac-ee8a148559f14cf186b188fd12d2bfcf"
+  },
+  {
+    "device_uuid": "3B2CCC82-B08E-5C26-BF32-F842E5DC7B0E",
+    "hardware_uuid": null,
+    "hostname": "202B iMac",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.177",
+    "name": "303B iMac",
+    "notion_last_edited_time": "2026-05-20T04:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/303B-iMac-5cf3c7aeeb0947ce86cfc6ef252326a7"
+  },
+  {
+    "device_uuid": "5B31AF0F-26E0-5368-8537-4A8AE3110050",
+    "hardware_uuid": null,
+    "hostname": "303D Mac Studio M2",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.193",
+    "name": "303D Mac Studio M2",
+    "notion_last_edited_time": "2026-06-13T10:58:00.000Z",
+    "notion_url": "https://app.notion.com/p/303D-Mac-Studio-M2-37efb4d59e5980b5b6e7f928e1ff2e13"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "Angels-iMac",
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Angel\u2019s iMac",
+    "notion_last_edited_time": "2025-10-27T23:47:00.000Z",
+    "notion_url": "https://app.notion.com/p/Angel-s-iMac-0b44da83fe194e5385e615067e9871e3"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "201 Bay 01 Mac Pro",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.171",
+    "name": "Bay 01 Mac Pro",
+    "notion_last_edited_time": "2026-02-10T05:39:00.000Z",
+    "notion_url": "https://app.notion.com/p/Bay-01-Mac-Pro-b43030ebec854c2c9c8d4377ba74b028"
+  },
+  {
+    "device_uuid": "441D8C2F-37B0-5F59-A6D1-0C93BB41DF3B",
+    "hardware_uuid": null,
+    "hostname": "201 Bay 02 M1 Max",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.172",
+    "name": "Bay 02 Mac Studio",
+    "notion_last_edited_time": "2025-12-12T11:54:00.000Z",
+    "notion_url": "https://app.notion.com/p/Bay-02-Mac-Studio-8927247d36494da98e5e1bbd2c6c6cd9"
+  },
+  {
+    "device_uuid": "630F031E-AEB9-539F-9B37-75EF968B5A12",
+    "hardware_uuid": null,
+    "hostname": "201 Bay 03 M1 Ultra",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.173",
+    "name": "Bay 03 Mac Studio Ultra",
+    "notion_last_edited_time": "2025-12-17T04:48:00.000Z",
+    "notion_url": "https://app.notion.com/p/Bay-03-Mac-Studio-Ultra-220190b0f3f9462babf9d1be496beb7f"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Chad\u2019s Mac",
+    "notion_last_edited_time": "2025-10-09T06:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/Chad-s-Mac-9c52b0536abb4ed59101dbc89773caf6"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Conversion PC",
+    "notion_last_edited_time": "2025-10-27T23:47:00.000Z",
+    "notion_url": "https://app.notion.com/p/Conversion-PC-fa1edb0adbb1449ab1669ad9c82f9129"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.202",
+    "name": "Cyril Machine",
+    "notion_last_edited_time": "2025-10-29T18:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/Cyril-Machine-882fb6a7f5994daeb241f0495078c3b3"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "DIT Laptop",
+    "notion_last_edited_time": "2025-10-27T23:47:00.000Z",
+    "notion_url": "https://app.notion.com/p/DIT-Laptop-86bb92c2e3904d489f1a4e1dbc04774a"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.161",
+    "name": "Deco 201",
+    "notion_last_edited_time": "2025-10-29T18:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/Deco-201-299fb4d59e59807ba218e54a2fe33166"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.162",
+    "name": "Deco 202",
+    "notion_last_edited_time": "2025-10-29T18:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/Deco-202-299fb4d59e59801095fbfb63b08bcf73"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.163",
+    "name": "Deco 203",
+    "notion_last_edited_time": "2025-10-29T18:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/Deco-203-299fb4d59e5980f18e86cd3bf9ed090e"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "T6-NAS-01",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.188",
+    "name": "NAS",
+    "notion_last_edited_time": "2026-09-11T19:47:00.000Z",
+    "notion_url": "https://app.notion.com/p/NAS-5f4f45adc9b34ec7a465a0108bd862be"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "US 16 XG",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.201",
+    "name": "PFSense",
+    "notion_last_edited_time": "2025-10-27T23:33:00.000Z",
+    "notion_url": "https://app.notion.com/p/PFSense-299fb4d59e598080b1acd0dfd43ccc36"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Pantry",
+    "notion_last_edited_time": "2025-10-09T06:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/Pantry-eb739aec19f84f408b2ca380a40bc78d"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Remote",
+    "notion_last_edited_time": "2025-10-09T06:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/Remote-cc502f5c791f40089a8ef966d3fd4c56"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": null,
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.151",
+    "name": "Sixto",
+    "notion_last_edited_time": "2025-10-29T18:08:00.000Z",
+    "notion_url": "https://app.notion.com/p/Sixto-1f0b63915ff14ae8a144e2243819b23d"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": "B903BCF6-9D5B-4FCB-A4F7-0542F3BBF86D",
+    "hostname": "T6 MacBook M3 Pro",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.118",
+    "name": "T6 MacBook M3 Pro",
+    "notion_last_edited_time": "2026-09-11T19:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/T6-MacBook-M3-Pro-3d8fb4d59e5981d087f5c70e8cad0d75"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "TL-SG3428X",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.12",
+    "name": "TL-SG3428X",
+    "notion_last_edited_time": "2026-09-08T00:24:00.000Z",
+    "notion_url": "https://app.notion.com/p/TL-SG3428X-a0fc07972fc547088c66ab4af85fa39f"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "US 16 XG",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.153",
+    "name": "Unifi Switch",
+    "notion_last_edited_time": "2026-05-21T05:26:00.000Z",
+    "notion_url": "https://app.notion.com/p/Unifi-Switch-f6150294f86f4f20a53e705d454125fb"
+  },
+  {
+    "device_uuid": "6C48C6B3-D095-5BBF-A9D2-838215EA754A",
+    "hardware_uuid": "6C48C6B3-D095-5BBF-A9D2-838215EA754A",
+    "hostname": "201 Viewing Room",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.170",
+    "name": "Viewing Room",
+    "notion_last_edited_time": "2026-02-10T05:39:00.000Z",
+    "notion_url": "https://app.notion.com/p/Viewing-Room-7a849c7a3edc48f69d4e516f12529bbb"
+  },
+  {
+    "device_uuid": "873FA57D-AA05-54D7-9347-A2A25A4D37EE",
+    "hardware_uuid": null,
+    "hostname": "202A iMac",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.175",
+    "name": "Wesley\u2019s Mac Mini M4",
+    "notion_last_edited_time": "2025-12-12T11:53:00.000Z",
+    "notion_url": "https://app.notion.com/p/Wesley-s-Mac-Mini-M4-299fb4d59e5980028894f581b01da751"
+  },
+  {
+    "device_uuid": null,
+    "hardware_uuid": null,
+    "hostname": "202-Windows",
+    "is_archived": 0,
+    "lan_ip_address": null,
+    "name": "Windows Machine",
+    "notion_last_edited_time": "2026-02-10T05:38:00.000Z",
+    "notion_url": "https://app.notion.com/p/Windows-Machine-bf64bf5733384006a8bc1a0ebc53a526"
+  },
+  {
+    "device_uuid": "654D5B83-1B61-5B30-92EC-A6F3F4FD5F86",
+    "hardware_uuid": "E0978034-F498-413F-B624-A8C69E9553B8",
+    "hostname": "T6 MacBook M4 Max",
+    "is_archived": 0,
+    "lan_ip_address": "192.168.88.17",
+    "name": "t6\u2019s MacBook Pro M4 Max",
+    "notion_last_edited_time": "2026-09-11T19:57:00.000Z",
+    "notion_url": "https://app.notion.com/p/t6-s-MacBook-Pro-M4-Max-35efb4d59e598083b327dbcb76710bff"
+  }
+]
