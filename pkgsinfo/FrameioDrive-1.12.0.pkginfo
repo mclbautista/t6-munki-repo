@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-11T20:27:21Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>category</key>
+	<string>Networking</string>
+	<key>installed_size</key>
+	<integer>571321</integer>
+	<key>installer_item_hash</key>
+	<string>178e7cd495221837e75a1c4b5d1cba9266149feff6a83e21def6a6d11bac427c</string>
+	<key>installer_item_location</key>
+	<string>FrameioDrive-1.12.0.pkg</string>
+	<key>installer_item_size</key>
+	<integer>227760</integer>
+	<key>minimum_os_version</key>
+	<string>10.5.0</string>
+	<key>name</key>
+	<string>FrameioDrive</string>
+	<key>receipts</key>
+	<array>
+		<dict>
+			<key>installed_size</key>
+			<integer>571321</integer>
+			<key>packageid</key>
+			<string>com.frameio.drive</string>
+			<key>version</key>
+			<string>0</string>
+		</dict>
+	</array>
+	<key>supported_architectures</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>uninstall_method</key>
+	<string>removepackages</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>1.12.0</string>
+</dict>
+</plist>

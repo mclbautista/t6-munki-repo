@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-11T20:28:20Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>category</key>
+	<string>Video</string>
+	<key>installed_size</key>
+	<integer>338501</integer>
+	<key>installer_item_hash</key>
+	<string>2a329052c4385672a6be4f29dc22096ce7d6f7ed86164cb668bd9b458190628e</string>
+	<key>installer_item_location</key>
+	<string>Shutter_Encoder-20.3.pkg</string>
+	<key>installer_item_size</key>
+	<integer>179192</integer>
+	<key>minimum_os_version</key>
+	<string>10.5.0</string>
+	<key>name</key>
+	<string>ShutterEncoder</string>
+	<key>receipts</key>
+	<array>
+		<dict>
+			<key>installed_size</key>
+			<integer>338501</integer>
+			<key>packageid</key>
+			<string>com.paulpacifico.shutterencoder</string>
+			<key>version</key>
+			<string>20.3.0</string>
+		</dict>
+	</array>
+	<key>supported_architectures</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>uninstall_method</key>
+	<string>removepackages</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>20.3</string>
+</dict>
+</plist>

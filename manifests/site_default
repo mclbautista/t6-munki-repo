@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>managed_installs</key>
+	<array/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>optional_installs</key>
+	<array>
+		<string>AnyDesk</string>
+		<string>Cyberduck</string>
+		<string>Dropbox</string>
+		<string>Firefox</string>
+		<string>GoogleChrome</string>
+		<string>MSAutoUpdate</string>
+		<string>MSEdge</string>
+		<string>MSTeams</string>
+		<string>Spotify</string>
+		<string>VLC</string>
+		<string>davinci-resolve-project-server</string>
+		<string>davinci-resolve-studio</string>
+		<string>t6-munki-test</string>
+	</array>
+</dict>
+</plist>

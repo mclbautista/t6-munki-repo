@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-10T09:19:22Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>description</key>
+	<string>DaVinci Resolve Project Server 20.0 for Mac</string>
+	<key>display_name</key>
+	<string>DaVinci Resolve Project Server 20.0</string>
+	<key>installed_size</key>
+	<integer>1369956</integer>
+	<key>installer_item_hash</key>
+	<string>c62640b2cb37566c10895908b6b7c09117b264d2f823f8d0d416bbcca5fc5a95</string>
+	<key>installer_item_location</key>
+	<string>DaVinci_Resolve_Project_Server_20.0_Mac-20.0.dmg</string>
+	<key>installer_item_size</key>
+	<integer>866850</integer>
+	<key>minimum_os_version</key>
+	<string>10.5.0</string>
+	<key>name</key>
+	<string>davinci-resolve-project-server</string>
+	<key>receipts</key>
+	<array>
+		<dict>
+			<key>installed_size</key>
+			<integer>2</integer>
+			<key>packageid</key>
+			<string>com.blackmagic-design.ManifestPostgres</string>
+			<key>version</key>
+			<string>13.4</string>
+		</dict>
+		<dict>
+			<key>installed_size</key>
+			<integer>1369954</integer>
+			<key>packageid</key>
+			<string>com.blackmagic-design.ManifestProjectServer</string>
+			<key>version</key>
+			<string>20.0</string>
+		</dict>
+	</array>
+	<key>uninstall_method</key>
+	<string>removepackages</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>20.0</string>
+</dict>
+</plist>

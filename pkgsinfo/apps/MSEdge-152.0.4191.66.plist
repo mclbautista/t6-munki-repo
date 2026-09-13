@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-10T10:19:55Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>blocking_applications</key>
+	<array>
+		<string>Microsoft Edge</string>
+		<string>Microsoft Error Reporting</string>
+		<string>Microsoft AutoUpdate</string>
+	</array>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>developer</key>
+	<string>Microsoft</string>
+	<key>display_name</key>
+	<string>Microsoft Edge</string>
+	<key>installed_size</key>
+	<integer>943468</integer>
+	<key>installer_item_hash</key>
+	<string>ea0cb511706321fbe7800d3e1d6b8e7c1237d9abea97d68a9ac56f7317479b38</string>
+	<key>installer_item_location</key>
+	<string>apps/MSEdge-152.0.4191.66.pkg</string>
+	<key>installer_item_size</key>
+	<integer>422145</integer>
+	<key>installs</key>
+	<array>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.microsoft.edgemac</string>
+			<key>CFBundleShortVersionString</key>
+			<string>152.0.4191.66</string>
+			<key>path</key>
+			<string>/Applications/Microsoft Edge.app</string>
+			<key>type</key>
+			<string>application</string>
+			<key>version_comparison_key</key>
+			<string>CFBundleShortVersionString</string>
+		</dict>
+	</array>
+	<key>minimum_os_version</key>
+	<string>10.5.0</string>
+	<key>name</key>
+	<string>MSEdge</string>
+	<key>receipts</key>
+	<array>
+		<dict>
+			<key>installed_size</key>
+			<integer>943468</integer>
+			<key>packageid</key>
+			<string>com.microsoft.edgemac</string>
+			<key>version</key>
+			<string>152.0.4191.66</string>
+		</dict>
+	</array>
+	<key>unattended_install</key>
+	<true/>
+	<key>uninstall_method</key>
+	<string>removepackages</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>152.0.4191.66</string>
+</dict>
+</plist>

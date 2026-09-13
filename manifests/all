@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>display_name</key>
+	<string>T6 All Macs</string>
+	<key>included_manifests</key>
+	<array>
+		<string>site_default</string>
+	</array>
+	<key>managed_installs</key>
+	<array>
+		<string>AnyDesk</string>
+		<string>AppCleaner</string>
+		<string>CineCred</string>
+		<string>Stow</string>
+		<string>DiskCatalogMaker</string>
+		<string>FrameioDrive</string>
+		<string>FrameioTransfer</string>
+		<string>FreeFileSync</string>
+		<string>GoogleChrome</string>
+		<string>HandBrake</string>
+		<string>IBMAsperaConnect</string>
+		<string>iTerm2</string>
+		<string>Keka</string>
+		<string>LucidLink</string>
+		<string>MediaInfo</string>
+		<string>Notion</string>
+		<string>OnyX</string>
+		<string>QfinderPro</string>
+		<string>RemoteDesktop</string>
+		<string>RemotePC</string>
+		<string>ShutterEncoder</string>
+		<string>Soundly</string>
+		<string>TeamViewer</string>
+		<string>Telegram</string>
+		<string>VLC</string>
+		<string>Zoom</string>
+	</array>
+	<key>managed_updates</key>
+	<array>
+	</array>
+</dict>
+</plist>

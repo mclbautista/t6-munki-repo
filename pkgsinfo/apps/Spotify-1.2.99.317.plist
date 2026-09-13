@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-10T10:09:28Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>description</key>
+	<string>Spotify is a music streaming service offering unlimited streaming of selected music from a range of major and independent record labels.</string>
+	<key>display_name</key>
+	<string>Spotify</string>
+	<key>installer_item_hash</key>
+	<string>c45e8ea0700c36fbc309d6351b803e9f6cee1dbf865a30aa6fa3d8cb9d0720b1</string>
+	<key>installer_item_location</key>
+	<string>apps/Spotify-arm64-1.2.99.317.dmg</string>
+	<key>installer_item_size</key>
+	<integer>161575</integer>
+	<key>installer_type</key>
+	<string>copy_from_dmg</string>
+	<key>installs</key>
+	<array>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.spotify.client</string>
+			<key>CFBundleName</key>
+			<string>Spotify</string>
+			<key>CFBundleShortVersionString</key>
+			<string>1.2.99.317</string>
+			<key>CFBundleVersion</key>
+			<string>1.2.99.317</string>
+			<key>minosversion</key>
+			<string>13.0</string>
+			<key>path</key>
+			<string>/Applications/Spotify.app</string>
+			<key>type</key>
+			<string>application</string>
+			<key>version_comparison_key</key>
+			<string>CFBundleShortVersionString</string>
+		</dict>
+	</array>
+	<key>items_to_copy</key>
+	<array>
+		<dict>
+			<key>destination_path</key>
+			<string>/Applications</string>
+			<key>source_item</key>
+			<string>Spotify.app</string>
+		</dict>
+	</array>
+	<key>minimum_os_version</key>
+	<string>13.0</string>
+	<key>name</key>
+	<string>Spotify</string>
+	<key>postinstall_script</key>
+	<string>#!/bin/bash
+                # Add directory traversal for the entire application and ensure 
+                # all executables are executable by group and other
+                /bin/chmod -R go+rX /Applications/Spotify.app
+            </string>
+	<key>supported_architectures</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>unattended_install</key>
+	<true/>
+	<key>uninstall_method</key>
+	<string>remove_copied_items</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>1.2.99.317</string>
+</dict>
+</plist>

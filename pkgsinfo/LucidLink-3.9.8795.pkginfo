@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>_metadata</key>
+	<dict>
+		<key>created_by</key>
+		<string>t6</string>
+		<key>creation_date</key>
+		<date>2026-09-11T20:27:46Z</date>
+		<key>munki_version</key>
+		<string>6.6.0.4686</string>
+		<key>os_version</key>
+		<string>15.7.1</string>
+	</dict>
+	<key>autoremove</key>
+	<false/>
+	<key>catalogs</key>
+	<array>
+		<string>testing</string>
+	</array>
+	<key>category</key>
+	<string>Networking</string>
+	<key>installed_size</key>
+	<integer>1106592</integer>
+	<key>installer_item_hash</key>
+	<string>1354bbaa182506bf7db732f7df7fca2528342f3caf25817a07202b127086a46e</string>
+	<key>installer_item_location</key>
+	<string>LucidLink-3.9.8795.pkg</string>
+	<key>installer_item_size</key>
+	<integer>458511</integer>
+	<key>minimum_os_version</key>
+	<string>10.5.0</string>
+	<key>name</key>
+	<string>LucidLink</string>
+	<key>receipts</key>
+	<array>
+		<dict>
+			<key>installed_size</key>
+			<integer>1106592</integer>
+			<key>packageid</key>
+			<string>com.lucidlink.app</string>
+			<key>version</key>
+			<string>3.9.8795</string>
+		</dict>
+	</array>
+	<key>uninstall_method</key>
+	<string>removepackages</string>
+	<key>uninstallable</key>
+	<true/>
+	<key>version</key>
+	<string>3.9.8795</string>
+</dict>
+</plist>
