@@ -1,0 +1,74 @@
+fleet-ssh-access ticket 03, wave 1: the state before any authorization
+
+Captured 2026-09-14T22:16:26+08:00 from the collector host
+(Cyrils-Mac-mini.local, 192.168.88.202) at checkout c3c2398.
+Read-only: ICMP echo, a TCP connect to port 22, and an ssh attempt with the fleet key as user t6.
+
+================================================================================
+1. THE WAVE, AGAINST THE INVENTORY AND THE ROLE MATRIX
+================================================================================
+
+machine             serial        address          role      arch     inventory OS
+----------------------------------------------------------------------------------------
+202-Mac-Pro-3       C02C71SDK7GF  192.168.88.174   toc       x86_64   macOS 15.6.1 (24G90)
+202-TOC-M4-Max      RW3HL9FL4M    192.168.88.182   toc       arm64    macOS 26.2 (25C56)
+202A-Mac-Mini-M4    X904F44LHX    192.168.88.175   warroom   arm64    macOS 26.6.2 (25G83)
+202B-Mac-Studio     (none)        (none)           warroom   (none)   (none)
+
+202B-Mac-Studio has no row in the Apple Remote Desktop export that sources every other machine's
+identity (docs/evidence/04-ard-system-overview-2026-09-13.txt): no serial, no address, no OS. Its
+role is recorded in docs/role-matrix.csv with Cyril's confirmation that the Mac exists. It is the
+one machine in this wave whose identity is still open, and it cannot be authorized against nothing.
+
+================================================================================
+2. PER-MACHINE STATE, MEASURED
+================================================================================
+
+$ ping -c 2 -W 1000 <ip> ; python3 -c 'socket.connect((ip, 22))' ; ssh -n -o BatchMode=yes -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 t6@<ip> 'whoami; hostname'
+
+202-Mac-Pro-3     192.168.88.174   ping replies   tcp/22 REFUSED   ssh: connect to host 192.168.88.174 port 22: Connection refused   exit 255
+202-TOC-M4-Max    192.168.88.182   ping replies   tcp/22 open      stdout: t6 / 202-TOC-M4-Max.local                                  exit 0
+202A-Mac-Mini-M4  192.168.88.175   ping replies   tcp/22 REFUSED   ssh: connect to host 192.168.88.175 port 22: Connection refused   exit 255
+202B-Mac-Studio   (no address)     not probed - there is no address in any source to probe
+
+Two of the three machines that can be addressed are up but are NOT running sshd: port 22 refuses
+the connection, which is a closed service rather than an authentication failure. Authorizing a key
+on them would change nothing; each needs Remote Login switched on first, which is a facility-Mac
+service change and is why this ticket's approval has to cover it explicitly.
+
+================================================================================
+3. IS 202B-MAC-STUDIO REACHABLE UNDER ANOTHER ADDRESS?
+================================================================================
+
+A ping sweep of 192.168.88.0/24 (ICMP echo only) found 45 hosts that answered. 14 are inventory or
+infrastructure addresses; 31 answered from addresses the inventory does not carry:
+
+  192.168.88.11 192.168.88.12 192.168.88.16 192.168.88.24 192.168.88.30 192.168.88.33 192.168.88.35
+  192.168.88.38 192.168.88.43 192.168.88.45 192.168.88.55 192.168.88.56 192.168.88.70 192.168.88.73
+  192.168.88.74 192.168.88.82 192.168.88.84 192.168.88.85 192.168.88.88 192.168.88.90 192.168.88.91
+  192.168.88.92 192.168.88.96 192.168.88.99 192.168.88.107 192.168.88.114 192.168.88.118 192.168.88.130
+  192.168.88.135 192.168.88.142 192.168.88.177
+
+None of them reverse-resolves to a name, and none reports itself: this sweep produces candidates,
+not identity, so 202B is NOT guessed into compliance from it. One address is worth naming rather
+than treating as noise: 192.168.88.177 is the address the operational Bays projection carried for
+303B iMac before that machine's real address (192.168.88.191) was established, so a live host there
+is a reassigned lease rather than evidence about 202B.
+
+What would close 202B: its own serial and address, read at the machine (Apple menu > About This Mac,
+or `system_profiler SPHardwareDataType` and `ipconfig getifaddr en0`), or a fresh Apple Remote
+Desktop export from an ARD task that actually sees it. Until then it has no disposition other than
+'identity unknown', and it stays out of the authorized set.
+
+================================================================================
+4. THE CHANGE EACH MACHINE WOULD NEED, AND ITS ROLLBACK
+================================================================================
+
+202-TOC-M4-Max    already done under ticket 02 (stanza in ~/.ssh/config; key in the t6 account).
+                  rollback: remove that authorized_keys line + the stanza.
+202-Mac-Pro-3     enable Remote Login at the machine, and authorize the fleet key for t6.
+                  rollback: delete the authorized_keys line; and Remote Login off again if it is to
+                  return to today's state (today: closed).
+202A-Mac-Mini-M4  same as 202-Mac-Pro-3.
+202B-Mac-Studio   nothing can be authorized until its identity is established.
+
