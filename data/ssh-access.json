@@ -13,6 +13,24 @@
       "serial": "RW3HL9FL4M",
       "destination": "202-TOC-M4-Max",
       "note": "The TOC pilot, 192.168.88.182, reached as t6. The destination is the machine's own name rather than an alias because it resolves through a stanza in the collector host's ~/.ssh/config that supplies HostName, User, IdentityFile and IdentitiesOnly - the fleet key is not a default identity name, so plain `ssh t6@192.168.88.182` offers the default identities instead and never tries it (measured 2026-09-14). Verified the same day: key auth returns t6/202-TOC-M4-Max.local/macOS 26.2, and the pilot's authorized_keys holds exactly one key, the approved one."
+    },
+    {
+      "name": "202-Mac-Pro-3",
+      "serial": "C02C71SDK7GF",
+      "destination": "202-Mac-Pro-3",
+      "note": "The wave-1 Intel Mac Pro, 192.168.88.174, reached as t6 through a stanza in the collector host's ~/.ssh/config. Verified 2026-09-14 23:41: key auth returns t6/202-Mac-Pro-3.local/macOS 15.6.1/x86_64/serial C02C71SDK7GF, exit 0. Its host key was unknown until then; the served key and the machine's own /etc/ssh/ssh_host_*_key.pub agree on all three types it serves (RSA, ECDSA, ED25519 - fingerprints in the evidence), and exactly those three are now in the collector host's known_hosts. The machine also holds a DSA host key it does not serve; it was deliberately NOT trusted."
+    },
+    {
+      "name": "202A-Mac-Mini-M4",
+      "serial": "X904F44LHX",
+      "destination": "202A-Mac-Mini-M4",
+      "note": "The wave-1 war-room M4 Mac mini, 192.168.88.175, declared as t6. ITS ACCESS IS NOT ESTABLISHED as of 2026-09-14 23:41: sshd is up and serving (three host keys answered ssh-keyscan) but authentication returns 'Permission denied (publickey,password,keyboard-interactive)', so the key Cyril authorized on the other two did not take here. No host-key entry was written for it, because a channel is needed to verify the served key against the machine's own - writing one without that would be the blind accept this set has refused. Declared anyway so the run reports a declared path and its real reason rather than falling back to an inventory address."
+    },
+    {
+      "name": "202B-Mac-Studio",
+      "serial": "GJYHK7T7GT",
+      "destination": "202B-Mac-Studio",
+      "note": "The wave-1 war-room Mac Studio, 192.168.88.177, reached as t6. Identity established 2026-09-14 by two independent reads that agree: Cyril read it at the machine (Mac13,1 / Apple M1 Max / serial GJYHK7T7GT / macOS 26.5 / 192.168.88.177) and the collector read the same serial, model and OS over the key channel. Its address was settled earlier by the machine's own mDNS binding (202B-Mac-Studio.local), not by assertion. It has no row in the ARD export, which is consistent with the export never having seen it. Its host key was already trusted by the collector host and the existing entry matches the key it serves, so nothing was written for it."
     }
   ]
 }

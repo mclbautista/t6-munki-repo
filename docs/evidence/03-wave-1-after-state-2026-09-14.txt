@@ -1,0 +1,272 @@
+WAVE 1 AFTER-STATE: WHAT THE THREE MACHINES ANSWERED, AND WHAT THEY TURNED OUT TO BE
+====================================================================================
+ticket 03 of fleet-ssh-access (establish-wave-1-ssh-access)
+captured 2026-09-14 23:38-23:45 +08:00 from the collector host, 192.168.88.202 (this Mac mini)
+appended by Hermes; this file is new and append-only from here
+
+Sections 1-6 of docs/evidence/03-wave-1-before-state-2026-09-14.txt are the before state and are
+unchanged by this file. This one records the after state: what was verified, what was written, what
+the run produced, and the finding that changes what this wave means.
+
+
+1. KEY AUTHENTICATION, PER MACHINE (the form that is required, and why)
+--------------------------------------------------------------------------------
+The collector's own ssh argv carries no identity flag - it is
+
+    ssh -o BatchMode=yes -o ControlMaster=auto -o ControlPath=/tmp/munki-fleet-<host>.sock \
+        -o ControlPersist=120s <host> <command>
+
+(read from munki_fleet/targets.py:149-161), so a destination only works if the collector host's
+~/.ssh/config supplies User/IdentityFile/IdentitiesOnly for it. The fleet key is not a default
+identity name, so plain `ssh t6@<ip>` cannot work by design; every measured line below either names
+the key explicitly or goes through a stanza.
+
+    $ ssh -n -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 \
+          -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null t6@<ip> '<identity read>'
+
+    machine            address          exit  whoami  hostname                  macOS     arch    serial
+    202-Mac-Pro-3      192.168.88.174   0     t6      202-Mac-Pro-3.local       15.6.1    x86_64  C02C71SDK7GF
+    202A-Mac-Mini-M4   192.168.88.175   255   -       -                         -         -       -
+    202B-Mac-Studio    192.168.88.177   0     t6      202B-Mac-Studio.local     26.5      arm64   GJYHK7T7GT
+
+    202A-Mac-Mini-M4's refusal, verbatim:
+      t6@192.168.88.175: Permission denied (publickey,password,keyboard-interactive).
+
+`StrictHostKeyChecking=no` with `UserKnownHostsFile=/dev/null` was used ONLY for these reads, so that
+first contact could be inspected without writing an unverified key into the real known_hosts. It is
+never used by the collector and no entry was written by it.
+
+202B-Mac-Studio's identity was read twice, independently, and the two reads agree:
+    - Cyril, at the machine, 23:38: Mac13,1 / Apple M1 Max / serial GJYHK7T7GT / macOS 26.5 / 192.168.88.177
+    - the collector, over the key channel, 23:41: serial GJYHK7T7GT / model Mac13,1 / os 26.5 / arm64
+This closes the identity gap the ticket carried as an explicit unknown, and it was closed by reading
+the machine rather than by inferring from resemblance. Its address was settled earlier the same way,
+by the machine's own mDNS binding (202B-Mac-Studio.local -> 192.168.88.177).
+
+
+2. HOST-KEY TRUST: THE TWO INDEPENDENT READS, AND WHAT WAS WRITTEN
+--------------------------------------------------------------------------------
+Method, per the ticket's decision 4: read what each machine SERVES (ssh-keyscan), read what the
+machine says about ITSELF (/etc/ssh/ssh_host_*_key.pub via ssh-keygen -lf), and compare. A key is
+written only if it appears in both reads. No blind accept-new anywhere.
+
+    machine            served                                reported by the machine        verdict
+    202-Mac-Pro-3      RSA, ECDSA, ED25519 (3)               RSA, ECDSA, ED25519, DSA (4)   MATCH on all 3 served
+    202B-Mac-Studio    RSA, ECDSA, ED25519 (3)               RSA, ECDSA, ED25519 (3)        MATCH, identical set
+    202A-Mac-Mini-M4   RSA, ECDSA, ED25519 (3)               NOT READ - no channel          NOT VERIFIED
+
+    fingerprints, 202-Mac-Pro-3 (192.168.88.174)
+      ED25519  SHA256:0+g9/8kdsA55pb2aF9LVQ6N5e0uDdKrKPHOZBzN7w1Q   served + reported  -> WRITTEN
+      ECDSA    SHA256:UftJmPBp5cuvy2BH3iobHcmZhwTXelzCAdrby7O66j4  served + reported  -> WRITTEN
+      RSA      SHA256:j0uWyxrfu+f1bcQk985vmZze0xd1+0SFwPkh5hp5+R4  served + reported  -> WRITTEN
+      DSA      SHA256:Cqk/LyoUHpF5Fzls4Lcx9qOqdkpFLJx6e9kXpq6w2XE  on the machine, NOT served -> NOT WRITTEN
+    fingerprints, 202B-Mac-Studio (192.168.88.177)
+      ED25519  SHA256:H9Hcl/1KE0JdwcZhFVojcnqFRti0AH0J7KWy+njVLRs
+      ECDSA    SHA256:0SU3naxb1fkU/DxR4FgtTd3Q7x7qdoj5RIyKmRkJFFs
+      RSA      SHA256:aJR/eYEAfpmk2EflfjWvqJo0g9ry/HRQXqZ9Et+5uLk
+      Already present in known_hosts, and the existing entry was checked against the served key:
+      its ED25519 entry IS SHA256:H9Hcl/1KE0JdwcZhFVojcnqFRti0AH0J7KWy+njVLRs, so nothing was written.
+
+The DSA key on 202-Mac-Pro-3 is the one case where the two reads do NOT agree, and it was resolved by
+not trusting it: macOS still holds an ssh-dss host key that this sshd never offers, and a key that is
+never served is a key this host has no reason to trust. Recorded rather than written.
+
+    $ ssh-keygen -F 192.168.88.174      before: no entry.   after: line 24-26, the three above.
+    pre-image of known_hosts: ~/.ssh/known_hosts.bak-20260914T234109-before-wave-1
+
+
+3. THE CONFIG THE DECLARED DESTINATIONS NEED (appended, read back)
+--------------------------------------------------------------------------------
+Three stanzas were appended to ~/.ssh/config, keyed on each machine's own name, case-exact (ssh
+lowercases the name it is given, so a lowercase pattern silently does not match - measured in ticket
+02). Pre-image: ~/.ssh/config.bak-20260914T234109-before-wave-1
+
+    Host 202-Mac-Pro-3          HostName 192.168.88.174   User t6
+                                IdentityFile ~/.ssh/id_ed25519_t6   IdentitiesOnly yes
+    Host 202A-Mac-Mini-M4       HostName 192.168.88.175   User t6   (same two lines)
+    Host 202B-Mac-Studio        HostName 192.168.88.177   User t6   (same two lines)
+
+Read back by connecting through the names, not by reading the file:
+
+    $ ssh -n -o BatchMode=yes -o ConnectTimeout=8 202-Mac-Pro-3  'printf whoami=; whoami'
+    whoami=t6                                                          exit 0
+    $ ssh -n -o BatchMode=yes -o ConnectTimeout=8 202B-Mac-Studio 'printf whoami=; whoami'
+    whoami=t6                                                          exit 0
+    $ ssh -n -o BatchMode=yes -o ConnectTimeout=8 202-TOC-M4-Max  'printf whoami=; whoami'
+    whoami=t6                                                          exit 0
+    $ ssh -n -o BatchMode=yes -o ConnectTimeout=8 202A-Mac-Mini-M4 'printf whoami=; whoami'
+    Host key verification failed.                                      exit 255
+       (expected: its host key is deliberately unwritten, and its key authorization also fails -
+        both halves of this machine are outstanding)
+
+No regression on the paths that already worked:
+
+    $ ssh -n -o BatchMode=yes t6-mac-mini printf ok   ->  ok      exit 0
+    $ ssh -n -o BatchMode=yes t6-nas      printf ok   ->  ok      exit 0
+
+
+4. THE ACCESS MAP RECORDS ADDED (data/ssh-access.json, 2 -> 5 records)
+--------------------------------------------------------------------------------
+pre-image: data/ssh-access.json.bak-20260914T234123-before-wave-1-records
+
+    name               serial        destination
+    202-Mac-Pro-3      C02C71SDK7GF  202-Mac-Pro-3
+    202A-Mac-Mini-M4   X904F44LHX    202A-Mac-Mini-M4
+    202B-Mac-Studio    GJYHK7T7GT    202B-Mac-Studio
+
+Each destination is the machine's name, matching the pattern ticket 02 established for the pilot,
+because the credential is presented by the collector host's config rather than by the map (no
+credentials live in the map, and none may). 202A-Mac-Mini-M4 is declared even though its access does
+not work yet: declaring it makes the run report a declared path and its real reason instead of
+falling back to an inventory address, and the machine record carries that state in its own note.
+
+
+5. THE OBSERVATION RUN (one run, all four machines)
+--------------------------------------------------------------------------------
+    $ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl \
+        --access-map data/ssh-access.json \
+        --machine 202-Mac-Pro-3:C02C71SDK7GF --machine 202A-Mac-Mini-M4:X904F44LHX \
+        --machine 202B-Mac-Studio:GJYHK7T7GT --machine 202-TOC-M4-Max:RW3HL9FL4M
+
+    access: 4 of 4 ssh target(s) have a declared destination (data/ssh-access.json)
+    run 2026-09-14T23:41:23+08:00/91efb3a2
+      targeted 4, reached 3 (observed 1, partial 2), unobserved 1
+      INCOMPLETE: some targets were not observed
+        202-Mac-Pro-3                UNOBSERVED   no-munki-tools:
+        202A-Mac-Mini-M4             UNOBSERVED   unreachable: Host key verification failed.
+        202B-Mac-Studio              UNOBSERVED   no-munki-tools:
+        202-TOC-M4-Max               RW3HL9FL4M     manifest=202-TOC-M4-Max pending=0 rejections=0
+      appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+    exit=0
+
+Per-machine outcome as recorded (records are in ~/.munki-fleet/observations.jsonl under that run id):
+
+    machine            outcome    reason              reached the machine?
+    202-Mac-Pro-3      partial    no-munki-tools      yes - payload returned
+    202A-Mac-Mini-M4   unobserved unreachable         no  - host key unwritten + key refused
+    202B-Mac-Studio    partial    no-munki-tools      yes - payload returned
+    202-TOC-M4-Max     observed   -                   yes - full reading (manifest 202-TOC-M4-Max,
+                                                         Munki 7.3.0.5808, pending 0, rejections 0,
+                                                         1 filtered warning, source age 3369 s)
+
+Nothing was dropped from the run's completeness: `targeted 4, reached 3, unobserved 1`, and the run
+record itself carries `complete: false`. Two machines reached and could not be read as Munki clients;
+one could not be reached at all. Both are answers, and neither is written as "fine".
+
+
+6. THE FINDING: TWO OF THE THREE WAVE-1 MACHINES ARE NOT MUNKI CLIENTS AT ALL
+--------------------------------------------------------------------------------
+`no-munki-tools` is the client script's own test (`[ -d /usr/local/munki ]` in
+munki_fleet/probe_client.sh:28) reporting that Munki is not installed. It was checked independently
+over ssh rather than accepted from a single reading, because it contradicts what the repository
+assumes about these machines:
+
+    machine             /usr/local/munki   receipts   /Library/Managed Installs   MSC.app   verdict
+    202-Mac-Pro-3       absent             none       absent                      absent    NOT a Munki client
+    202B-Mac-Studio     absent             none       absent                      absent    NOT a Munki client
+    202-TOC-M4-Max      present (root)     6 munki    present                     present   Munki client, enrolled
+
+Evidence for 202-Mac-Pro-3, verbatim:
+    ls: /usr/local/munki: No such file or directory
+    (no munki receipts)                      # pkgutil --pkgs | grep -i munki
+    ls: /Library/Managed Installs: No such file or directory
+    ls: /Applications/Managed Software Center.app: No such file or directory
+    managedsoftwareupdate not found          # so `which` finds no munki binary either
+    /usr/local contains Homebrew (Caskroom, Cellar, Frameworks, Homebrew, bin, ...) and no munki
+Evidence for 202B-Mac-Studio is the same four absences, with /usr/local holding only bin/lib/sbin.
+
+Both machines DO have manifests in the repository - manifests/202-Mac-Pro-3 (358 bytes) and
+manifests/202B-Mac-Studio (366 bytes), published 2026-09-13. A manifest for a machine with no Munki
+client is a manifest nothing reads: it was authored ahead of enrolment, which is a legitimate order
+of work, but it means the repository's picture of the fleet (manifest per machine) is not evidence
+that a machine is a client.
+
+What this changes, stated plainly:
+    - These two machines cannot be observed for Munki client state, now or after their access is
+      fixed, because there is no client state to observe. The observation outcome is `partial /
+      no-munki-tools` and that is the correct reading.
+    - The first-wave rollout tickets (16, 17) assume a managed client exists on the wave's machines.
+      For 202-Mac-Pro-3 and 202B-Mac-Studio that assumption is false today, so wave 1's real
+      prerequisite for them is **enrolment**, which is a bigger and more privileged change than ssh
+      access and needs its own decision. It is not attempted here.
+    - Ticket 06's criterion that every inventoried Mac resolves its own machine manifest cannot be
+      satisfied on a machine with no client, so some of its unticked criteria are gated on enrolment
+      rather than on access. That re-scoping is recorded, not acted on, in this ticket.
+    - The reverse is also now answerable: SSH access is what makes "which Macs are actually enrolled"
+      a measurable question for the fleet instead of an assumption. Two of the three wave machines
+      answered it with a flat no.
+
+
+7. 202A MAC MINI M4 (192.168.88.175): WHY IT IS STILL OUT
+--------------------------------------------------------------------------------
+Measured, not inferred. sshd is up and serving three host keys (ssh-keyscan answered from
+192.168.88.175), so the service is fine. Authentication fails:
+
+    t6@192.168.88.175: Permission denied (publickey,password,keyboard-interactive)
+
+and therefore the served host key could not be checked against the machine's own, so no known_hosts
+entry was written for it and the run reports `unreachable: Host key verification failed.` rather than
+`authentication refused`. That ordering is honest groundwork, not a defect: host-key verification
+happens before authentication, and the underlying blocker is the machine-side authorization.
+
+The key Cyril authorized on the other two machines did not take here. What can be established from
+outside is exhausted: sshd answers, and sshd cannot tell an observer whether an account exists, so
+"no such key" and "no such account" are indistinguishable from the collector. The checks that
+distinguish them have to run at the machine:
+
+    whoami
+    dscl . -list /Users | grep -v '^_' | sort
+    ls -ld /Users/* | head -20
+    ls -la ~t6/.ssh
+    ssh-keygen -lf ~t6/.ssh/authorized_keys
+    stat -f '%Su %Sp %N' ~t6/.ssh ~t6/.ssh/authorized_keys
+
+The two failure modes worth checking first, both of which the runbook named before the work started:
+a different account name on this machine, in which case `~t6` expanded to a home no account owns and
+the key landed where nothing reads it; or the file or its directory ending up owned by root or wrong
+in mode, which sshd's StrictModes refuses silently as `Permission denied`.
+
+
+8. PER-MACHINE ROLLBACK (recorded, NOT exercised - see 9)
+--------------------------------------------------------------------------------
+For each machine that was granted access, the reversal is three removals and one pre-image:
+
+    202-Mac-Pro-3, 202B-Mac-Studio, and (once it works) 202A-Mac-Mini-M4, at the machine:
+        grep -vF 'AAAAC3NzaC1lZDI1NTE5AAAAIEsOr/HucyN9ns0palgBduVElHZx5vQqo2emkoDIEwR6' \
+            ~t6/.ssh/authorized_keys > /tmp/ak.rollback && mv /tmp/ak.rollback ~t6/.ssh/authorized_keys
+        chmod 600 ~t6/.ssh/authorized_keys
+    on the collector host:
+        remove that machine's stanza from ~/.ssh/config      (pre-image: ~/.ssh/config.bak-20260914T234109-before-wave-1)
+        remove its known_hosts entry                          (pre-image: ~/.ssh/known_hosts.bak-20260914T234109-before-wave-1)
+        remove its record from data/ssh-access.json           (pre-image: data/ssh-access.json.bak-20260914T234123-before-wave-1-records)
+
+A full rollback for 202-Mac-Pro-3 and 202A-Mac-Mini-M4 is four removals, not three, because they had
+sshd closed this morning: returning them to their exact before-state also means turning Remote Login
+off again. That is written down rather than assumed, and it is the one part of this change that would
+need to be done at the machine or over ARD.
+
+
+9. THE ROLLBACK IS NOT EXERCISED ON THIS WAVE, BY CYRIL'S EXPLICIT DIRECTION
+--------------------------------------------------------------------------------
+Cyril, 2026-09-14 23:38, in the session that produced this file: "I don't want to run the rollback."
+
+Recorded as a dated acceptance rather than as a gap: the rollback for this wave is written down
+per machine (section 8), with pre-images for all three collector-side files, and it is deliberately
+left unexercised. Note the difference from ticket 02, where the drill WAS run and verified: there the
+same class of change had never been removed from any machine, and the removal procedure is what the
+drill established. That is now established for this class of authorization by ticket 02's drill
+(commit 70b5df5, evidence section 7 of the pilot's file). So this wave repeats a removal procedure
+that has been exercised once, on a machine of the same class, and the wave-level drill is declined
+rather than deferred. Nothing here is left in doubt; it is left undone on purpose, and that is
+recorded where it can be read.
+
+
+10. WHAT THIS TICKET CANNOT CLAIM
+--------------------------------------------------------------------------------
+    - 202A-Mac-Mini-M4 does not have the approved access. One of the three wave machines is
+      unauthenticated, so the wave's authorization is 2 of 3 complete.
+    - Consequently its host key is not trusted on the collector host, and it is the only machine in
+      the wave with no verified trust entry.
+    - None of the three wave machines yields a Munki reading, because two have no Munki and the third
+      cannot be reached. The fleet's observed set is unchanged by this run: still the pilot, plus
+      Sixto-5 from ticket 01's run.
