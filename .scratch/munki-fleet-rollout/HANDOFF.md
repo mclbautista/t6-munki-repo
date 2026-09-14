@@ -1,12 +1,18 @@
 # Where this stopped, and what is next
 
-Written 2026-09-14 at the end of the session that implemented ticket 15 (alerting) and left its
-delivery as a decision for Cyril. Every claim below was read back from the system it describes;
-anything unverified is marked as such.
+Written 2026-09-14 at the end of a full day's session, and revised at the end of that same day. Every
+claim below was read back from the system it describes; anything unverified is marked as such.
 
-The previous version of this file (written 2026-09-13 at head `08c2c78`) is superseded where it
-disagrees: tickets 05, 09, 10 and 12 are unchanged, and 15 has moved from unstarted to
-implemented-with-one-decision-open.
+What that session did, in order: implemented **ticket 15** (alerting) up to its outbox and left delivery
+as a decision for Cyril; verified **ticket 13** read-only, had its own record audited and corrected, and
+then closed it by Cyril's **decision 13E** — the network topology is accepted as the restriction; then
+executed the one approved **publish** (ticket 06's two machine manifests together with ticket 08's
+forced-core suspension), which took drift from 3 findings to 0. The tracker (`projects.db` id 3) and the
+T6-Ops-Docs tree were reconciled the same evening.
+
+The previous version of this file (written 2026-09-13 at head `08c2c78`, revised through `a13bb26`) is
+superseded where it disagrees: tickets 05, 09, 10 and 12 are unchanged; 15 is implemented with one
+decision open; 13 is closed; 06 and 08 have their published halves done.
 
 ## State at the stop
 
@@ -59,6 +65,11 @@ Then, unchanged from the previous handoff and each still needing one approval:
    new ticket for option B, with its own approval.
 5. **Ticket 14** (the fleet view's user-facing shape) needs the grilling session with Cyril. No
    implementation in that ticket; it produces a specification.
+6. **Fleet SSH access for an observation run — the single highest-value unblock, and the only one that is
+   not a decision.** It needs access, not approval, and it is what closes ticket 06's criteria 1, 4, 5
+   and 6 and what ticket 07's criterion 5 and tickets 16/17 all wait on. **Only 2 of 17 inventoried Macs
+   have ever been observed**, and the pilot `202-TOC-M4-Max` refuses the current key
+   (`Permission denied (publickey,password,keyboard-interactive)`, every alert cycle reports it).
 
 Smaller, not blocking: the three stray empty directories in the `Web` share root (`catalogs/ icons/
 manifests/`) are a NAS deletion awaiting a yes.
@@ -93,3 +104,18 @@ network restriction by path rather than a firewall on the NAS (0007, 0013 decisi
 with approval boundaries (0008); a publish must declare what it changes (0009); the catalog builder
 must share the clients' major version (0010); **Munki decides alerts, Kulit delivers them, and the
 outbox with receipts is the contract between them (0011, proposed — this is the open decision above)**.
+
+## Skills the next session should load
+
+- **`t6-implementation-workflow`** — the governing procedure for this repository: TDD at public seams,
+  the claim-before-implementing rule, path-scoped staging, the concurrent-writer rules, and the
+  evidence/citation conventions. Load it before touching a ticket, and keep it current: it is where
+  this project's hard-won rules live.
+- **`munki`** and **`munki-nas-workflows`** — the Munki tooling itself and the NAS-backed repository
+  specifics (what may be imported, how manifests are built, what must never be hand-edited).
+- **`t6-nas-ops`** — reading and verifying the NAS side (storage, app inventory, and the SSH alias the
+  publish path uses). Read-only unless a change is approved.
+- **`update-projects-db`** — the write path for `~/.hermes/data/projects.db` (back up, append to notes,
+  rewrite `next_steps`, verify in the *served* dashboard, not just the generator's output).
+- **`handoff`** — if you are the session that stops next, this file is the project handoff; that skill
+  covers the session-level one.
