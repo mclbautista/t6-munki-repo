@@ -1,0 +1,167 @@
+ONBOARDING, VERIFIED INDEPENDENTLY — TWO MACHINES IN, ONE FOUND IN THE SAME STATE
+====================================================================================
+ticket 11 (client-onboarding-procedure) acceptance evidence, and ticket 03's closing verification
+captured 2026-09-15 00:24-00:26 +08:00 from the collector host, 192.168.88.202 (this Mac mini)
+appended by Hermes
+
+Cyril ran the procedure at 202-Mac-Pro-3 and 202B-Mac-Studio and pasted each machine's
+`ONBOARDING EVIDENCE` block. Nothing below is taken from those blocks: every line was read back off
+the machines over SSH afterwards, because a pasted block is a self-report and a read-back is
+evidence. Where the two agree it is said so; where they differ it is said so too.
+
+
+1. WHAT THE MACHINES SAY NOW (read back, not pasted)
+--------------------------------------------------------------------------------
+    machine            munki core    receipts  launchd plists   SoftwareRepoURL
+    202-Mac-Pro-3      7.3.0.5808    6         6 installed      http://192.168.88.188/MunkiRepo
+    202B-Mac-Studio    7.3.0.5808    6         6 installed      http://192.168.88.188/MunkiRepo
+
+    machine            resolved manifest     report written              LastCheckResult  pending
+    202-Mac-Pro-3      202-Mac-Pro-3         2026-09-15T00:21:23+0800    0                0
+    202B-Mac-Studio    202B-Mac-Studio       2026-09-15T00:22:42+0800    0                0
+
+    202-Mac-Pro-3's own report, verbatim on the points that matter:
+        "Conditions" => { "arch" => "x86_64", "catalogs" => [ 0 => "testing" ],
+                          "hostname" => "202-Mac-Pro-3.local", "machine_model" => "MacPro7,1",
+                          "munki_version" => "7.3.0.5808" }
+        "LastCheckDate" => 2026-09-14 16:21:23 +0000     (UTC; = 00:21:23 +0800 local)
+        "PackageVerificationMode" => "hash"
+        "SoftwareRepoURL" => "http://192.168.88.188/MunkiRepo"
+        "PendingUpdateCount" => 0
+
+Both machines resolved **their own machine manifest**, which is the fact that makes them onboarded
+rather than merely installed. Neither reports a warning, an error or a pending item.
+
+**One deliberate asymmetry, explained rather than reported as a mismatch.** The evidence block each
+operator sees says `launchd munki jobs : 6`; a read-back as an ordinary user reports **3**. Both are
+true: `ls /Library/LaunchDaemons/com.googlecode.munki.*.plist | wc -l` is 6 (that is the
+authoritative count of what is installed), and `launchctl list | grep -ci munki` sees only what the
+domain you are querying from exposes — root sees all six, an ordinary user sees three. The lesson is
+the check, not the machine: a count whose answer depends on the privilege of the shell that ran it
+must say which context it counted in.
+
+
+2. `ClientIdentifier`: NOT SET BY THE PROCEDURE, AND THE PLIST IS RIGHT TO LOOK ODD
+--------------------------------------------------------------------------------
+The client prefs on 202-Mac-Pro-3, every key, read back:
+
+    "AppleSoftwareUpdatesOnly" => 0        "ClientIdentifier" => ""        "FollowHTTPRedirects" => "none"
+    "IgnoreSystemProxies" => 0             "InstallAppleSoftwareUpdates" => 0
+    "LastCheckDate" => 2026-09-14 16:21:23 +0000    "LastCheckResult" => 0
+    "LogFile" => "/Library/Managed Installs/Logs/ManagedSoftwareUpdate.log"   "LoggingLevel" => 1
+    "LogToSyslog" => 0                     "ManagedInstallDir" => "/Library/Managed Installs"
+    "OldestUpdateDays" => 0                "PackageVerificationMode" => "hash"
+    "PendingUpdateCount" => 0              "ShowOptionalInstallsForHigherOSVersions" => 0
+    "SoftwareRepoURL" => "http://192.168.88.188/MunkiRepo"
+    "UseClientCertificate" => 0
+
+`ClientIdentifier` is present as an **empty string**, and that is not something this procedure wrote.
+It is Munki's own default, in the tools' own source:
+
+    $ ssh 202-Mac-Pro-3 "grep -rn 'ClientIdentifier' /usr/local/munki/munkilib/*.py | head"
+    /usr/local/munki/munkilib/prefs.py:61:    'ClientIdentifier': '',
+
+So the honest statement of what was done is: **the procedure sets no `ClientIdentifier`, and deletes a
+NON-EMPTY one if it finds it** — a non-empty value is what overrides short-hostname resolution, and
+that is exactly the live defect on Cyril's Mac mini (`t6-test-client`, ticket 07's outstanding item).
+An empty value does not override anything, and the machine's resolved manifest is the proof.
+
+This is worth stating in the evidence because the pasted block says "none set" while a literal reader
+of the plist sees the key present. Both are true, and the difference is the sort of thing that gets
+reported as a defect by whoever reads it next without the citation above. The script's own evidence
+line was corrected to say this precisely, and the corrected script was re-staged on all three
+machines (sha256 of the staged copy matches this host's copy byte for byte).
+
+
+3. THE INSTALLER, AND WHY ITS PROVENANCE IS AN EVIDENCE LINE
+--------------------------------------------------------------------------------
+    munkitools-7.3.0.5808.pkg
+    sha256 4ed826bd32811ef54524a10300f66c9af4c9fdd8c243ada146d468485e1bffcc
+    official release: https://github.com/munki/munki/releases/download/v7.3.0/munkitools-7.3.0.5808.pkg
+    Status: signed by a developer certificate issued by Apple for distribution
+    Notarization: trusted by the Apple notary service
+    Certificate Chain: Developer ID Installer: Mac Admins Open Source (T4SK8ZXCXG)
+
+It is the **same build the pilot runs** (`com.googlecode.munki.core 7.3.0.5808`), so the fleet does
+not acquire a second version by this work. The hash was read back off each machine after the copy
+rather than assumed from the transfer, and the script re-checks the signature and the notarization
+itself before installing anything — a substituted or corrupt package cannot be installed by this path,
+which is the property that makes "installer provenance" a step rather than a hope.
+
+
+4. BEFORE AND AFTER, PER MACHINE (ticket 11's criterion 6)
+--------------------------------------------------------------------------------
+    machine            before state (measured 2026-09-14, before anything ran)
+    202-Mac-Pro-3      no /usr/local/munki · 0 munki receipts · no /Library/Managed Installs ·
+                       no client prefs · 0 munki launchd jobs · x86_64 · macOS 15.6.1 (24G90) ·
+                       4.0 GiB free
+    202B-Mac-Studio    the same four absences · arm64 · macOS 26.5 (25F71) · 48 GiB free
+
+    machine            after state (measured 2026-09-15, section 1)
+    202-Mac-Pro-3      tools 7.3.0.5808 · 6 receipts · 6 launchd plists · client prefs present ·
+                       resolved manifest 202-Mac-Pro-3 · check clean, nothing pending
+    202B-Mac-Studio    tools 7.3.0.5808 · 6 receipts · 6 launchd plists · client prefs present ·
+                       resolved manifest 202B-Mac-Studio · check clean, nothing pending
+
+The after state is a machine that resolves a manifest — not a machine that has an installer on it.
+A run that installed the tools and resolved `site_default` would have been recorded here as a
+failure (the script exits non-zero and says so), and it did not happen.
+
+**Free space, recorded because it changes now:** 202-Mac-Pro-3 reports `AvailableDiskSpace` 3918848
+(≈3.7 GiB) in its own report. A managed client downloads installers before installing them, so this
+machine's headroom is a monitored quantity from here, not a curiosity.
+
+
+5. THE OBSERVATION RUN — AND THE THIRD MACHINE FOUND IN THE SAME STATE
+--------------------------------------------------------------------------------
+    $ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl \
+        --access-map data/ssh-access.json \
+        --machine 202-Mac-Pro-3:C02C71SDK7GF --machine 202A-Mac-Mini-M4:X904F44LHX \
+        --machine 202B-Mac-Studio:GJYHK7T7GT --machine 202-TOC-M4-Max:RW3HL9FL4M
+
+    access: 4 of 4 ssh target(s) have a declared destination (data/ssh-access.json)
+    run 2026-09-15T00:24:35+08:00/0aa5e759
+      targeted 4, reached 4 (observed 3, partial 1), unobserved 0
+      complete: True
+        202-Mac-Pro-3                C02C71SDK7GF     manifest=202-Mac-Pro-3 pending=0 rejections=0
+        202A-Mac-Mini-M4             UNOBSERVED       no-munki-tools:
+        202B-Mac-Studio              GJYHK7T7GT       manifest=202B-Mac-Studio pending=0 rejections=0
+        202-TOC-M4-Max               RW3HL9FL4M       manifest=202-TOC-M4-Max pending=0 rejections=0
+    exit=0
+
+**Every machine in the wave is now reachable — and the third one is in the same state the other two
+were in.** `202A-Mac-Mini-M4` has no `/usr/local/munki`, no Munki receipt, no `/Library/Managed
+Installs`, no Managed Software Center and no client prefs. So the wave's finding is bigger than "two
+machines need enrolment": **three of the four wave machines have no Munki client at all**, and the
+pilot is the only one that ever did. The machine Cyril asked to enrol was two machines because two
+were known at the time; the corrected count is three.
+
+`202A-Mac-Mini-M4` also closes ticket 03's access gap, verified rather than reported:
+
+    $ ssh -n -o BatchMode=yes -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 t6macminim4pro01@192.168.88.175 '<identity read>'
+    whoami=t6macminim4pro01   hostname=202A-Mac-Mini-M4.local   os=26.6.2   arch=arm64
+    serial=X904F44LHX         LocalHostName=202A-Mac-Mini-M4
+    $ ssh -n -o BatchMode=yes 202A-Mac-Mini-M4 'whoami'     ->  by name now: t6macminim4pro01   exit=0
+
+Its host key was written only after the two independent reads agreed, all three types:
+
+    ED25519  SHA256:Spp3nG8o0mmJgZX3xwGI/4GFbUatKdkCE79JunWNIzE   served + reported -> WRITTEN
+    ECDSA    SHA256:IrZmOwxPkHkXuW+3JD4kQV10fMIi0c6jX4CM8Qh7CpA   served + reported -> WRITTEN
+    RSA      SHA256:Zorpnu6Y1F9OEhEzcTZdUufyxs9a2DRhq32xQmbTZJE   served + reported -> WRITTEN
+    pre-image of known_hosts: ~/.ssh/known_hosts.bak-20260915T002423-before-202A-trust
+
+The serial `X904F44LHX` matches the role matrix's row for that machine, so the access path landed on
+the machine the inventory names — which is the check that would have caught a wrong-host mistake.
+
+
+6. WHAT THIS DOES NOT CLAIM
+--------------------------------------------------------------------------------
+    - Nothing here says the fleet is managed. **Three of the four wave machines had no Munki client
+      before this work; two are now enrolled and the third is not.**
+    - `202A-Mac-Mini-M4` has no `known_hosts`-verified trust beyond what is recorded above, and no
+      enrolment: it needs the same privileged command the other two have already had.
+    - No Munki *payload* has been installed on either machine, by design. Enrolment points the client
+      at the repository and resolves a manifest; what the manifest then authorises is a separate
+      decision (the promotion path, ticket 07).
+    - The manifests both machines resolved are the ones published 2026-09-13. Whether they should
+      carry what they carry right now is ticket 07's and ticket 16's business, not this file's.

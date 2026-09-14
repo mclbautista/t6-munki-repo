@@ -149,9 +149,11 @@ say "4. CONFIGURE the client endpoint (and make sure resolution is by short host
 ok "SoftwareRepoURL = $REPO_URL"
 if echo "$(defaults read "$PREFS_BASE" ClientIdentifier 2>/dev/null || true)" | grep -q '[^[:space:]]'; then
     /usr/bin/defaults delete "$PREFS_BASE" ClientIdentifier
-    ok "REMOVED a ClientIdentifier it found — it would have overridden short-hostname resolution"
+    ok "REMOVED a NON-EMPTY ClientIdentifier it found — that value overrides short-hostname
+      resolution, which is how a machine ends up reading another machine's manifest"
 else
-    ok "no ClientIdentifier set, so the client resolves by its short hostname (as intended)"
+    ok "no non-empty ClientIdentifier, so the client resolves by its short hostname. Munki writes
+      its own empty default here (munkilib/prefs.py:61); empty does not override the hostname."
 fi
 chown root:wheel "$PREFS" 2>/dev/null || true
 chmod 644 "$PREFS" 2>/dev/null || true
@@ -185,7 +187,9 @@ cat <<EOF
    architecture       : $(uname -m)
    Munki tools        : $VERSION   (com.googlecode.munki.core)
    SoftwareRepoURL    : $REPO_URL
-   ClientIdentifier   : none set — resolution is by short hostname
+   ClientIdentifier   : not set by this procedure. Munki writes its OWN default of "" here
+                        (munkilib/prefs.py:61), and an empty value does not override hostname
+                        resolution — the resolved manifest below is the proof of that.
    check-only result  : completed, no error  (see the line above)
    resolved manifest  : $MANIFEST
    report timestamp   : $(stat -f '%Sm' -t '%Y-%m-%dT%H:%M:%S%z' "$REPORT")

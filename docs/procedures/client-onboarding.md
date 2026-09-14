@@ -51,7 +51,7 @@ sudo bash ~/munki-bootstrap/onboard-munki-client.sh --pkg ~/munki-bootstrap/munk
 | 1c | the repo serves the resolution machinery | `manifests/<Short>` , `manifests/all` , `manifests/site_default` all return 200 |
 | 2 | the before state is recorded | product version, build, arch, `LocalHostName`, whether the tools were already present, whether client prefs existed, launchd job count |
 | 3 | the tools install | `installer` exits 0 and `pkgutil --pkg-info com.googlecode.munki.core` reports the version |
-| 4 | the endpoint is set, and no `ClientIdentifier` exists | `SoftwareRepoURL = http://192.168.88.188/MunkiRepo`; the script **removes** a `ClientIdentifier` if it finds one and says so |
+| 4 | the endpoint is set, and no `ClientIdentifier` is left that could override the hostname | `SoftwareRepoURL = http://192.168.88.188/MunkiRepo`; the script **removes a non-empty** `ClientIdentifier` if it finds one and says so. Note what the plist looks like afterwards: `ClientIdentifier` is present as an **empty string**, because that is Munki's own default (`/usr/local/munki/munkilib/prefs.py:61`) — not a value this procedure set. Empty does not override hostname resolution, and the resolved manifest is the proof. A *non-empty* value is the dangerous case, and it is the live defect on Cyril's Mac mini (`t6-test-client`) |
 | 5 | one check-only run | `managedsoftwareupdate --checkonly` completes and writes `/Library/Managed Installs/ManagedInstallReport.plist` |
 | 6 | the resolved manifest is the machine's own | the report's `ManifestName` equals `LocalHostName`. **Anything else is FAILURE**, and `site_default` is the loudest case: it means the machine has no manifest of its own |
 
