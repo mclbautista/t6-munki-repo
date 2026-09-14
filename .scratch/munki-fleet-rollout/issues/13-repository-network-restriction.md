@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**Claimed by:** hermes-desktop (Cyril's Mac mini, /Users/cyrilbautista/Projects/t6-munki-repo) 2026-09-14T08:20+08:00
+
 ## Acceptance criteria
 
 - [ ] An allowlist restricting the repository's port to T6's own addresses is configured at the NAS.
