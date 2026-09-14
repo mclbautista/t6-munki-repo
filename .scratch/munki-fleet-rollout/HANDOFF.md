@@ -12,11 +12,12 @@ implemented-with-one-decision-open.
 
 | thing | state | how it was checked |
 |---|---|---|
-| Repository | `8b9b448` on `main`, pushed and read back | `git ls-remote origin refs/heads/main` == `HEAD` |
+| Repository | `d36b18c` on `main`, pushed and read back | `git ls-remote origin refs/heads/main` == `HEAD` |
 | Tests | **259 passing** (47 of them ticket 15's) | `python3 -m pytest`, run bare, and again in a detached worktree of the commit |
 | Served catalog | **28 items, 28 unique names**, `catalogs/production` correctly absent (HTTP 404) | fetched over HTTP from the NAS, parsed with `plistlib` |
-| Drift | 3 findings, all pending one approval: two manifests missing on the target (`303A-Mac-Mini-M4-Pro`, `Sixto-5`) and one file differing (`manifests/all` — the unpublished forced-core suspension) | `munki_fleet.cli check`, exit 1 |
-| Alert decision | implemented and exercised live: 19 conditions from the real repository and the recorded fleet, one source-linked message, two silent cycles, a failed receipt recorded with exit 1 | `docs/evidence/15-alert-cycle-live-2026-09-14.txt` |
+| Drift | **0 findings** — drift 0, integrity 0 — where the previous handoff had 3 pending one approval | `munki_fleet.cli check`, exit 0 |
+| Published 2026-09-14 | ticket 06's two machine manifests and ticket 08's forced-core suspension, in one publish; the served `manifests/all` now reads **0 forced / 26 optional**, filesystem verify 96/96 and HTTP verify 96/96 | `docs/evidence/06-08-publish-2026-09-14.txt` |
+| Alert decision | implemented and exercised live: 19 conditions before that publish, **17 after — all of them fleet observations**, because the repository now contributes none; one source-linked message, two silent cycles, a failed receipt recorded with exit 1 | `docs/evidence/15-alert-cycle-live-2026-09-14.txt`, `docs/evidence/06-08-publish-2026-09-14.txt` |
 | Alert delivery | **not wired** — nothing is delivered to anyone | the receipt in that capture was written by hand; the ticket says so |
 | Network path to the repository | reachable from the fleet LAN (HTTP 200, 0.002 s); **no reply** from this host's Wi-Fi network and no route on its Tailscale interface (8 s timeouts, not refusals) | `docs/evidence/13-network-path-verification-2026-09-14.txt` |
 | That restriction | **accepted as the topology** (decision 13E, 2026-09-14). The network path is the enforcement; the pfSense firewall at `192.168.88.201` stays unread as an **accepted unknown**, with five tripwires named and nothing monitoring them | ticket 13 (done); ADR 0007's second amendment |
@@ -36,12 +37,14 @@ runs `munki_fleet.cli alert` every 15 minutes. The cycle must run **on Cyril's M
 
 Then, unchanged from the previous handoff and each still needing one approval:
 
-1. **Approve ticket 06's two manifests** (`303A-Mac-Mini-M4-Pro`, `Sixto-5`). That single publish
-   lands them *together with* the suspension of the forced core (ticket 08), because a publish is
-   all-or-nothing — and landing them together is the safe order: those two machines then inherit
-   0 forced / 26 optional instead of force-installing up to 26 items on first resolution. Until it is
-   published, `manifests/all` still force-installs 26 items (re-verified this session: the served
-   file differs from the checkout).
+1. **DONE 2026-09-14 — the publish that carried ticket 06's two manifests and ticket 08's forced-core
+   suspension.** Approval was given in session and the publish ran the same day: gate run in refusing
+   mode first (it named exactly three files), then one run declaring all three, `written 3, unchanged
+   93, backed up 1`, and an independent read-back of drift 0 / integrity 0 and HTTP verify 96/96. Those
+   two machines therefore inherit 0 forced / 26 optional rather than force-installing up to 26 items.
+   Capture: `docs/evidence/06-08-publish-2026-09-14.txt`; pre-image kept at
+   `~/.munki-fleet/pre-images-20260914T092916/manifests/all`. Ticket 06's remaining criteria now need
+   an **observation**, not an approval — no Mac has reported since the publish.
 2. **Ticket 10's toolchain install** on the admin workstation (6.6.0.4686 → 7.3.x), per ADR 0010.
    The plan, the before/after harness and the rollback versions are in the ticket.
 3. **`Cyrils-Mac-mini` still has no machine manifest.** With the forced core suspended this is
