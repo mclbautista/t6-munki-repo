@@ -107,7 +107,9 @@ No regression on the paths that already worked:
 
 4. THE ACCESS MAP RECORDS ADDED (data/ssh-access.json, 2 -> 5 records)
 --------------------------------------------------------------------------------
-pre-image: data/ssh-access.json.bak-20260914T234123-before-wave-1-records
+pre-image: ~/.munki-fleet/pre-images/ssh-access.json.bak-20260914T234123-before-wave-1-records
+(The pre-image of a repository file lives OUTSIDE the repository: untracked, beside the file it
+protects, in a repo with no ignore rule for it, it is one `git add -A` away from being committed.)
 
     name               serial        destination
     202-Mac-Pro-3      C02C71SDK7GF  202-Mac-Pro-3
