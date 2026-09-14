@@ -72,3 +72,58 @@ Desktop export from an ARD task that actually sees it. Until then it has no disp
 202A-Mac-Mini-M4  same as 202-Mac-Pro-3.
 202B-Mac-Studio   nothing can be authorized until its identity is established.
 
+
+
+================================================================================
+5. AFTER REMOTE LOGIN WAS ENABLED (Cyril, 2026-09-14 ~23:00), RE-MEASURED
+================================================================================
+
+Appended 2026-09-14T23:03:22+08:00; the section above is kept as the
+before-state it was, not edited to match.
+
+$ python3 -c 'socket.connect((ip,22))' ; ssh -n -o BatchMode=yes -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 t6@<ip> 'whoami; hostname; sw_vers -productVersion'
+
+202-Mac-Pro-3     192.168.88.174   tcp/22 OPEN   rc=255   "Host key verification failed."
+202-TOC-M4-Max    192.168.88.182   tcp/22 OPEN   rc=0     t6 / 202-TOC-M4-Max.local / 26.2 / Model Identifier: Mac16,9 / Chip: Apple M4 Max / Serial Number (system): RW3HL9FL4M
+202A-Mac-Mini-M4  192.168.88.175   tcp/22 OPEN   rc=255   "Host key verification failed."
+202B-Mac-Studio   192.168.88.177   tcp/22 OPEN   rc=255   "t6@192.168.88.177: Permission denied (publickey,password,keyboard-interactive)."
+
+All four machines now answer on port 22. The remaining gates are different for each, and they are
+not the same problem:
+
+- 202-Mac-Pro-3 and 202A-Mac-Mini-M4: the host key is UNKNOWN, not changed. `ssh-keygen -F <ip>`
+  finds no entry in known_hosts for either, and the refusal is BatchMode declining to prompt for an
+  unknown key. They had sshd closed until today, so this is first contact. Establishing trust is a
+  write to the collector host's known_hosts and is done verifiably (fingerprint recorded and compared
+  against the machine's own `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), never with a blind
+  accept-new.
+- 202-TOC-M4-Max: nothing outstanding; key auth works (ticket 02).
+- 202B-Mac-Studio: sshd is OpenSSH_10.2, auth methods publickey,password,keyboard-interactive, and no
+  key is authorized for t6. So it needs the account confirmed and the key authorized, like the others.
+
+================================================================================
+6. 202B-MAC-STUDIO: THE ADDRESS CYRIL GAVE, CHECKED AGAINST THE MACHINE'S OWN BINDING
+================================================================================
+
+Cyril gave 192.168.88.177 on 2026-09-14. It is not taken on assertion:
+
+$ dscacheutil -q host -a name 202B-Mac-Studio.local
+  ip_address: 192.168.88.177
+$ dscacheutil -q host -a name 202C-Studio-M1-Ultra.local
+  ip_address: 192.168.88.99
+$ arp -n 192.168.88.177
+  ? (192.168.88.177) at 9c:76:e:46:89:f3 on en0 ifscope [ethernet]
+
+- The machine's OWN mDNS binding answers the inventory's name for it: 202B-Mac-Studio.local resolves
+  to 192.168.88.177. That is the machine naming itself, which is the strongest read-only evidence
+  available without logging in, and it is why this address is now recorded rather than assumed.
+- Its MAC (9C:76:0E:46:89:F3) is an Apple OUI already seen on four inventoried Macs (201-Bay-02,
+  201-Bay-03, 201-Viewing-Room, 202C-Studio) - consistent with a fleet Mac, and NOT in the ARD export,
+  which agrees with 202B having no row in it.
+- What is still unknown: its serial, its OS, and its account name. Those need a login, or a read at
+  the machine (`system_profiler SPHardwareDataType`, `ipconfig getifaddr en0`).
+
+A FINDING ON THE WAY, NOT PART OF THIS TICKET: 202C-Studio-M1-Ultra.local now answers at
+192.168.88.99, while data/machines.json carries 192.168.88.181 for it (from the ARD export of
+2026-09-13). One of the two is stale. It is recorded here because the inventory is what every probe
+travels by, so a stale address is a probe that fails for the wrong reason - ticket 04's subject.

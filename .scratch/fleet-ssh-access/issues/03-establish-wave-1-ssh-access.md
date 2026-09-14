@@ -10,14 +10,20 @@
 
 ## The wave, fixed and measured
 
-| machine | serial | address | role | inventory OS | sshd today |
-|---|---|---|---|---|---|
-| `202-Mac-Pro-3` | `C02C71SDK7GF` | `192.168.88.174` | toc | macOS 15.6.1 (24G90) | **port 22 refused** — not running |
-| `202-TOC-M4-Max` | `RW3HL9FL4M` | `192.168.88.182` | toc | macOS 26.2 (25C56) | open; key auth works (ticket 02) |
-| `202A-Mac-Mini-M4` | `X904F44LHX` | `192.168.88.175` | warroom | macOS 26.6.2 (25G83) | **port 22 refused** — not running |
-| `202B-Mac-Studio` | *unknown* | *unknown* | warroom | *unknown* | cannot be probed — no address anywhere |
+| machine | serial | address | role | inventory OS | sshd before | sshd now | still needed |
+|---|---|---|---|---|---|---|---|
+| `202-Mac-Pro-3` | `C02C71SDK7GF` | `192.168.88.174` | toc | macOS 15.6.1 (24G90) | port 22 refused | **open** | host-key trust; key authorization |
+| `202-TOC-M4-Max` | `RW3HL9FL4M` | `192.168.88.182` | toc | macOS 26.2 (25C56) | open | open | nothing — done under ticket 02 |
+| `202A-Mac-Mini-M4` | `X904F44LHX` | `192.168.88.175` | warroom | macOS 26.6.2 (25G83) | port 22 refused | **open** | host-key trust; key authorization |
+| `202B-Mac-Studio` | *unknown* | `192.168.88.177` | warroom | *unknown* | port 22 refused | **open** | its serial; key authorization |
 
 Measured 2026-09-14 from the collector host; commands and output in `docs/evidence/03-wave-1-before-state-2026-09-14.txt`.
+
+**Update, 2026-09-14 ~23:00 — Cyril enabled Remote Login on all three machines, and the wave was re-measured** (evidence sections 5–6). All four now answer on port 22, and the remaining gate is a different one per machine:
+
+- **`202-Mac-Pro-3` and `202A-Mac-Mini-M4`: the host key is unknown, not changed.** `ssh-keygen -F <ip>` finds no `known_hosts` entry for either, and the refusal is BatchMode declining to prompt about an unknown key. They had sshd closed until today, so this is first contact — and establishing trust is a write to the collector host's `known_hosts` to be done **verifiably** (record the fingerprint, compare it against the machine's own `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), never with a blind `accept-new`.
+- **`202B-Mac-Studio` is at `192.168.88.177`, and not on assertion.** The machine's own mDNS binding answers the inventory's name for it: `202B-Mac-Studio.local` → `192.168.88.177`. Its MAC (`9C:76:0E:46:89:F3`) is an Apple OUI already seen on four inventoried Macs and is absent from the ARD export, which agrees with it having no row there. Its sshd is `OpenSSH_10.2` and no key is authorized for `t6`. **Its serial, OS and account name are still unknown** — they need a login or a read at the machine.
+- **A finding on the way, and not this ticket's:** `202C-Studio-M1-Ultra.local` now answers at `192.168.88.99`, while `data/machines.json` carries `192.168.88.181` from the ARD export. One of the two is stale, and since every probe travels by the inventory's address, a stale one fails for the wrong reason. Recorded for ticket 04.
 
 ### Finding: this wave's change is bigger than ticket 02's
 
@@ -27,21 +33,20 @@ Two of the three machines that can be addressed answer ICMP and **refuse port 22
 
 A ping sweep of `192.168.88.0/24` found 45 hosts; 31 answered from addresses the inventory does not carry. None reverse-resolves, none reports itself, and none can be attributed to `202B`. One is worth naming rather than discarding as noise: `192.168.88.177` is the address the Bays projection carried for `303B iMac` before that machine's real address (`192.168.88.191`) was established, so a live host there is a reassigned lease, not evidence about the Studio. A sweep produces candidates, not identity. What would close it: the machine's own serial and address read at the machine (`system_profiler SPHardwareDataType`, `ipconfig getifaddr en0`), or a fresh Apple Remote Desktop export from a task that actually sees it.
 
-## The two decisions this ticket owes
+## The decisions this ticket owes
 
-1. **The pilot's rollback drill** (ticket 02, runbook steps 6–8) — removes the last open criterion on 02 and clears this ticket's blocker by its own letter. Two minutes at the pilot, and it is the prerequisite that makes repeating the same change three more times defensible.
-2. **This wave's authorization**, which is *two* changes per machine, not one: enable Remote Login, then authorize the fleet key for `t6`. Machines `202-Mac-Pro-3` and `202A-Mac-Mini-M4`; both need Cyril at the machine (or ARD). `202-TOC-M4-Max` is already done under ticket 02.
-   - **Option A (recommended):** enable Remote Login and authorize the key on both, then observe. Closes criteria 4–6 and unblocks the Munki rollout tickets 11/16/17 for these machines.
-   - **Option B:** authorize nothing on the two Mac Pro/Mini machines yet; wave 1 becomes the pilot alone. Nothing new is exposed, and the observation layer covers one machine instead of three.
-   - **Option C:** probe them by hand through Apple Remote Desktop's Send UNIX Command, which needs no sshd. Rejected unless Cyril wants it: it puts a human in the loop of every reading, and ADR 0004 wants one deterministic writer, not a hand-carried payload.
-3. **Separately, and smaller:** where does `202B-Mac-Studio`'s identity come from? It cannot be authorized against nothing, and it is the only machine in the fleet nobody can currently describe.
+1. **The pilot's rollback drill** (ticket 02, runbook steps 6–8) — removes the last open criterion on 02 and clears this ticket's blocker by its own letter. Two minutes at the pilot, and it is what makes repeating the same change three more times defensible. **Still open.**
+2. ~~Enable Remote Login on the wave's machines~~ — **DONE by Cyril, 2026-09-14 ~23:00.** All four answer on port 22 now.
+3. **Authorize the fleet key for `t6`** on `202-Mac-Pro-3`, `202A-Mac-Mini-M4` and `202B-Mac-Studio`. This is Cyril's step, not the collector's: the only ways in are an authorized key (none yet) or a password, and no password is handled here. The command is ticket 02's step 4, per machine, at the machine.
+4. **Host-key trust for `.174` and `.175`** — mine to do once the keys are authorized, but it is a write to the collector host's `known_hosts`, so it is named here rather than done quietly. Method: record the served key's fingerprint, compare it against the machine's own `/etc/ssh/ssh_host_ed25519_key.pub`, then write the entry. No blind `accept-new`.
+5. **`202B-Mac-Studio`'s serial, OS and account name.** Its address is settled; its identity is not. Read at the machine: `system_profiler SPHardwareDataType | grep -E 'Serial|Model'` and `ipconfig getifaddr en0`.
 
 ## Acceptance criteria
 
 - [x] The wave is fixed before execution as `202-Mac-Pro-3`, `202-TOC-M4-Max`, `202A-Mac-Mini-M4`, and `202B-Mac-Studio`, with each machine's known serial, address, username, and SSH destination listed; unknown identity fields remain explicit gaps.
-  - Table above; `202B-Mac-Studio`'s serial, address and OS are recorded as explicit gaps rather than filled by resemblance. Username is `t6` for the fleet by convention — confirmed on the pilot, and to be confirmed at each machine with the same `whoami` check ticket 02 used before its key was authorized.
+  - Table above. `202B-Mac-Studio`'s address is now `192.168.88.177`, established from the machine's own mDNS binding rather than from the assertion that named it; its **serial, OS and account name remain explicit gaps**, filled by resemblance nowhere. Username is `t6` by fleet convention — confirmed on the pilot, and to be confirmed at each machine with the same `whoami` check ticket 02 used before its key was authorized.
 - [x] Current network, SSH-service, and authentication state is recorded per machine before any change, preserving whether the result is timeout, connection refused, authentication refusal, or success.
-  - Recorded with those distinctions kept apart: `.174` and `.175` = ICMP replies + **connection refused** (service closed); `.182` = open + **success** (`t6` / `202-TOC-M4-Max.local`, exit 0); `202B` = not probed, no address. Evidence sections 1–3.
+  - Recorded with those distinctions kept apart, before and after the Remote Login change: `.174`/`.175`/`202B` were ICMP replies + **connection refused** (service closed) and are now open with **host-key-unknown** (`.174`, `.175`) and **authentication refusal** (`.177`); `.182` is open + **success** (`t6` / `202-TOC-M4-Max.local`, exit 0). Evidence sections 1–6.
 - [ ] Cyril approves the exact machine set and authentication change before keys are authorized or Remote Login is enabled.
   - **NOT MET — awaiting Cyril.** The ask is now explicit and larger than the ticket assumed: two changes per machine (Remote Login on, then the key authorized), on two named machines, each with the rollback below.
 - [ ] Each machine receives only the approved least-privileged access needed to run the existing no-root, read-only probe; credentials and private keys remain outside Git and the observation store.
