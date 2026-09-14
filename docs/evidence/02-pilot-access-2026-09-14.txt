@@ -1,0 +1,203 @@
+Fleet SSH access, ticket 02: the TOC pilot becomes observable (fleet-ssh-access)
+
+Captured 2026-09-14T22:04:43+08:00 on Cyrils-Mac-mini.local
+(Cyril's Mac mini, 192.168.88.202 - the collector host), at checkout
+b3f62d5.
+Pilot: 202-TOC-M4-Max, 192.168.88.182, serial RW3HL9FL4M. Store: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+================================================================================
+1. BEFORE - the state the ticket has to change
+================================================================================
+
+--- the plain form the collector's transport issues, before the change ---
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 t6@192.168.88.182 echo key-auth-ok
+stderr: t6@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).
+exit=255
+
+--- stanzas covering the pilot in ~/.ssh/config, before ---
+$ python3 -c "import os;print(os.path.exists(os.path.expanduser('~/.ssh/config')) and open(os.path.expanduser('~/.ssh/config')).read().count('202-TOC-M4-Max'))"
+0
+exit=0
+
+================================================================================
+2. THE AUTHORIZED CHANGE (approved by Cyril in session, 2026-09-14)
+================================================================================
+
+On the pilot, keyed on the account t6: the collector's public key
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsOr/HucyN9ns0palgBduVElHZx5vQqo2emkoDIEwR6 t6-cyril@192.168.88.188
+  fingerprint SHA256:yQdIFGNdehuePZHauN7tB/S3dZWiluxz78rGQUEzkqU (ED25519)
+
+On the collector host, one stanza appended to ~/.ssh/config (no existing block modified):
+Host 202-TOC-M4-Max / HostName 192.168.88.182 / User t6 / IdentityFile ~/.ssh/id_ed25519_t6 / IdentitiesOnly yes
+The fleet key is not a default identity name, so without this stanza ssh offers the default
+identities and never tries it. Pre-image: ~/.ssh/config.bak-20260914T220422-before-fleet-ssh-stanza
+
+================================================================================
+3. AFTER - key authentication, and what the pilot itself says it trusts
+================================================================================
+
+--- the pilot, by its own name through the new stanza ---
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 202-TOC-M4-Max whoami; hostname; scutil --get LocalHostName; sw_vers -productVersion; echo '--- the pilot''s own account of its authorized_keys ---'; ls -ld ~/.ssh ~/.ssh/authorized_keys; ssh-keygen -lf ~/.ssh/authorized_keys
+t6
+202-TOC-M4-Max.local
+202-TOC-M4-Max
+26.2
+--- the pilots own account of its authorized_keys ---
+drwx------  3 t6  staff   96 Sep 14 21:52 /Users/t6/.ssh
+-rw-------  1 t6  staff  105 Sep 14 21:52 /Users/t6/.ssh/authorized_keys
+256 SHA256:yQdIFGNdehuePZHauN7tB/S3dZWiluxz78rGQUEzkqU t6-cyril@192.168.88.188 (ED25519)
+exit=0
+
+--- regression: the path that already worked ---
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 t6-mac-mini printf key-auth-ok
+key-auth-ok
+exit=0
+
+================================================================================
+4. THE DECLARED ACCESS MAP, AND THE PILOT OBSERVED
+================================================================================
+
+--- the first observation of the pilot ---
+$ python3 -m munki_fleet.cli probe --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --access-map data/ssh-access.json --machine 202-TOC-M4-Max:RW3HL9FL4M
+access: 1 of 1 ssh target(s) have a declared destination (data/ssh-access.json)
+run 2026-09-14T22:04:43+08:00/966dabd2
+  targeted 1, reached 1 (observed 1, partial 0), unobserved 0
+  complete: True
+    202-TOC-M4-Max               RW3HL9FL4M     manifest=202-TOC-M4-Max pending=0 rejections=0
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+
+--- read back: newest reading per machine ---
+$ python3 -m munki_fleet.cli observations --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --max-age 3600
+49 records, 7 run(s); latest observed 2026-09-14T22:04:43+08:00
+max age 3600s; now 2026-09-14T22:04:43+08:00
+  C02C71SCK7GF   current  age=   1862s  201-Bay-01-Mac-Pro         unobserved: unreachable  problems=no-access-record
+  C02C71SDK7GF   current  age=   2178s  202-Mac-Pro-3              unobserved: unreachable  problems=no-access-record
+  C02DX110PN5V   current  age=   2178s  303B iMac                  unobserved: unreachable  problems=no-access-record
+  C07D317NPJJ7   current  age=   1862s  Sixto-5                    manifest=Sixto-5 pending=0
+  GK7RW3463R     current  age=   2178s  201-Bay-02-M1-Max          unobserved: unreachable  problems=no-access-record
+  GYC39Q30PJ     current  age=   2178s  T6-MacBook-M4-Max          unobserved: unreachable  problems=no-access-record
+  HPXH7XG2DD     current  age=   2178s  303A-Mac-Mini-M4-Pro       unobserved: unreachable  problems=no-access-record
+  J4X5JTVXDD     current  age=   2178s  201-Viewing-Room           unobserved: unreachable  problems=no-access-record
+  J90PHXGC5V     current  age=   2178s  202-Jason-M2-Max           unobserved: unreachable  problems=no-access-record
+  K267DWDMWX     current  age=   2178s  T6-MacBook-M3-Pro          unobserved: unreachable  problems=no-access-record
+  KL6G9VMQVP     current  age=   2178s  201-Bay-03-M1-Ultra        unobserved: unreachable  problems=no-access-record
+  PKXTGR769Q     current  age=   2178s  303D-Mac-Studio-M2         unobserved: unreachable  problems=no-access-record
+  PM4PWN40R0     current  age=   2178s  202C-Studio-M1-Ultra       unobserved: unreachable  problems=no-access-record
+  R6WV6DCVVH     current  age=   2178s  202-Tim-M2-Max-9           unobserved: unreachable  problems=no-access-record
+  RW3HL9FL4M     current  age=      0s  202-TOC-M4-Max             manifest=202-TOC-M4-Max pending=0
+  RWJ57V9PW4     current  age=   1862s  Cyrils-Mac-mini            manifest=site_default pending=0
+  X904F44LHX     current  age=   2178s  202A-Mac-Mini-M4           unobserved: unreachable  problems=no-access-record
+exit=0
+
+--- the pilot's observation record, verbatim ---
+{
+  "detail": null,
+  "kind": "observation",
+  "machine": {
+    "arch": "arm64",
+    "hostname": "202-TOC-M4-Max.local",
+    "model": "Mac16,9",
+    "munki_version": "7.3.0.5808",
+    "os_build": "25C56",
+    "os_vers": "26.2",
+    "serial": "RW3HL9FL4M"
+  },
+  "observed_at": "2026-09-14T22:04:43+08:00",
+  "observer": "munki-fleet-collector",
+  "outcome": "observed",
+  "problems": [],
+  "reason": null,
+  "run_id": "2026-09-14T22:04:43+08:00/966dabd2",
+  "source": {
+    "age_seconds": 1172,
+    "log_mtime": 1789393511,
+    "report_mtime": 1789393511,
+    "timestamp": "2026-09-14 21:45:07.937+08:00"
+  },
+  "state": {
+    "architecture_rejections": [],
+    "errors": [],
+    "last_check": {
+      "log_run_ended": "2026-09-14 21:45:11.117+08:00",
+      "log_run_started": "2026-09-14 21:45:07.937+08:00",
+      "report_ended": "2026-09-14 13:45:11",
+      "report_started": "2026-09-14 13:45:07",
+      "result": "warnings",
+      "run_kind": "auto",
+      "timestamp": "2026-09-14 21:45:07.937+08:00"
+    },
+    "manifest_lookups": [
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found...",
+      "Manifest 202-TOC-M4-Max.local not found..."
+    ],
+    "manifest_name": "202-TOC-M4-Max",
+    "munki_version": "7.3.0.5808",
+    "pending_count": 0,
+    "pending_items": [],
+    "problem_installs": [],
+    "run_type": "auto",
+    "source_age_seconds": 1172,
+    "warnings": [
+      "WARNING: Could not process item IBMAsperaConnect for optional install. No pkginfo found in catalogs: [\"testing\"]"
+    ]
+  },
+  "target": {
+    "address": "202-TOC-M4-Max",
+    "host": "202-TOC-M4-Max",
+    "name": "202-TOC-M4-Max",
+    "serial": "RW3HL9FL4M",
+    "ssh_destination": "202-TOC-M4-Max"
+  }
+}
+
+--- the whole fleet after the change, for coverage ---
+$ python3 -m munki_fleet.cli probe --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --access-map data/ssh-access.json --from-inventory data/machines.json --local-host Cyrils-Mac-mini --timeout 6
+access: 2 of 16 ssh target(s) have a declared destination (data/ssh-access.json)
+  no-access-record: no access record for '201-Bay-01-Mac-Pro'
+  no-access-record: no access record for '201-Bay-02-M1-Max'
+  no-access-record: no access record for '201-Bay-03-M1-Ultra'
+  no-access-record: no access record for '201-Viewing-Room'
+  no-access-record: no access record for '202-Jason-M2-Max'
+  no-access-record: no access record for '202-Mac-Pro-3'
+  no-access-record: no access record for '202-Tim-M2-Max-9'
+  no-access-record: no access record for '202A-Mac-Mini-M4'
+  no-access-record: no access record for '202C-Studio-M1-Ultra'
+  no-access-record: no access record for '303A-Mac-Mini-M4-Pro'
+  no-access-record: no access record for '303B iMac'
+  no-access-record: no access record for '303D-Mac-Studio-M2'
+  no-access-record: no access record for 'T6-MacBook-M3-Pro'
+  no-access-record: no access record for 'T6-MacBook-M4-Max'
+run 2026-09-14T22:04:43+08:00/9fb6078c
+  targeted 17, reached 3 (observed 3, partial 0), unobserved 14
+  INCOMPLETE: some targets were not observed
+    201-Bay-01-Mac-Pro           UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Bay-02-M1-Max            UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Bay-03-M1-Ultra          UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Viewing-Room             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.170 port 22: Connection refused
+    202-Jason-M2-Max             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.179 port 22: Connection refused
+    202-Mac-Pro-3                UNOBSERVED   unreachable: ssh: connect to host 192.168.88.174 port 22: Connection refused
+    202-TOC-M4-Max               RW3HL9FL4M     manifest=202-TOC-M4-Max pending=0 rejections=0
+    202-Tim-M2-Max-9             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.180 port 22: Connection refused
+    202A-Mac-Mini-M4             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.175 port 22: Connection refused
+    202C-Studio-M1-Ultra         UNOBSERVED   unreachable: ssh: connect to host 192.168.88.181 port 22: Connection refused
+    303A-Mac-Mini-M4-Pro         UNOBSERVED   unreachable: ssh: connect to host 192.168.88.190 port 22: Connection refused
+    303B iMac                    UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    303D-Mac-Studio-M2           UNOBSERVED   unreachable: ssh: connect to host 192.168.88.193 port 22: Connection refused
+    Cyrils-Mac-mini              RWJ57V9PW4     manifest=site_default pending=0 rejections=0
+    Sixto-5                      C07D317NPJJ7   manifest=Sixto-5 pending=0 rejections=0
+    T6-MacBook-M3-Pro            UNOBSERVED   unreachable: ssh: connect to host 192.168.88.80 port 22: Connection refused
+    T6-MacBook-M4-Max            UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+

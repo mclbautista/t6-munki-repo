@@ -4,15 +4,79 @@
 
 **Blocked by:** 01: Resolve observation targets through an explicit SSH transport contract
 
-**Status:** ready-for-human
+**Status:** ready-for-human — the pilot is reachable and observed; **one item remains: the rollback drill on the pilot** (runbook steps 6–8), which is a hands-on step at the machine.
 
-**Approval gate:** Enabling Remote Login, changing SSH authentication, or adding an authorized public key changes authentication on a facility Mac and requires Cyril's confirmation before execution.
+**Approval gate:** Enabling Remote Login, changing SSH authentication, or adding an authorized public key changes authentication on a facility Mac and requires Cyril's confirmation before execution. **Discharged 2026-09-14**: Cyril approved appending one per-machine stanza to the collector host's `~/.ssh/config` and authorizing the collector's public key on the pilot's `t6` account, after being shown the exact scope, the key fingerprint and the rollback. The runbook he worked from is `~/T6-Ops-Docs/runbooks/fleet-ssh-pilot-access-ticket02-2026-09-14.html`.
 
-- [ ] Before any system change, the current state is recorded from the pilot: network reachability, SSH service response, attempted destination and username, and the transport's exact authentication result.
-- [ ] The proposed authentication change names the affected machine, collector host, public-key identity, dependencies, rollback steps, and recovery path; Cyril approves that exact scope before execution.
-- [ ] Only the approved public key and least-privileged account are authorized; no password, private key, or secret is committed, logged, or copied into the observation store.
-- [ ] The resulting access path is non-interactive from the collector host and permits the read-only probe without root or a client-side write.
-- [ ] A live observation records serial `RW3HL9FL4M`, Munki tools version, resolved manifest, pending count, last-check result, architecture rejections, warnings, source timestamps, and observation timestamp.
-- [ ] A serial mismatch, fallback manifest, partial payload, or authentication failure leaves the ticket incomplete and is reported with its source evidence.
+## What was done
+
+| where | change |
+|---|---|
+| the pilot, `t6` account | the collector's public key (`id_ed25519_t6.pub`, `SHA256:yQdIFGNdehuePZHauN7tB/S3dZWiluxz78rGQUEzkqU`) added to `~/.ssh/authorized_keys` by Cyril, at the machine as `t6` — the pilot's own listing shows `drwx------ t6 staff` and `-rw------- t6 staff`, and **exactly one** key |
+| the collector host, `~/.ssh/config` | one stanza appended (no existing block touched): `Host 202-TOC-M4-Max` / `HostName 192.168.88.182` / `User t6` / `IdentityFile ~/.ssh/id_ed25519_t6` / `IdentitiesOnly yes`. Pre-image: `~/.ssh/config.bak-20260914T220422-before-fleet-ssh-stanza` |
+| `data/ssh-access.json` | a record for `202-TOC-M4-Max`, serial `RW3HL9FL4M`, destination `202-TOC-M4-Max` |
+
+**Nothing was enabled.** The pilot was already offering SSH: the before-state refusal is `t6@192.168.88.182: Permission denied (publickey,password,keyboard-interactive)`, which is sshd answering, so Remote Login did not need turning on and no authentication method was changed.
+
+### The stanza exists because the fleet key is not a default identity
+
+Plain `ssh -o BatchMode=yes t6@192.168.88.182` still fails after the key is authorized, because ssh offers its default identities (`~/.ssh/id_ed25519`) and never tries `id_ed25519_t6`. Measured, not assumed: the failure was reproduced in both forms before the stanza was written, and the collector's exact argv shape was dry-run against a throwaway config file before `~/.ssh/config` was touched. Two consequences worth carrying forward:
+
+- **A shared glob block does not work.** `Host 201-* 202-* 202A-* …` was tried first and failed: ssh lowercases the name it is given, and a shared block carries no `HostName`, so there is nothing to resolve. One stanza per machine, keyed on the machine's own name.
+- **The case must be exact.** A stanza whose `Host` pattern is lowercase does not match, so a lowercase copy of the block silently fails to resolve (verified both ways). The comment in the config says so.
+
+### A dependency this ticket creates, recorded where it can bite
+
+An access record declares **which** machine may be reached; the machine that runs the collector holds **how** the credential is presented, in its own `~/.ssh/config`. A destination no stanza covers fails as `unreachable` and is reported rather than guessed — but it fails only at probe time, so **ticket 05's cutover must recreate these stanzas on the admin workstation** or its destinations will silently not resolve. Recorded in `CONTEXT.md` (glossary) and in the map's own note. A pre-flight check that a declared destination resolves on this host would be a useful guard; it is not built here, and this ticket is not the place (it would be new behaviour on the same reviewed path).
+
+## Acceptance criteria
+
+- [x] Before any system change, the current state is recorded from the pilot: network reachability, SSH service response, attempted destination and username, and the transport's exact authentication result.
+  - `ssh -n -o BatchMode=yes t6@192.168.88.182 'echo key-auth-ok'` → `t6@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).` and `… ssh -o BatchMode=yes 192.168.88.182 …` → `cyrilbautista@192.168.88.182: …` (the undeclared path, named by the local account) — evidence section 1. The service is up, so the refusal is authentication, not reachability.
+- [x] The proposed authentication change names the affected machine, collector host, public-key identity, dependencies, rollback steps, and recovery path; Cyril approves that exact scope before execution.
+  - Machine `202-TOC-M4-Max`/`192.168.88.182`; collector host this Mac mini `192.168.88.202`; key `id_ed25519_t6.pub` with its fingerprint; dependency = the collector host's ssh config, which is *why* the change is two-sided; rollback = delete the one `authorized_keys` line and the one stanza; recovery = restore `~/.ssh/config` from the pre-image. Approved in session after the plain-form failure was demonstrated.
+- [x] Only the approved public key and least-privileged account are authorized; no password, private key, or secret is committed, logged, or copied into the observation store.
+  - The pilot's own answer, quoted in evidence section 3: `ssh-keygen -lf ~/.ssh/authorized_keys` lists one entry, the approved fingerprint. Account `t6`, ordinary user, no sudo involved in the probe. The map records a destination and a serial; the observation record's `target` carries `{'address', 'host', 'name', 'serial', 'ssh_destination'}` and nothing credential-shaped.
+- [x] The resulting access path is non-interactive from the collector host and permits the read-only probe without root or a client-side write.
+  - `BatchMode=yes` makes a prompt impossible; the probe ran with no root and wrote nothing on the pilot (it reads `ManagedInstallReport.plist` and the log tail). Run `2026-09-14T22:04:43+08:00/966dabd2`, `targeted 1, reached 1 (observed 1, partial 0), unobserved 0`.
+- [x] A live observation records serial `RW3HL9FL4M`, Munki tools version, resolved manifest, pending count, last-check result, architecture rejections, warnings, source timestamps, and observation timestamp.
+  - Serial `RW3HL9FL4M`; Munki `7.3.0.5808`; **resolved manifest `202-TOC-M4-Max` — its own machine manifest, not `site_default`**; pending 0; `last_check.result` `warnings` with `run_kind: auto` and the run's own start/end in both the report's UTC (`13:45:07`/`13:45:11`) and the log's local offset (`21:45:07.937+08:00`/`21:45:11.117+08:00`) forms, recorded as given; `architecture_rejections: []`; warnings = one item filtered (`IBMAsperaConnect … No pkginfo found in catalogs: ["testing"]`, the x86_64-only item on an arm64 machine); `observed_at 2026-09-14T22:04:43+08:00`; source age 1172 s. Full record verbatim in evidence section 4.
+- [x] A serial mismatch, fallback manifest, partial payload, or authentication failure leaves the ticket incomplete and is reported with its source evidence.
+  - None occurred: the record's `problems` is `[]`, the serial matches the inventory row (`RW3HL9FL4M`), and the resolved manifest is the machine's own. Had any of them occurred the observation would have been `partial`/`unobserved` or flagged, and the ticket would say so — the mechanism is ticket 01's and is tested there.
 - [ ] Rollback is exercised or independently verified: removing the approved authorization returns the access path to its prior state without altering Munki client data.
-- [ ] The ticket records before/after evidence and reads the exact access target and observation back before claiming completion.
+  - **NOT MET.** The rollback is written down and its two halves are known — delete the `authorized_keys` line on the pilot, delete the stanza on the collector host — and the pre-image exists (`~/.ssh/config.bak-20260914T220422-before-fleet-ssh-stanza`). What has *not* happened is the drill: remove the key, watch the refusal return, restore. Nothing about it is in doubt; it is simply not done, and a rollback nobody has run is not a rollback. Runbook steps 6–8. Nothing here alters Munki client data: the change is an ssh authorization, and no Munki file on the pilot was written.
+- [x] The ticket records before/after evidence and reads the exact access target and observation back before claiming completion.
+  - Before and after, with the commands and what each returned: `docs/evidence/02-pilot-access-2026-09-14.txt`. The read-back is section 4: `49 records, 7 run(s)`, newest reading per machine, with `RW3HL9FL4M current age=0s … manifest=202-TOC-M4-Max`. The stanza's own effect was read back twice — `ssh 202-TOC-M4-Max whoami` → `t6`, and the paths that already worked (`t6-mac-mini`, `t6-nas`) still answer after the append.
+
+## What this changes for the rest of the set
+
+- **Fleet coverage after this ticket: 2 of 16 ssh targets declared** (`Sixto-5`, `202-TOC-M4-Max`), 17 targeted, 3 observed, 14 unobserved with their transport reasons. The fleet run is evidence section 5.
+- **Ticket 06 gains its first production-machine data point.** The pilot resolves its own manifest, so criterion 4's "every inventoried Mac reports a resolved manifest name that is its own machine manifest" has a real machine behind it (2 with `Sixto-5`). Its four `name-difference` cases are elsewhere and untouched by this.
+- **Ticket 03's wave 1** is `202-Mac-Pro-3`, `202-TOC-M4-Max` (done here), `202A-Mac-Mini-M4`, and `202B-Mac-Studio` — which still has no serial and no address, so it cannot be probed even with access. Each new machine needs its own stanza *and* its own approval.
+- **Ticket 04's remaining fleet** includes `303B iMac`, whose Munki name contains a space: it needs an alias form (its UNIX hostname `303B-iMac`) in both the stanza and the map, which is a naming decision rather than a mechanical one.
+
+## Verification
+
+Suite unchanged by this ticket (no code), run bare at `b3f62d5`:
+
+```
+$ /usr/bin/python3 -m pytest
+288 passed
+```
+
+Live, on the collector host (`192.168.88.202`), 2026-09-14:
+
+```
+$ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl \
+    --access-map data/ssh-access.json --machine 202-TOC-M4-Max:RW3HL9FL4M
+access: 1 of 1 ssh target(s) have a declared destination (data/ssh-access.json)
+run 2026-09-14T22:04:43+08:00/966dabd2
+  targeted 1, reached 1 (observed 1, partial 0), unobserved 0
+  complete: True
+    202-TOC-M4-Max               RW3HL9FL4M     manifest=202-TOC-M4-Max pending=0 rejections=0
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+```
+
+Full capture, including the before state, the pilot's own account of its `authorized_keys`, the
+regression checks and the whole-fleet run: `docs/evidence/02-pilot-access-2026-09-14.txt`.

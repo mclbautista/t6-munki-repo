@@ -75,7 +75,12 @@ Two failures this project exists to prevent, in order:
   a machine name, optionally the serial that name is expected to have, and one destination (an ssh
   alias, `user@host`, or a bare host). It carries no credential and cannot: the destination grammar
   is `[user@]host`, so a port, a path, a password or a space is refused rather than stored. The
-  collector uses the declared destination verbatim, or refuses.
+  collector uses the declared destination verbatim, or refuses. A record declares **which** machine
+  may be reached; **how** the credential is presented belongs to the machine that runs the collector,
+  in its own `~/.ssh/config` — an alias, or a stanza keyed on the machine's name supplying
+  `HostName`, `User`, `IdentityFile` and `IdentitiesOnly`. A destination no stanza covers fails as
+  unreachable and is reported, never guessed, so a host that runs the collector needs the stanzas as
+  well as the map.
 - **Access map:** the file of access records, one per machine (`data/ssh-access.json`, committed,
   because it holds nothing secret). A map that is malformed, that names one machine twice, or whose
   declared serial contradicts the machine's own inventory row **blocks** that machine's probe: a

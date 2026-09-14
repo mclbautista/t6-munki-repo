@@ -1,12 +1,18 @@
 {
   "schema_version": 1,
-  "note": "The declared SSH access path per machine, for the fleet observation collector (ticket 01 of fleet-ssh-access). No credentials live here and none may: the destination is an ssh alias, user@host, or a bare host, and it is passed to ssh verbatim. A machine with no record here is reported as no-access-record and its readings carry that fact. A record that is malformed, duplicated, or whose serial contradicts the machine's own inventory row is reported and the machine is NOT probed. Everything still uncovered needs its access approved first: see tickets 02-04 of this set.",
+  "note": "The declared SSH access path per machine, for the fleet observation collector (ticket 01 of fleet-ssh-access). No credentials live here and none may: the destination is an ssh alias, a machine name, or user@host, and it is passed to ssh verbatim. RESOLUTION IS THE COLLECTOR HOST'S: a record declares WHICH machine may be reached; the host that runs the collector holds HOW the credential is presented (User, IdentityFile, IdentitiesOnly, HostName) in its own ~/.ssh/config. A destination that no stanza covers fails as unreachable and is reported, never guessed. A machine with no record here is reported as no-access-record and its readings carry that fact. A record that is malformed, duplicated, or whose serial contradicts the machine's own inventory row is reported and the machine is NOT probed. Everything still uncovered needs its access approved first: see tickets 02-04 of this set.",
   "machines": [
     {
       "name": "Sixto-5",
       "serial": "C07D317NPJJ7",
       "destination": "t6-mac-mini",
       "note": "The admin workstation, 192.168.88.151, reached as t6 by key over the t6-mac-mini ssh alias. Verified 2026-09-14: `ssh -n -o BatchMode=yes t6-mac-mini printf key-auth-ok` returned key-auth-ok. This is the only access path the repository can evidence today."
+    },
+    {
+      "name": "202-TOC-M4-Max",
+      "serial": "RW3HL9FL4M",
+      "destination": "202-TOC-M4-Max",
+      "note": "The TOC pilot, 192.168.88.182, reached as t6. The destination is the machine's own name rather than an alias because it resolves through a stanza in the collector host's ~/.ssh/config that supplies HostName, User, IdentityFile and IdentitiesOnly - the fleet key is not a default identity name, so plain `ssh t6@192.168.88.182` offers the default identities instead and never tries it (measured 2026-09-14). Verified the same day: key auth returns t6/202-TOC-M4-Max.local/macOS 26.2, and the pilot's authorized_keys holds exactly one key, the approved one."
     }
   ]
 }
