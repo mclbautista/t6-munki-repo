@@ -238,7 +238,7 @@ For each machine that was granted access, the reversal is three removals and one
     on the collector host:
         remove that machine's stanza from ~/.ssh/config      (pre-image: ~/.ssh/config.bak-20260914T234109-before-wave-1)
         remove its known_hosts entry                          (pre-image: ~/.ssh/known_hosts.bak-20260914T234109-before-wave-1)
-        remove its record from data/ssh-access.json           (pre-image: data/ssh-access.json.bak-20260914T234123-before-wave-1-records)
+        remove its record from data/ssh-access.json           (pre-image: ~/.munki-fleet/pre-images/ssh-access.json.bak-20260914T234123-before-wave-1-records)
 
 A full rollback for 202-Mac-Pro-3 and 202A-Mac-Mini-M4 is four removals, not three, because they had
 sshd closed this morning: returning them to their exact before-state also means turning Remote Login
