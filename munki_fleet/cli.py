@@ -32,6 +32,7 @@ import urllib.request
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
+from .access import AccessMap, resolve_targets
 from .catalogs import CatalogError, build_catalogs
 from .drift import DriftReport, integrity, repo_url
 from .drift import drift as drift_report
@@ -48,6 +49,11 @@ from .targets import SshTarget, TargetError
 METADATA_DIRS = ("pkgsinfo", "manifests", "icons")
 GENERATED_DIRS = ("catalogs",)
 
+# Where a machine's declared SSH access lives. No credentials: an alias, or `user@host`, and nothing
+# else (ticket 01 of fleet-ssh-access). It is loaded by default so the committed declaration is
+# actually in force; a run that names a map explicitly refuses to start if that map cannot be read.
+DEFAULT_ACCESS_MAP = "data/ssh-access.json"
+
 
 def parse_target(spec: str) -> SshTarget:
     if ":" not in spec:
@@ -58,9 +64,10 @@ def parse_target(spec: str) -> SshTarget:
 
 @dataclasses.dataclass
 class Deps:
-    """Injection seams for tests: the target, and the catalog builder's runner."""
+    """Injection seams for tests: the target, the catalog builder's runner, the probe's runner."""
     target_factory: Callable[[str], object] = parse_target
     catalog_runner: Optional[Callable] = None
+    probe_runner: Optional[Callable] = None
 
 
 def tracked_paths(metadata_root: str, include_generated: bool = True) -> List[str]:
@@ -460,9 +467,32 @@ def cmd_probe(args, deps: Deps) -> int:
         if args.local_host in (candidate.get("host"), candidate.get("address")):
             local_addresses |= {candidate.get("host"), candidate.get("address")}
 
+    def probed_locally(candidate):
+        return bool({candidate.get("host"), candidate.get("address")} & local_addresses)
+
+    # The declared access path (ticket 01 of fleet-ssh-access). A target reached locally travels
+    # without ssh, so no ssh record applies to it: --local-host is that transport's own declaration.
+    map_path = args.access_map or DEFAULT_ACCESS_MAP
+    access = AccessMap.load(map_path)
+    if not access.available and (args.access_map or os.path.exists(map_path)):
+        print(f"error: --access-map {map_path}: {access.reason}", file=sys.stderr)
+        return 2
+    network = [candidate for candidate in targets if not probed_locally(candidate)]
+    resolved, defects = resolve_targets(network, access)
+    queue = iter(resolved)
+    targets = [next(queue) if not probed_locally(candidate) else candidate
+               for candidate in targets]
+    declared = sum(1 for candidate in targets if candidate.get("ssh_destination"))
+    print(f"access: {declared} of {len(network)} ssh target(s) have a declared destination"
+          f" ({map_path}{'' if access.available else ': ' + (access.reason or 'unavailable')})")
+    for defect in defects:
+        print(f"  {defect.kind}: {defect.detail}")
+
     def runner(address, command, timeout=None):
         if address and address in local_addresses:
             return local_runner(address, command, timeout or args.timeout)
+        if deps.probe_runner is not None:
+            return deps.probe_runner(address, command, timeout or args.timeout)
         return probe.default_runner(address, command, timeout or args.timeout)
 
     run, observations = probe.probe_run(targets, runner, store_path=args.store,
@@ -509,13 +539,17 @@ def cmd_observations(args, deps: Deps) -> int:
         observation = entry["observation"]
         age = entry["age_seconds"]
         verdict = "STALE" if entry["stale"] else "current"
+        # A reading whose transport path was never declared is not a verified-access reading, and
+        # this line is the only place an operator can see the difference.
+        problems = observation.get("problems") or []
+        flag = f"  problems={','.join(problems)}" if problems else ""
         if observation["outcome"] == "observed":
             state = observation["state"]
             print(f"  {key:14} {verdict:8} age={age:>7}s  {observation['target']['host']:26} "
-                  f"manifest={state['manifest_name']} pending={state['pending_count']}")
+                  f"manifest={state['manifest_name']} pending={state['pending_count']}{flag}")
         else:
             print(f"  {key:14} {verdict:8} age={age:>7}s  {observation['target']['host']:26} "
-                  f"{observation['outcome']}: {observation.get('reason')}")
+                  f"{observation['outcome']}: {observation.get('reason')}{flag}")
     return 0
 
 
@@ -694,6 +728,11 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
                         "192.168.88.182@202-TOC-M4-Max:RW3HL9FL4M")
     p.add_argument("--from-inventory", default=None, metavar="PATH",
                    help="probe the machines in an identity inventory, e.g. data/machines.json")
+    p.add_argument("--access-map", default=None, metavar="PATH",
+                   help=f"the declared SSH access path per machine (default: {DEFAULT_ACCESS_MAP}); "
+                        f"a map named here that cannot be read refuses the run")
+    p.add_argument("--limit", type=int, default=None, metavar="N",
+                   help="probe at most N of the inventory's machines, for a bounded first run")
     p.add_argument("--observer", default=None,
                    help=f"who is observing (default: {probe.DEFAULT_OBSERVER})")
     p.add_argument("--local-host", default=None, metavar="HOST",

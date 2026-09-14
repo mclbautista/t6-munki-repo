@@ -1,0 +1,231 @@
+Fleet SSH access: the declared transport contract, live (ticket 01 of fleet-ssh-access)
+
+Captured 2026-09-14T21:28:24+0800 on Cyrils-Mac-mini.local (Cyril's Mac mini, 192.168.88.202).
+Checkout: /Users/cyrilbautista/Projects/t6-munki-repo at 8e10127
+Access map: data/ssh-access.json
+Observation store: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+Transport: ssh from this machine; one declared path today, the t6-mac-mini alias.
+
+================================================================================
+1. THE DECLARATION — the whole map, and what it resolves to
+================================================================================
+$ cat data/ssh-access.json
+{
+  "schema_version": 1,
+  "note": "The declared SSH access path per machine, for the fleet observation collector (ticket 01 of fleet-ssh-access). No credentials live here and none may: the destination is an ssh alias, user@host, or a bare host, and it is passed to ssh verbatim. A machine with no record here is reported as no-access-record and its readings carry that fact. A record that is malformed, duplicated, or whose serial contradicts the machine's own inventory row is reported and the machine is NOT probed. Everything still uncovered needs its access approved first: see tickets 02-04 of this set.",
+  "machines": [
+    {
+      "name": "Sixto-5",
+      "serial": "C07D317NPJJ7",
+      "destination": "t6-mac-mini",
+      "note": "The admin workstation, 192.168.88.151, reached as t6 by key over the t6-mac-mini ssh alias. Verified 2026-09-14: `ssh -n -o BatchMode=yes t6-mac-mini printf key-auth-ok` returned key-auth-ok. This is the only access path the repository can evidence today."
+    }
+  ]
+}
+
+$ python3 -c "from munki_fleet.access import AccessMap; print(AccessMap.load('data/ssh-access.json').resolve({'host': 'Sixto-5', 'serial': 'C07D317NPJJ7', 'address': '192.168.88.151'}))"
+Resolution(destination='t6-mac-mini', defect=None)
+
+================================================================================
+2. THE STORE BEFORE EITHER RUN
+================================================================================
+/Users/cyrilbautista/.munki-fleet/observations.jsonl: 23 record(s)
+  run          2026-09-13T19:39:19+08:00/4299990c serial=None outcome=None
+  observation  2026-09-13T19:39:19+08:00/4299990c serial=RWJ57V9PW4 outcome=observed
+  observation  2026-09-13T19:39:19+08:00/4299990c serial=None outcome=unobserved
+  run          2026-09-14T21:24:59+08:00/635f9a94 serial=None outcome=None
+  observation  2026-09-14T21:24:59+08:00/635f9a94 serial=C07D317NPJJ7 outcome=observed
+  run          2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=None
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=RWJ57V9PW4 outcome=observed
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=C07D317NPJJ7 outcome=observed
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+  observation  2026-09-14T21:25:41+08:00/0c5d9752 serial=None outcome=unobserved
+
+================================================================================
+3. ONE MACHINE, THROUGH THE DECLARED DESTINATION
+================================================================================
+$ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl --access-map data/ssh-access.json --machine 192.168.88.151@Sixto-5:C07D317NPJJ7
+access: 1 of 1 ssh target(s) have a declared destination (data/ssh-access.json)
+run 2026-09-14T21:28:24+08:00/0bf01128
+  targeted 1, reached 1 (observed 1, partial 0), unobserved 0
+  complete: True
+    Sixto-5                      C07D317NPJJ7   manifest=Sixto-5 pending=0 rejections=0
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+
+================================================================================
+4. THE WHOLE INVENTORY, ONE RUN — 17 targets, access resolved per machine
+================================================================================
+$ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl --access-map data/ssh-access.json --from-inventory data/machines.json --local-host Cyrils-Mac-mini --timeout 6
+access: 1 of 16 ssh target(s) have a declared destination (data/ssh-access.json)
+  no-access-record: no access record for '201-Bay-01-Mac-Pro'
+  no-access-record: no access record for '201-Bay-02-M1-Max'
+  no-access-record: no access record for '201-Bay-03-M1-Ultra'
+  no-access-record: no access record for '201-Viewing-Room'
+  no-access-record: no access record for '202-Jason-M2-Max'
+  no-access-record: no access record for '202-Mac-Pro-3'
+  no-access-record: no access record for '202-TOC-M4-Max'
+  no-access-record: no access record for '202-Tim-M2-Max-9'
+  no-access-record: no access record for '202A-Mac-Mini-M4'
+  no-access-record: no access record for '202C-Studio-M1-Ultra'
+  no-access-record: no access record for '303A-Mac-Mini-M4-Pro'
+  no-access-record: no access record for '303B iMac'
+  no-access-record: no access record for '303D-Mac-Studio-M2'
+  no-access-record: no access record for 'T6-MacBook-M3-Pro'
+  no-access-record: no access record for 'T6-MacBook-M4-Max'
+run 2026-09-14T21:28:25+08:00/6927dd96
+  targeted 17, reached 2 (observed 2, partial 0), unobserved 15
+  INCOMPLETE: some targets were not observed
+    201-Bay-01-Mac-Pro           UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Bay-02-M1-Max            UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Bay-03-M1-Ultra          UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    201-Viewing-Room             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.170 port 22: Connection refused
+    202-Jason-M2-Max             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.179 port 22: Connection refused
+    202-Mac-Pro-3                UNOBSERVED   unreachable: ssh: connect to host 192.168.88.174 port 22: Connection refused
+    202-TOC-M4-Max               UNOBSERVED   unreachable: cyrilbautista@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).
+    202-Tim-M2-Max-9             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.180 port 22: Connection refused
+    202A-Mac-Mini-M4             UNOBSERVED   unreachable: ssh: connect to host 192.168.88.175 port 22: Connection refused
+    202C-Studio-M1-Ultra         UNOBSERVED   unreachable: ssh: connect to host 192.168.88.181 port 22: Connection refused
+    303A-Mac-Mini-M4-Pro         UNOBSERVED   unreachable: ssh: connect to host 192.168.88.190 port 22: Connection refused
+    303B iMac                    UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+    303D-Mac-Studio-M2           UNOBSERVED   unreachable: ssh: connect to host 192.168.88.193 port 22: Connection refused
+    Cyrils-Mac-mini              RWJ57V9PW4     manifest=site_default pending=0 rejections=0
+    Sixto-5                      C07D317NPJJ7   manifest=Sixto-5 pending=0 rejections=0
+    T6-MacBook-M3-Pro            UNOBSERVED   unreachable: ssh: connect to host 192.168.88.80 port 22: Connection refused
+    T6-MacBook-M4-Max            UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+
+================================================================================
+5. THE RECORD READ BACK — newest reading per machine, with its age
+================================================================================
+$ python3 -m munki_fleet.cli observations --store ~/.munki-fleet/observations.jsonl --max-age 3600
+43 records, 5 run(s); latest observed 2026-09-14T21:28:25+08:00
+max age 3600s; now 2026-09-14T21:28:59+08:00
+  C02C71SCK7GF   current  age=     34s  201-Bay-01-Mac-Pro         unobserved: unreachable
+  C02C71SDK7GF   current  age=     34s  202-Mac-Pro-3              unobserved: unreachable
+  C02DX110PN5V   current  age=     34s  303B iMac                  unobserved: unreachable
+  C07D317NPJJ7   current  age=     34s  Sixto-5                    manifest=Sixto-5 pending=0
+  GK7RW3463R     current  age=     34s  201-Bay-02-M1-Max          unobserved: unreachable
+  GYC39Q30PJ     current  age=     34s  T6-MacBook-M4-Max          unobserved: unreachable
+  HPXH7XG2DD     current  age=     34s  303A-Mac-Mini-M4-Pro       unobserved: unreachable
+  J4X5JTVXDD     current  age=     34s  201-Viewing-Room           unobserved: unreachable
+  J90PHXGC5V     current  age=     34s  202-Jason-M2-Max           unobserved: unreachable
+  K267DWDMWX     current  age=     34s  T6-MacBook-M3-Pro          unobserved: unreachable
+  KL6G9VMQVP     current  age=     34s  201-Bay-03-M1-Ultra        unobserved: unreachable
+  PKXTGR769Q     current  age=     34s  303D-Mac-Studio-M2         unobserved: unreachable
+  PM4PWN40R0     current  age=     34s  202C-Studio-M1-Ultra       unobserved: unreachable
+  R6WV6DCVVH     current  age=     34s  202-Tim-M2-Max-9           unobserved: unreachable
+  RW3HL9FL4M     current  age=     34s  202-TOC-M4-Max             unobserved: unreachable
+  RWJ57V9PW4     current  age=     34s  Cyrils-Mac-mini            manifest=site_default pending=0
+  X904F44LHX     current  age=     34s  202A-Mac-Mini-M4           unobserved: unreachable
+
+================================================================================
+6. THE READING THE DECLARED PATH PRODUCED (Sixto-5, verbatim record)
+================================================================================
+{
+  "detail": null,
+  "kind": "observation",
+  "machine": {
+    "arch": "x86_64",
+    "hostname": "Sixto-5.local",
+    "model": "Macmini8,1",
+    "munki_version": "6.6.0.4686",
+    "os_build": "24G231",
+    "os_vers": "15.7.1",
+    "serial": "C07D317NPJJ7"
+  },
+  "observed_at": "2026-09-14T21:28:25+08:00",
+  "observer": "munki-fleet-collector",
+  "outcome": "observed",
+  "problems": [],
+  "reason": null,
+  "run_id": "2026-09-14T21:28:25+08:00/6927dd96",
+  "source": {
+    "age_seconds": 352,
+    "log_mtime": 1789392153,
+    "report_mtime": 1789392153,
+    "timestamp": "2026-09-14 13:22:33 +0000"
+  },
+  "state": {
+    "architecture_rejections": [],
+    "errors": [],
+    "last_check": {
+      "log_run_ended": null,
+      "log_run_started": null,
+      "report_ended": "2026-09-14 13:22:33 +0000",
+      "report_started": "2026-09-14 13:22:26 +0000",
+      "result": "warnings",
+      "run_kind": null,
+      "timestamp": "2026-09-14 13:22:33 +0000"
+    },
+    "manifest_lookups": [],
+    "manifest_name": "Sixto-5",
+    "munki_version": "6.6.0.4686",
+    "pending_count": 0,
+    "pending_items": [],
+    "problem_installs": [],
+    "run_type": "auto",
+    "source_age_seconds": 352,
+    "warnings": [
+      "Could not process item CineCred for optional install. No pkginfo found in catalogs: testing",
+      "Could not process item Stow for optional install. No pkginfo found in catalogs: testing",
+      "Could not process item FrameioDrive for optional install. No pkginfo found in catalogs: testing",
+      "Could not process item OnyX for optional install. No pkginfo found in catalogs: testing",
+      "Could not process item ShutterEncoder for optional install. No pkginfo found in catalogs: testing"
+    ]
+  },
+  "target": {
+    "address": "192.168.88.151",
+    "host": "Sixto-5",
+    "name": "Sixto (3)",
+    "serial": "C07D317NPJJ7",
+    "ssh_destination": "t6-mac-mini"
+  }
+}
+
+records in the store after these runs: 43
+runs: 5
+a destination may not appear with a secret: True
+
+================================================================================
+7. THE OPERATOR VIEW AFTER THE RUN — which readings came from a declared path
+================================================================================
+Appended after section 6, at 2026-09-14T21:29:33+0800, once the read command showed the
+problems flag. The 15 unobserved rows carry no-access-record: their transport was the inventory
+address, which is where each machine was last seen and not what it answers to. Sixto-5's row has
+no flag, because its path is the one thing in the map that is declared.
+
+$ python3 -m munki_fleet.cli observations --store ~/.munki-fleet/observations.jsonl --max-age 3600
+43 records, 5 run(s); latest observed 2026-09-14T21:28:25+08:00
+max age 3600s; now 2026-09-14T21:29:33+08:00
+  C02C71SCK7GF   current  age=     68s  201-Bay-01-Mac-Pro         unobserved: unreachable  problems=no-access-record
+  C02C71SDK7GF   current  age=     68s  202-Mac-Pro-3              unobserved: unreachable  problems=no-access-record
+  C02DX110PN5V   current  age=     68s  303B iMac                  unobserved: unreachable  problems=no-access-record
+  C07D317NPJJ7   current  age=     68s  Sixto-5                    manifest=Sixto-5 pending=0
+  GK7RW3463R     current  age=     68s  201-Bay-02-M1-Max          unobserved: unreachable  problems=no-access-record
+  GYC39Q30PJ     current  age=     68s  T6-MacBook-M4-Max          unobserved: unreachable  problems=no-access-record
+  HPXH7XG2DD     current  age=     68s  303A-Mac-Mini-M4-Pro       unobserved: unreachable  problems=no-access-record
+  J4X5JTVXDD     current  age=     68s  201-Viewing-Room           unobserved: unreachable  problems=no-access-record
+  J90PHXGC5V     current  age=     68s  202-Jason-M2-Max           unobserved: unreachable  problems=no-access-record
+  K267DWDMWX     current  age=     68s  T6-MacBook-M3-Pro          unobserved: unreachable  problems=no-access-record
+  KL6G9VMQVP     current  age=     68s  201-Bay-03-M1-Ultra        unobserved: unreachable  problems=no-access-record
+  PKXTGR769Q     current  age=     68s  303D-Mac-Studio-M2         unobserved: unreachable  problems=no-access-record
+  PM4PWN40R0     current  age=     68s  202C-Studio-M1-Ultra       unobserved: unreachable  problems=no-access-record
+  R6WV6DCVVH     current  age=     68s  202-Tim-M2-Max-9           unobserved: unreachable  problems=no-access-record
+  RW3HL9FL4M     current  age=     68s  202-TOC-M4-Max             unobserved: unreachable  problems=no-access-record
+  RWJ57V9PW4     current  age=     68s  Cyrils-Mac-mini            manifest=site_default pending=0
+  X904F44LHX     current  age=     68s  202A-Mac-Mini-M4           unobserved: unreachable  problems=no-access-record

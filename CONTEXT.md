@@ -71,6 +71,17 @@ Two failures this project exists to prevent, in order:
   machine's Munki state. One artefact, run over ssh or locally; it writes nothing and needs no root.
 - **Collector:** the deterministic writer that runs the probe over a set of machines and appends the
   result to the observation store (ADR 0004). `munki_fleet.cli probe`.
+- **Access record:** the declared SSH destination for one machine, held in `data/ssh-access.json`:
+  a machine name, optionally the serial that name is expected to have, and one destination (an ssh
+  alias, `user@host`, or a bare host). It carries no credential and cannot: the destination grammar
+  is `[user@]host`, so a port, a path, a password or a space is refused rather than stored. The
+  collector uses the declared destination verbatim, or refuses.
+- **Access map:** the file of access records, one per machine (`data/ssh-access.json`, committed,
+  because it holds nothing secret). A map that is malformed, that names one machine twice, or whose
+  declared serial contradicts the machine's own inventory row **blocks** that machine's probe: a
+  declaration that cannot be trusted is never replaced by an undeclared path that happens to work. A
+  machine with no record is probed by its inventory address, and that reading carries
+  `no-access-record` so it cannot pass as a verified-access one.
 - **Observation:** one deterministic read of one Mac's Munki state, carrying both the source's
   own timestamps and the observation timestamp. Outcomes: `observed` (a report was read),
   `partial` (reached, but no usable state — no Munki tools, no report, unreadable report),

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "note": "The declared SSH access path per machine, for the fleet observation collector (ticket 01 of fleet-ssh-access). No credentials live here and none may: the destination is an ssh alias, user@host, or a bare host, and it is passed to ssh verbatim. A machine with no record here is reported as no-access-record and its readings carry that fact. A record that is malformed, duplicated, or whose serial contradicts the machine's own inventory row is reported and the machine is NOT probed. Everything still uncovered needs its access approved first: see tickets 02-04 of this set.",
+  "machines": [
+    {
+      "name": "Sixto-5",
+      "serial": "C07D317NPJJ7",
+      "destination": "t6-mac-mini",
+      "note": "The admin workstation, 192.168.88.151, reached as t6 by key over the t6-mac-mini ssh alias. Verified 2026-09-14: `ssh -n -o BatchMode=yes t6-mac-mini printf key-auth-ok` returned key-auth-ok. This is the only access path the repository can evidence today."
+    }
+  ]
+}

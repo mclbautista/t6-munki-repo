@@ -153,3 +153,156 @@ def test_dry_run_reports_without_publishing(tmp_path):
 
     assert code == 0
     assert target.read("catalogs/all") == catalog_array([item("A", display_name="A")])
+
+
+# --- the probe command and the declared access path (ticket 01 of fleet-ssh-access) ---------------
+
+PROBE_FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "probe", "healthy-envelope.txt")
+
+
+def access_map(tmp_path, records):
+    import json
+    path = os.path.join(str(tmp_path), "ssh-access.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"schema_version": 1, "machines": records}, fh)
+    return path
+
+
+def test_the_probe_command_uses_the_declared_destination_from_the_map(tmp_path, capsys):
+    import json
+    store = str(tmp_path / "observations.jsonl")
+    map_path = access_map(tmp_path, [{"name": "Sixto-5", "destination": "t6-mac-mini"}])
+    with open(PROBE_FIXTURE, encoding="utf-8") as fh:
+        envelope = fh.read().encode()
+    calls = []
+
+    def runner(address, command, timeout=None):
+        calls.append(address)
+        return 0, envelope, b""
+
+    code = main(["probe", "--store", store, "--access-map", map_path,
+                 "--machine", "192.168.88.151@Sixto-5"], deps=Deps(probe_runner=runner))
+
+    assert code == 0, capsys.readouterr().out
+    assert calls == ["t6-mac-mini"], "the map's destination is the transport"
+    with open(store, encoding="utf-8") as fh:
+        records = [json.loads(line) for line in fh if line.strip()]
+    observation = next(r for r in records if r["kind"] == "observation")
+    assert observation["target"]["ssh_destination"] == "t6-mac-mini"
+    assert observation["observed_at"] and observation["machine"]["serial"]
+
+
+def test_the_probe_command_drives_the_inventory_and_the_access_map(tmp_path, capsys):
+    """The `--from-inventory` path, which no test had ever driven.
+
+    `cmd_probe` read `args.limit` while the parser defined no such option, so the documented command
+    raised `AttributeError: 'Namespace' object has no attribute 'limit'` before it probed anything —
+    every module-seam test for the probe was green while the inventory path could not run at all.
+    """
+    import json
+    store = str(tmp_path / "observations.jsonl")
+    inventory = os.path.join(str(tmp_path), "machines.json")
+    with open(inventory, "w", encoding="utf-8") as fh:
+        json.dump({"machines": [{"munki_name": "202A-Mac-Mini-M4", "unix_hostname": "202A-Mac-Mini-M4",
+                                 "primary_ip": "192.168.88.175", "serial": "X904F44LHX",
+                                 "computer_name": "202A Mac Mini M4"}],
+                   "known_absent": []}, fh)
+    map_path = access_map(tmp_path, [{"name": "202A-Mac-Mini-M4", "destination": "202a-mini"}])
+    with open(PROBE_FIXTURE, encoding="utf-8") as fh:
+        envelope = fh.read().encode()
+    calls = []
+
+    def runner(address, command, timeout=None):
+        calls.append(address)
+        return 0, envelope, b""
+
+    code = main(["probe", "--store", store, "--access-map", map_path,
+                 "--from-inventory", inventory], deps=Deps(probe_runner=runner))
+
+    assert code == 0, capsys.readouterr().out
+    assert calls == ["202a-mini"], "the inventory machine travels to its declared destination"
+    with open(store, encoding="utf-8") as fh:
+        records = [json.loads(line) for line in fh if line.strip()]
+    run = next(r for r in records if r["kind"] == "run")
+    assert run["targeted"] == 1 and run["observed"] == 1
+
+
+def test_the_probe_command_refuses_an_unusable_access_map(tmp_path, capsys):
+    """A map you passed and that cannot be read is a caller error, not something to read around."""
+    store = str(tmp_path / "observations.jsonl")
+    path = os.path.join(str(tmp_path), "ssh-access.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("{not json")
+
+    def runner(address, command, timeout=None):
+        raise AssertionError("nothing may be contacted when the map is unusable")
+
+    code = main(["probe", "--store", store, "--access-map", path,
+                 "--machine", "192.168.88.151@Sixto-5"], deps=Deps(probe_runner=runner))
+
+    assert code == 2
+    assert "access-map" in capsys.readouterr().err
+    assert not os.path.exists(store), "nothing may be written when the run was refused"
+
+
+def test_an_absent_default_map_is_reported_and_the_readings_say_the_path_was_undeclared(
+        tmp_path, capsys, monkeypatch):
+    """A map that is not there yet is not a refusal: it is reported, and every reading says so."""
+    import json
+    monkeypatch.chdir(tmp_path)                     # no data/ssh-access.json here
+    store = str(tmp_path / "observations.jsonl")
+    with open(PROBE_FIXTURE, encoding="utf-8") as fh:
+        envelope = fh.read().encode()
+
+    def runner(address, command, timeout=None):
+        return 0, envelope, b""
+
+    code = main(["probe", "--store", store, "--machine", "192.168.88.151@Sixto-5"],
+                deps=Deps(probe_runner=runner))
+
+    out = capsys.readouterr().out
+    assert code == 0, out
+    assert "no-access-map" in out and "0 of 1 ssh target(s)" in out
+    with open(store, encoding="utf-8") as fh:
+        records = [json.loads(line) for line in fh if line.strip()]
+    observation = next(r for r in records if r["kind"] == "observation")
+    assert observation["problems"] == ["no-access-map"]
+
+
+def test_the_operator_view_shows_why_a_reading_is_not_a_declared_path(tmp_path, capsys):
+    """The one place an operator can see the difference between a reading and a verified one."""
+    import json
+    store = str(tmp_path / "observations.jsonl")
+    map_path = access_map(tmp_path, [{"name": "Somewhere-Else", "destination": "t6-mac-mini"}])
+    with open(PROBE_FIXTURE, encoding="utf-8") as fh:
+        envelope = fh.read().encode()
+
+    def runner(address, command, timeout=None):
+        return 0, envelope, b""
+
+    main(["probe", "--store", store, "--access-map", map_path, "--machine", "192.168.88.151@Sixto-5"],
+         deps=Deps(probe_runner=runner))
+    capsys.readouterr()
+
+    code = main(["observations", "--store", store, "--now", "2026-09-14T21:30:00+08:00"])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "problems=no-access-record" in out, out
+
+
+def test_the_committed_access_map_is_readable_and_carries_no_credential():
+    """The declaration in this repository is the one the collector loads: it must stay usable."""
+    import json as jsonlib
+    from munki_fleet.access import DESTINATION, AccessMap
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(root, "data", "ssh-access.json")
+    access = AccessMap.load(path)
+    assert access.available is True, access.reason
+    with open(path, encoding="utf-8") as fh:
+        raw = jsonlib.load(fh)
+    assert raw["machines"], "a map with no records declares no access at all"
+    for record in raw["machines"]:
+        assert DESTINATION.match(record["destination"]), record["destination"]
+        assert ":" not in record["destination"], "a destination may not carry a port or a password"
+    assert "PRIVATE KEY" not in jsonlib.dumps(raw)

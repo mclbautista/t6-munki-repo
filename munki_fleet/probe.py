@@ -321,6 +321,32 @@ def default_runner(host: str, command: str, timeout: Optional[int] = None):
     return default_ssh_runner(host, timeout or DEFAULT_TIMEOUT)(command)
 
 
+def _declared_path(observation: Observation, defect: Optional[dict]) -> Observation:
+    """Keep on the reading the fact that its path was never declared.
+
+    A machine with no access record is still probed — by its inventory address, which is where it was
+    last seen and not what it answers to — and the reading is real. But `no-access-record` travels
+    with it, so a row produced by a path nobody declared cannot be read as a verified one.
+    """
+    kind = (defect or {}).get("kind")
+    if kind and kind not in observation.problems:
+        observation.problems.append(kind)
+    return observation
+
+
+def _transport_message(exc: BaseException, command: str) -> str:
+    """The transport's own words, without this probe's whole script quoted back inside them.
+
+    `default_ssh_runner` reports a timeout as `ssh timed out after Ns: <command>`, and the command is
+    the entire probe script. Kept verbatim, one unreachable machine contributes 200 characters of
+    heredoc to every reading — which buries the one fact that matters and repeats it per machine.
+    """
+    message = f"{type(exc).__name__}: {exc}"
+    if command:
+        message = message.replace(command, "<the probe script>")
+    return message.splitlines()[0][:200]
+
+
 def probe_command() -> str:
     with open(CLIENT_SCRIPT, encoding="utf-8") as fh:
         script = fh.read()
@@ -343,30 +369,43 @@ def probe_run(targets: Sequence[dict], runner: Optional[Runner] = None,
 
     observations: List[Observation] = []
     for target in targets:
-        address = target.get("address") or target["host"]
+        # A declaration that could not be trusted stops the probe here rather than being replaced by
+        # one that was never declared: a fallback that happens to work is how an unverified login
+        # becomes fleet state.
+        defect = target.get("access_defect") or {}
+        if defect.get("blocks"):
+            observations.append(Observation.unreachable(
+                target, observed_at, observer, defect.get("kind") or "access-blocked",
+                detail=defect.get("detail") or "", run_id=run_id))
+            continue
+        # The declared destination is the transport and is used verbatim. The inventory address is
+        # where the machine was last seen, and is the transport only when nothing was declared.
+        address = target.get("ssh_destination") or target.get("address") or target["host"]
         try:
             returncode, stdout, stderr = runner(address, command, timeout)
         except Exception as exc:                                   # transport failure
-            observations.append(Observation.unreachable(
+            observations.append(_declared_path(Observation.unreachable(
                 target, observed_at, observer, "unreachable",
-                detail=f"{type(exc).__name__}: {exc}"[:200], run_id=run_id))
+                detail=_transport_message(exc, command), run_id=run_id), defect))
             continue
         if returncode != 0:
             reason = "unreachable" if returncode == 255 else "probe-failed"
             detail = stderr.decode("utf-8", "replace").strip().splitlines()
-            observations.append(Observation.unreachable(
+            observations.append(_declared_path(Observation.unreachable(
                 target, observed_at, observer, reason,
-                detail=(detail[-1] if detail else f"exit {returncode}")[:200], run_id=run_id))
+                detail=(detail[-1] if detail else f"exit {returncode}")[:200], run_id=run_id),
+                defect))
             continue
         try:
             payload = parse_envelope(stdout.decode("utf-8", "replace"))
         except ProbeError as exc:
-            observations.append(Observation.unreachable(
+            observations.append(_declared_path(Observation.unreachable(
                 target, observed_at, observer, "unparseable-probe-output",
-                detail=str(exc)[:200], run_id=run_id))
+                detail=str(exc)[:200], run_id=run_id), defect))
             continue
-        observations.append(Observation.from_payload(target, payload, observed_at, observer,
-                                                     run_id=run_id))
+        observations.append(_declared_path(
+            Observation.from_payload(target, payload, observed_at, observer, run_id=run_id),
+            defect))
 
     counts = {outcome: sum(1 for o in observations if o.outcome == outcome)
               for outcome in ("observed", "partial", "unobserved")}
