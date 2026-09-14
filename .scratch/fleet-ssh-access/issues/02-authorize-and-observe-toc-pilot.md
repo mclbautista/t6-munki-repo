@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Resolve observation targets through an explicit SSH transport contract
 
-**Status:** ready-for-human — the pilot is reachable and observed; **one item remains: the rollback drill on the pilot** (runbook steps 6–8), which is a hands-on step at the machine.
+**Status:** done (2026-09-14) — all eight criteria met. The eighth was the last: the rollback was exercised at the pilot (remove the key, watch the refusal return, restore) and the end state was verified from the collector host afterwards, including that the drill wrote nothing under `/Library/Managed Installs`. The one claim that rests on the operator's report rather than on this host's observation — the intermediate refusal — is named in the criterion rather than glossed.
 
 **Approval gate:** Enabling Remote Login, changing SSH authentication, or adding an authorized public key changes authentication on a facility Mac and requires Cyril's confirmation before execution. **Discharged 2026-09-14**: Cyril approved appending one per-machine stanza to the collector host's `~/.ssh/config` and authorizing the collector's public key on the pilot's `t6` account, after being shown the exact scope, the key fingerprint and the rollback. The runbook he worked from is `~/T6-Ops-Docs/runbooks/fleet-ssh-pilot-access-ticket02-2026-09-14.html`.
 
@@ -43,8 +43,14 @@ An access record declares **which** machine may be reached; the machine that run
   - Serial `RW3HL9FL4M`; Munki `7.3.0.5808`; **resolved manifest `202-TOC-M4-Max` — its own machine manifest, not `site_default`**; pending 0; `last_check.result` `warnings` with `run_kind: auto` and the run's own start/end in both the report's UTC (`13:45:07`/`13:45:11`) and the log's local offset (`21:45:07.937+08:00`/`21:45:11.117+08:00`) forms, recorded as given; `architecture_rejections: []`; warnings = one item filtered (`IBMAsperaConnect … No pkginfo found in catalogs: ["testing"]`, the x86_64-only item on an arm64 machine); `observed_at 2026-09-14T22:04:43+08:00`; source age 1172 s. Full record verbatim in evidence section 4.
 - [x] A serial mismatch, fallback manifest, partial payload, or authentication failure leaves the ticket incomplete and is reported with its source evidence.
   - None occurred: the record's `problems` is `[]`, the serial matches the inventory row (`RW3HL9FL4M`), and the resolved manifest is the machine's own. Had any of them occurred the observation would have been `partial`/`unobserved` or flagged, and the ticket would say so — the mechanism is ticket 01's and is tested there.
-- [ ] Rollback is exercised or independently verified: removing the approved authorization returns the access path to its prior state without altering Munki client data.
-  - **NOT MET.** The rollback is written down and its two halves are known — delete the `authorized_keys` line on the pilot, delete the stanza on the collector host — and the pre-image exists (`~/.ssh/config.bak-20260914T220422-before-fleet-ssh-stanza`). What has *not* happened is the drill: remove the key, watch the refusal return, restore. Nothing about it is in doubt; it is simply not done, and a rollback nobody has run is not a rollback. Runbook steps 6–8. Nothing here alters Munki client data: the change is an ssh authorization, and no Munki file on the pilot was written.
+- [x] Rollback is exercised or independently verified: removing the approved authorization returns the access path to its prior state without altering Munki client data.
+  - **MET, by exercise plus after-the-fact verification.** Cyril ran the drill at the pilot on 2026-09-14 ~23:31 (runbook steps 6–8): `authorized_keys` copied aside, the approved line removed, the refusal confirmed, the copy restored. Verified from this host afterwards — evidence section 7:
+    - The end state is **exactly** the pre-drill state, not merely working again: one key line, the approved fingerprint `SHA256:yQdIFGN…`, 105 bytes (104 characters plus its newline), owner `t6`, mode `0600`, directory `0700`, and **no `.drill` copy left behind**.
+    - The drill's own writes are visible in the file's mtime, `21:52 → 23:31:01`, so the removal and the restore actually happened rather than being skipped.
+    - Both working forms still work: `-i ~/.ssh/id_ed25519_t6` explicitly, and by name `202-TOC-M4-Max` through the stanza.
+    - **No Munki client data was altered**, and that is checkable rather than asserted: the pilot's own report was last written at `22:45:14`, **46 minutes before** the drill at `23:31`, so the drill wrote nothing under `/Library/Managed Installs`. The reading afterwards is the same in substance (`manifest=202-TOC-M4-Max pending=0`, Munki `7.3.0.5808`, `problems=[]`, run `2026-09-14T23:32:38+08:00/0977f76c`).
+  - **On the operator's report, not independently observed:** the intermediate refusal. Reading the pilot's unified log without privilege returned no sshd entries, so the removal taking effect was not witnessed from this host. What is verified is that the file changed during the drill window and came back as exactly one approved key — its end state; the middle state rests on Cyril's account plus that mtime. Recorded because "the drill was run" and "the drill was observed" are different claims.
+  - The collector-side half of the rollback (delete the stanza, restore the pre-image `~/.ssh/config.bak-20260914T220422-before-fleet-ssh-stanza`) is **not** exercised: it is a one-line deletion with a pre-image in hand, and exercising it would break the pilot's access that tickets 03–04 depend on. Named as the residual rather than claimed.
 - [x] The ticket records before/after evidence and reads the exact access target and observation back before claiming completion.
   - Before and after, with the commands and what each returned: `docs/evidence/02-pilot-access-2026-09-14.txt`. The read-back is section 4: `49 records, 7 run(s)`, newest reading per machine, with `RW3HL9FL4M current age=0s … manifest=202-TOC-M4-Max`. The stanza's own effect was read back twice — `ssh 202-TOC-M4-Max whoami` → `t6`, and the paths that already worked (`t6-mac-mini`, `t6-nas`) still answer after the append.
 
@@ -52,7 +58,7 @@ An access record declares **which** machine may be reached; the machine that run
 
 - **Fleet coverage after this ticket: 2 of 16 ssh targets declared** (`Sixto-5`, `202-TOC-M4-Max`), 17 targeted, 3 observed, 14 unobserved with their transport reasons. The fleet run is evidence section 5.
 - **Ticket 06 gains its first production-machine data point.** The pilot resolves its own manifest, so criterion 4's "every inventoried Mac reports a resolved manifest name that is its own machine manifest" has a real machine behind it (2 with `Sixto-5`). Its four `name-difference` cases are elsewhere and untouched by this.
-- **Ticket 03's wave 1** is `202-Mac-Pro-3`, `202-TOC-M4-Max` (done here), `202A-Mac-Mini-M4`, and `202B-Mac-Studio` — which still has no serial and no address, so it cannot be probed even with access. Each new machine needs its own stanza *and* its own approval.
+- **Ticket 03's wave 1** is `202-Mac-Pro-3`, `202-TOC-M4-Max` (done here), `202A-Mac-Mini-M4`, and `202B-Mac-Studio`. Each new machine needs its own stanza *and* its own approval. *Corrected 2026-09-14 by ticket 03's measurement:* `202B-Mac-Studio` **does** have an address — `192.168.88.177`, confirmed by the machine's own mDNS binding `202B-Mac-Studio.local` rather than by assertion — so it can be reached; what it still lacks is its **serial**, which is what an inventory row and a manifest need. The earlier claim here that it had no address was written from the ARD export's silence and is superseded.
 - **Ticket 04's remaining fleet** includes `303B iMac`, whose Munki name contains a space: it needs an alias form (its UNIX hostname `303B-iMac`) in both the stanza and the map, which is a naming decision rather than a mechanical one.
 
 ## Verification
@@ -64,7 +70,31 @@ $ /usr/bin/python3 -m pytest
 288 passed
 ```
 
-Live, on the collector host (`192.168.88.202`), 2026-09-14:
+After the rollback drill, the same host, 2026-09-14 23:32 — the criterion-7 read-back:
+
+```
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 t6@192.168.88.182 'printf key-auth-ok'
+key-auth-ok                                                        exit=0
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 202-TOC-M4-Max 'printf key-auth-ok'
+key-auth-ok                                                        exit=0
+$ ssh … t6@192.168.88.182 'stat -f "%Sm %N" ~/.ssh ~/.ssh/authorized_keys'
+2026-09-14T23:31:14 /Users/t6/.ssh
+2026-09-14T23:31:01 /Users/t6/.ssh/authorized_keys
+$ ssh … t6@192.168.88.182 'ls -la ~/.ssh; ssh-keygen -lf ~/.ssh/authorized_keys'
+drwx------   3 t6  staff    96 Sep 14 23:31 .
+-rw-------   1 t6  staff   105 Sep 14 23:31 authorized_keys
+256 SHA256:yQdIFGNdehuePZHauN7tB/S3dZWiluxz78rGQUEzkqU t6-cyril@192.168.88.188 (ED25519)
+(no .drill copy: it was consumed by the restore)
+$ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl \
+    --access-map data/ssh-access.json --machine 202-TOC-M4-Max:RW3HL9FL4M
+run 2026-09-14T23:32:38+08:00/0977f76c
+  targeted 1, reached 1 (observed 1, partial 0), unobserved 0
+  complete: True
+    202-TOC-M4-Max               RW3HL9FL4M     manifest=202-TOC-M4-Max pending=0 rejections=0
+exit=0
+```
+
+Live, on the collector host (`192.168.88.202`), 2026-09-14, before the drill:
 
 ```
 $ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl \

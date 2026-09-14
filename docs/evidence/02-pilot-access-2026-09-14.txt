@@ -201,3 +201,48 @@ run 2026-09-14T22:04:43+08:00/9fb6078c
   appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
 exit=0
 
+
+
+================================================================================
+7. THE ROLLBACK DRILL, AND WHAT WAS VERIFIED AFTERWARDS (ticket 02 criterion 7)
+================================================================================
+
+Cyril ran the drill at the pilot (runbook steps 6-8: remove the key, confirm the refusal returns,
+restore from the copy) on 2026-09-14 ~23:31. Appended 2026-09-14T23:32:55+08:00;
+sections 1-6 are unchanged.
+
+VERIFIED from the collector host after the drill:
+
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_t6 t6@192.168.88.182 'printf key-auth-ok'
+key-auth-ok                                                            exit=0
+$ ssh -n -o BatchMode=yes -o ConnectTimeout=6 202-TOC-M4-Max 'printf key-auth-ok'
+key-auth-ok                                                            exit=0
+$ ssh ... t6@192.168.88.182 'ls -la ~/.ssh; ssh-keygen -lf ~/.ssh/authorized_keys'
+drwx------   3 t6  staff    96 Sep 14 23:31 .                          <- the drill touched this directory
+-rw-------   1 t6  staff   105 Sep 14 23:31 authorized_keys            <- and this file
+256 SHA256:yQdIFGNdehuePZHauN7tB/S3dZWiluxz78rGQUEzkqU t6-cyril@192.168.88.188 (ED25519)
+authorized_keys.drill: absent                                         <- the copy was consumed by the restore
+$ ssh ... cat ~/.ssh/authorized_keys
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsOr/HucyN9ns0palgBduVElHZx5vQqo2emkoDIEwR6 t6-cyril@192.168.88.188
+
+- The end state is exactly the pre-drill state: one key line, the approved fingerprint, 105 bytes
+  (104 characters plus its newline), owner t6, mode 0600, directory 0700. The file's size and content
+  match what was read before the drill (section 3), and no .drill copy remains behind.
+- The fingerprints before and after are the same single key, so the restore put back the bytes that
+  were there rather than re-adding a key by a second route.
+- The drill's own writes are visible in the file's mtime (21:52 -> 23:31), which is the evidence that
+  the removal and the restore actually happened rather than being skipped.
+
+MUNKI CLIENT DATA WAS NOT ALTERED, and this is checkable rather than asserted: the client's own
+report file was last written at 22:45:14 (epoch 1789397114), which is 46 minutes BEFORE the drill at
+23:31, so the drill wrote nothing under /Library/Managed Installs. The post-drill reading is the same
+in substance as the pre-drill one - manifest 202-TOC-M4-Max, pending 0, Munki 7.3.0.5808, no
+problems - from run 2026-09-14T23:32:38+08:00/0977f76c.
+
+ACCEPTED ON THE OPERATOR'S REPORT, not independently observed: the INTERMEDIATE state of the drill
+(the refusal coming back once the key was removed). Reading the pilot's unified log without privilege
+returned no sshd entries, so the removal taking effect was not witnessed from this host. What is
+verified is that the file was modified during the drill window and that its content is back to
+exactly one approved key, which is the drill's end state; the middle state rests on Cyril's account
+plus that mtime. Recorded rather than glossed, because "the drill was run" and "the drill was
+observed" are different claims.
