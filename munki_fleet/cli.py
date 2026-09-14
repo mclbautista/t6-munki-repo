@@ -478,10 +478,7 @@ def cmd_probe(args, deps: Deps) -> int:
         print(f"error: --access-map {map_path}: {access.reason}", file=sys.stderr)
         return 2
     network = [candidate for candidate in targets if not probed_locally(candidate)]
-    resolved, defects = resolve_targets(network, access)
-    queue = iter(resolved)
-    targets = [next(queue) if not probed_locally(candidate) else candidate
-               for candidate in targets]
+    targets, defects = resolve_targets(targets, access, skip=probed_locally)
     declared = sum(1 for candidate in targets if candidate.get("ssh_destination"))
     print(f"access: {declared} of {len(network)} ssh target(s) have a declared destination"
           f" ({map_path}{'' if access.available else ': ' + (access.reason or 'unavailable')})")

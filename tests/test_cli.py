@@ -3,11 +3,12 @@
 These tests exist because the module-level gate tests can pass while the wiring is wrong — a
 refusal that still publishes, or a missing declaration that slips through.
 """
+import json
 import os
 
 import pytest
 
-from conftest import catalog_array, catalog_runner, item, write_file
+from conftest import access_map, catalog_array, catalog_runner, item, write_file
 from munki_fleet.cli import Deps, main, parse_expectations
 from munki_fleet.targets import LocalDirTarget
 
@@ -160,16 +161,7 @@ def test_dry_run_reports_without_publishing(tmp_path):
 PROBE_FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "probe", "healthy-envelope.txt")
 
 
-def access_map(tmp_path, records):
-    import json
-    path = os.path.join(str(tmp_path), "ssh-access.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump({"schema_version": 1, "machines": records}, fh)
-    return path
-
-
 def test_the_probe_command_uses_the_declared_destination_from_the_map(tmp_path, capsys):
-    import json
     store = str(tmp_path / "observations.jsonl")
     map_path = access_map(tmp_path, [{"name": "Sixto-5", "destination": "t6-mac-mini"}])
     with open(PROBE_FIXTURE, encoding="utf-8") as fh:
@@ -199,7 +191,6 @@ def test_the_probe_command_drives_the_inventory_and_the_access_map(tmp_path, cap
     raised `AttributeError: 'Namespace' object has no attribute 'limit'` before it probed anything —
     every module-seam test for the probe was green while the inventory path could not run at all.
     """
-    import json
     store = str(tmp_path / "observations.jsonl")
     inventory = os.path.join(str(tmp_path), "machines.json")
     with open(inventory, "w", encoding="utf-8") as fh:
@@ -248,7 +239,6 @@ def test_the_probe_command_refuses_an_unusable_access_map(tmp_path, capsys):
 def test_an_absent_default_map_is_reported_and_the_readings_say_the_path_was_undeclared(
         tmp_path, capsys, monkeypatch):
     """A map that is not there yet is not a refusal: it is reported, and every reading says so."""
-    import json
     monkeypatch.chdir(tmp_path)                     # no data/ssh-access.json here
     store = str(tmp_path / "observations.jsonl")
     with open(PROBE_FIXTURE, encoding="utf-8") as fh:
@@ -271,7 +261,6 @@ def test_an_absent_default_map_is_reported_and_the_readings_say_the_path_was_und
 
 def test_the_operator_view_shows_why_a_reading_is_not_a_declared_path(tmp_path, capsys):
     """The one place an operator can see the difference between a reading and a verified one."""
-    import json
     store = str(tmp_path / "observations.jsonl")
     map_path = access_map(tmp_path, [{"name": "Somewhere-Else", "destination": "t6-mac-mini"}])
     with open(PROBE_FIXTURE, encoding="utf-8") as fh:

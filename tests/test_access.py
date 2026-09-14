@@ -10,15 +10,10 @@ import os
 
 import pytest
 
-from munki_fleet.access import (ACCESS_SCHEMA_VERSION, NO_ACCESS_MAP, RECORD_DUPLICATE,
-                                RECORD_MALFORMED, RECORD_SERIAL_MISMATCH, AccessMap)
+from conftest import access_map
 
-
-def write_map(tmp_path, records, schema_version=ACCESS_SCHEMA_VERSION):
-    path = os.path.join(str(tmp_path), "ssh-access.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump({"schema_version": schema_version, "machines": records}, fh)
-    return path
+from munki_fleet.access import (NO_ACCESS_MAP, RECORD_DUPLICATE, RECORD_MALFORMED,
+                                RECORD_SERIAL_MISMATCH, AccessMap)
 
 
 def target(name="Sixto-5", serial="C07D317NPJJ7", address="192.168.88.151"):
@@ -29,7 +24,7 @@ def target(name="Sixto-5", serial="C07D317NPJJ7", address="192.168.88.151"):
 # --- a declared destination is the one that is used -------------------------------------------------
 
 def test_a_declared_record_resolves_to_its_ssh_destination(tmp_path):
-    access = AccessMap.load(write_map(tmp_path, [
+    access = AccessMap.load(access_map(tmp_path, [
         {"name": "Sixto-5", "serial": "C07D317NPJJ7", "destination": "t6-mac-mini"},
     ]))
     resolution = access.resolve(target())
@@ -40,7 +35,7 @@ def test_a_declared_record_resolves_to_its_ssh_destination(tmp_path):
 @pytest.mark.parametrize("destination", ["t6-mac-mini", "t6@192.168.88.175", "192.168.88.175"])
 def test_the_declared_destination_is_used_verbatim_never_synthesised(tmp_path, destination):
     """A bare address must not become `t6@<address>` and an alias must not become `t6@<alias>`."""
-    access = AccessMap.load(write_map(tmp_path, [
+    access = AccessMap.load(access_map(tmp_path, [
         {"name": "202A-Mac-Mini-M4", "destination": destination},
     ]))
     resolution = access.resolve(target("202A-Mac-Mini-M4", serial="X904F44LHX"))
@@ -60,7 +55,7 @@ BLOCKING = {
 
 @pytest.mark.parametrize("record", list(BLOCKING.values()), ids=list(BLOCKING))
 def test_a_malformed_record_blocks_the_machine_it_names(tmp_path, record):
-    access = AccessMap.load(write_map(tmp_path, [record]))
+    access = AccessMap.load(access_map(tmp_path, [record]))
     resolution = access.resolve(target())
     assert resolution.destination is None, "a malformed declaration must not be used"
     assert resolution.defect.kind == RECORD_MALFORMED
@@ -68,7 +63,7 @@ def test_a_malformed_record_blocks_the_machine_it_names(tmp_path, record):
 
 
 def test_two_records_naming_one_machine_are_refused_as_ambiguous(tmp_path):
-    access = AccessMap.load(write_map(tmp_path, [
+    access = AccessMap.load(access_map(tmp_path, [
         {"name": "Sixto-5", "destination": "t6-mac-mini"},
         {"name": "Sixto-5", "destination": "t6@192.168.88.151"},
     ]))
@@ -79,7 +74,7 @@ def test_two_records_naming_one_machine_are_refused_as_ambiguous(tmp_path):
 
 def test_a_record_whose_serial_contradicts_the_machine_blocks_it(tmp_path):
     """The record says this name's serial is X, the machine's own inventory row says Y."""
-    access = AccessMap.load(write_map(tmp_path, [
+    access = AccessMap.load(access_map(tmp_path, [
         {"name": "Sixto-5", "serial": "SN-OF-A-DIFFERENT-MACHINE", "destination": "t6-mac-mini"},
     ]))
     resolution = access.resolve(target(serial="C07D317NPJJ7"))
@@ -90,7 +85,7 @@ def test_a_record_whose_serial_contradicts_the_machine_blocks_it(tmp_path):
 
 def test_a_record_matching_on_name_alone_is_usable_when_the_serial_is_unknown(tmp_path):
     """A machine with no inventory serial (202B-Mac-Studio) can still have a declared path."""
-    access = AccessMap.load(write_map(tmp_path, [
+    access = AccessMap.load(access_map(tmp_path, [
         {"name": "202B-Mac-Studio", "destination": "192.168.88.176"},
     ]))
     resolution = access.resolve(target("202B-Mac-Studio", serial=None, address="192.168.88.176"))

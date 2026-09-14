@@ -4,11 +4,13 @@ The doubles live here so the tests exercise the production code through its own 
 through hooks embedded in it.
 """
 import hashlib
+import json
 import os
 
 import pytest
 
 from munki_fleet.targets import LocalDirTarget, Target, TargetError
+from munki_fleet.access import ACCESS_SCHEMA_VERSION
 
 
 # --- catalog fixtures shared by the catalog, gate and CLI tests ------------------------------
@@ -53,6 +55,15 @@ def write_file(root, relpath, content):
     with open(full, "wb") as fh:
         fh.write(content)
     return full
+
+
+def access_map(root, records):
+    """A declared-access map, in the shape the collector reads it. Shared by every test that needs
+    one, so the three test files cannot drift into writing three different shapes."""
+    path = os.path.join(str(root), "ssh-access.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"schema_version": ACCESS_SCHEMA_VERSION, "machines": records}, fh)
+    return path
 
 
 class StoringTarget(LocalDirTarget):

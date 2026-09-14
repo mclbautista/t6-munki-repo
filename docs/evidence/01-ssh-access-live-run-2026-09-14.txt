@@ -229,3 +229,63 @@ max age 3600s; now 2026-09-14T21:29:33+08:00
   RW3HL9FL4M     current  age=     68s  202-TOC-M4-Max             unobserved: unreachable  problems=no-access-record
   RWJ57V9PW4     current  age=     68s  Cyrils-Mac-mini            manifest=site_default pending=0
   X904F44LHX     current  age=     68s  202A-Mac-Mini-M4           unobserved: unreachable  problems=no-access-record
+
+================================================================================
+8. AFTER THE REVIEW — the same paths, re-driven on the reviewed code
+================================================================================
+Appended at 2026-09-14T21:33:41+0800 after the two-axis review was adjudicated: the access
+resolution now takes a skip predicate instead of merging resolved targets back by position, and
+--limit (the option --from-inventory had always read) is exercised for the first time.
+
+$ python3 -m munki_fleet.cli probe --store ~/.munki-fleet/observations.jsonl --access-map data/ssh-access.json \
+    --from-inventory data/machines.json --limit 1 \
+    --machine 192.168.88.151@Sixto-5:C07D317NPJJ7 \
+    --machine 192.168.88.202@Cyrils-Mac-mini:RWJ57V9PW4 --local-host Cyrils-Mac-mini --timeout 6
+access: 1 of 2 ssh target(s) have a declared destination (data/ssh-access.json)
+  no-access-record: no access record for '201-Bay-01-Mac-Pro'
+run 2026-09-14T21:33:41+08:00/9764dcbd
+  targeted 3, reached 2 (observed 2, partial 0), unobserved 1
+  INCOMPLETE: some targets were not observed
+    Sixto-5                      C07D317NPJJ7   manifest=Sixto-5 pending=0 rejections=0
+    Cyrils-Mac-mini              RWJ57V9PW4     manifest=site_default pending=0 rejections=0
+    201-Bay-01-Mac-Pro           UNOBSERVED   unreachable: TargetError: ssh timed out after 6s: <the probe script>
+  appended to /Users/cyrilbautista/.munki-fleet/observations.jsonl
+exit=0
+
+$ python3 -m munki_fleet.cli observations --store ~/.munki-fleet/observations.jsonl --max-age 3600
+47 records, 6 run(s); latest observed 2026-09-14T21:33:41+08:00
+max age 3600s; now 2026-09-14T21:33:48+08:00
+  C02C71SCK7GF   current  age=      7s  201-Bay-01-Mac-Pro         unobserved: unreachable  problems=no-access-record
+  C02C71SDK7GF   current  age=    323s  202-Mac-Pro-3              unobserved: unreachable  problems=no-access-record
+  C02DX110PN5V   current  age=    323s  303B iMac                  unobserved: unreachable  problems=no-access-record
+
+The line above: the locally probed machine carries no problems= flag (its transport is declared
+by --local-host), and the machine reached over the alias carries none either (its path is in the
+map). Every reading taken over an undeclared ssh path carries no-access-record.
+
+================================================================================
+9. THE COMPLETE READ-BACK (section 8 above truncated it, which cannot support an absence claim)
+================================================================================
+Every row, so that 'the two declared-path machines carry no flag' is readable rather than
+asserted. Appended at 2026-09-14T21:33:53+0800.
+
+$ python3 -m munki_fleet.cli observations --store ~/.munki-fleet/observations.jsonl --max-age 3600
+47 records, 6 run(s); latest observed 2026-09-14T21:33:41+08:00
+max age 3600s; now 2026-09-14T21:33:53+08:00
+  C02C71SCK7GF   current  age=     12s  201-Bay-01-Mac-Pro         unobserved: unreachable  problems=no-access-record
+  C02C71SDK7GF   current  age=    328s  202-Mac-Pro-3              unobserved: unreachable  problems=no-access-record
+  C02DX110PN5V   current  age=    328s  303B iMac                  unobserved: unreachable  problems=no-access-record
+  C07D317NPJJ7   current  age=     12s  Sixto-5                    manifest=Sixto-5 pending=0
+  GK7RW3463R     current  age=    328s  201-Bay-02-M1-Max          unobserved: unreachable  problems=no-access-record
+  GYC39Q30PJ     current  age=    328s  T6-MacBook-M4-Max          unobserved: unreachable  problems=no-access-record
+  HPXH7XG2DD     current  age=    328s  303A-Mac-Mini-M4-Pro       unobserved: unreachable  problems=no-access-record
+  J4X5JTVXDD     current  age=    328s  201-Viewing-Room           unobserved: unreachable  problems=no-access-record
+  J90PHXGC5V     current  age=    328s  202-Jason-M2-Max           unobserved: unreachable  problems=no-access-record
+  K267DWDMWX     current  age=    328s  T6-MacBook-M3-Pro          unobserved: unreachable  problems=no-access-record
+  KL6G9VMQVP     current  age=    328s  201-Bay-03-M1-Ultra        unobserved: unreachable  problems=no-access-record
+  PKXTGR769Q     current  age=    328s  303D-Mac-Studio-M2         unobserved: unreachable  problems=no-access-record
+  PM4PWN40R0     current  age=    328s  202C-Studio-M1-Ultra       unobserved: unreachable  problems=no-access-record
+  R6WV6DCVVH     current  age=    328s  202-Tim-M2-Max-9           unobserved: unreachable  problems=no-access-record
+  RW3HL9FL4M     current  age=    328s  202-TOC-M4-Max             unobserved: unreachable  problems=no-access-record
+  RWJ57V9PW4     current  age=     12s  Cyrils-Mac-mini            manifest=site_default pending=0
+  X904F44LHX     current  age=    328s  202A-Mac-Mini-M4           unobserved: unreachable  problems=no-access-record

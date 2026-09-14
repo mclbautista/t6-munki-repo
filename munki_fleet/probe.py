@@ -25,6 +25,7 @@ PROBE_VERSION = "munki-fleet-probe/1"
 CLIENT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "probe_client.sh")
 DEFAULT_OBSERVER = "munki-fleet-collector"
 DEFAULT_TIMEOUT = 45
+DETAIL_LIMIT = 200
 LOG_TAIL_LINES = 400
 
 Runner = Callable[..., Tuple[int, bytes, bytes]]
@@ -321,8 +322,17 @@ def default_runner(host: str, command: str, timeout: Optional[int] = None):
     return default_ssh_runner(host, timeout or DEFAULT_TIMEOUT)(command)
 
 
-def _declared_path(observation: Observation, defect: Optional[dict]) -> Observation:
-    """Keep on the reading the fact that its path was never declared.
+def _detail(text: str) -> str:
+    """A transport message bounded for the store.
+
+    One line, capped: the store is read by an operator in a terminal, and a message that carries a
+    script tail or a wall of stderr buries the one fact a reading has to convey.
+    """
+    return text.splitlines()[0][:DETAIL_LIMIT]
+
+
+def _note_access_defect(observation: Observation, defect: Optional[dict]) -> Observation:
+    """Note on the reading that its transport path was never declared.
 
     A machine with no access record is still probed — by its inventory address, which is where it was
     last seen and not what it answers to — and the reading is real. But `no-access-record` travels
@@ -344,7 +354,7 @@ def _transport_message(exc: BaseException, command: str) -> str:
     message = f"{type(exc).__name__}: {exc}"
     if command:
         message = message.replace(command, "<the probe script>")
-    return message.splitlines()[0][:200]
+    return _detail(message)
 
 
 def probe_command() -> str:
@@ -384,26 +394,26 @@ def probe_run(targets: Sequence[dict], runner: Optional[Runner] = None,
         try:
             returncode, stdout, stderr = runner(address, command, timeout)
         except Exception as exc:                                   # transport failure
-            observations.append(_declared_path(Observation.unreachable(
+            observations.append(_note_access_defect(Observation.unreachable(
                 target, observed_at, observer, "unreachable",
                 detail=_transport_message(exc, command), run_id=run_id), defect))
             continue
         if returncode != 0:
             reason = "unreachable" if returncode == 255 else "probe-failed"
             detail = stderr.decode("utf-8", "replace").strip().splitlines()
-            observations.append(_declared_path(Observation.unreachable(
+            observations.append(_note_access_defect(Observation.unreachable(
                 target, observed_at, observer, reason,
-                detail=(detail[-1] if detail else f"exit {returncode}")[:200], run_id=run_id),
+                detail=_detail(detail[-1] if detail else f"exit {returncode}"), run_id=run_id),
                 defect))
             continue
         try:
             payload = parse_envelope(stdout.decode("utf-8", "replace"))
         except ProbeError as exc:
-            observations.append(_declared_path(Observation.unreachable(
+            observations.append(_note_access_defect(Observation.unreachable(
                 target, observed_at, observer, "unparseable-probe-output",
-                detail=str(exc)[:200], run_id=run_id), defect))
+                detail=_detail(str(exc)), run_id=run_id), defect))
             continue
-        observations.append(_declared_path(
+        observations.append(_note_access_defect(
             Observation.from_payload(target, payload, observed_at, observer, run_id=run_id),
             defect))
 

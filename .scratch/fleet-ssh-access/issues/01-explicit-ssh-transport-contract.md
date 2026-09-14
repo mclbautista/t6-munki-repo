@@ -58,9 +58,11 @@ proceeded past**. The split is deliberate and was decided with Cyril on 2026-09-
   - `test_the_probe_travels_to_the_declared_destination_not_the_inventory_address` asserts the runner is handed `t6-mac-mini`, not `192.168.88.151`; `test_a_blocked_target_is_recorded_unobserved_and_never_contacted` asserts the runner is not called at all. No code path composes `user@address`: the destination is passed to `ssh` verbatim, or the target is not probed.
 - [x] A missing, malformed, duplicate, or serial-mismatched access record is reported deterministically and cannot produce a compliant-looking observation.
   - *malformed*: five shapes pinned, including a misspelled field and `t6:hunter2@192.168.88.151`; *duplicate*: two records naming one machine are refused as ambiguous; *serial-mismatch*: the defect names both serials. All three block and yield `unobserved` with the defect kind — never `observed`.
-  - *missing*: a map named explicitly that cannot be read exits 2 having written nothing (`test_the_probe_command_refuses_an_unusable_access_map`); the default map being absent prints `no-access-map` per machine and tags each reading (`test_an_absent_default_map_is_reported_and_the_readings_say_the_path_was_undeclared`); a machine with no record is tagged `no-access-record` and the flag is visible in the operator view (`test_the_operator_view_shows_why_a_reading_is_not_a_declared_path`). The reading stays `observed` because the state is real — see *The judgement call* above for what that leaves open.
+  - *missing*: a map named explicitly that cannot be read exits 2 having written nothing (`test_the_probe_command_refuses_an_unusable_access_map`); the default map being absent prints `no-access-map` per machine and tags each reading (`test_an_absent_default_map_is_reported_and_the_readings_say_the_path_was_undeclared`); a machine with no record is tagged `no-access-record` and the flag is visible in the operator view (`test_the_operator_view_shows_why_a_reading_is_not_a_declared_path`). The reading stays `observed` because the state is real — see *The judgement call* above.
+  - **Where the flag is and is not read today** (reproduced by a review, kept as a finding in *Left open*): `alerting.py:342` and `toolchain.py:85` branch on `outcome` and never read `problems`. Both ask what a machine *runs*, and the state they read is real whatever carried it, so they are right to ignore the flag — but it means nothing yet surfaces access *coverage* as a condition.
 - [x] Existing targets without an access record retain an explicit unobserved result with the transport reason preserved; they are never omitted from run completeness.
-  - Live: 16 ssh targets, 1 with a declared destination, and the run records `targeted 17, reached 2, unobserved 15` with `complete: False`. Each unreachable machine keeps the transport's own message verbatim (`Connection refused`, `Permission denied (publickey,password,keyboard-interactive)`, `ssh timed out after 6s: <the probe script>`) — evidence section 4.
+  - Live: 16 ssh targets, 1 with a declared destination, and the run records `targeted 17, reached 2, unobserved 15` with `complete: False`. Each unreachable machine keeps the transport's own message (`Connection refused`, `Permission denied (publickey,password,keyboard-interactive)`; for a timeout `ssh timed out after 6s: <the probe script>`, where the script embedded in the transport's message is replaced rather than quoted) — evidence section 4.
+  - **What this criterion does *not* say**, because a review read it as an absolute: a machine with no record that *does* answer on its inventory address is not forced to stay unobserved. It is probed, its real state is recorded, and the reading carries `problems: ["no-access-record"]`. The criterion is about the existing fleet — which does retain an unobserved result, 15 of 17, with each reason preserved — not about a machine that happens to be reachable by an undeclared path.
 - [x] Tests cover an SSH alias, a distinct username/destination, an absent mapping, a serial mismatch, and proof that secrets are neither required in nor written to repository data.
   - Alias `t6-mac-mini`, `t6@192.168.88.175`, bare host `192.168.88.175` (one parametrized test); absent record, absent map, duplicate, malformed and serial mismatch as above; `test_the_committed_access_map_is_readable_and_carries_no_credential` reads `data/ssh-access.json` itself and asserts every destination matches the grammar and no value contains `:`, and the credential-shaped destination is refused by the parser.
 - [x] A live run reaches `Sixto-5` through the already-working `t6-mac-mini` access path, appends an observation to an explicitly named store outside the checkout, and reads back the matching serial, resolved manifest, and observation timestamp.
@@ -74,11 +76,12 @@ Python 3.9.6, pytest 8.4.2, checkout at the commit that adds this work):
 
 ```
 $ /usr/bin/python3 -m pytest
-287 passed in 0.57s          pytest_exit=0
+288 passed in 0.68s          pytest_exit=0
 ```
 
-28 of those are this ticket's: the same command in a detached worktree at the commit before this
-work added the first one (`35f43b2`) reports `259 passed in 0.88s`.
+29 of those are this ticket's across its two commits: the same command in a detached worktree at the
+commit before both (`35f43b2`) reports `259 passed in 0.88s`, and the pre-review commit reported
+`287 passed`.
 Two sensitivity checks, both reverted byte-for-byte afterwards (`sha256` compared): `blocks=True` →
 `blocks=False` on the malformed branch fails 5 tests, and dropping `ssh_destination` from
 `probe_run`'s address choice fails `test_the_probe_travels_to_the_declared_destination_not_the_inventory_address`.
@@ -114,8 +117,9 @@ Full capture, including the store before and after, the verbatim Sixto-5 record 
 view: `docs/evidence/01-ssh-access-live-run-2026-09-14.txt`.
 
 **No system change was made.** No key was installed, no Remote Login was enabled, no client was
-written to. The store gained 40 records (23 → 43 across three runs of this session); nothing was
-rewritten, because the store is append-only and both runs are real observations of the fleet.
+written to. The store went from 23 records to 43 across the runs captured here (evidence sections 2
+and 6) and to 47 after the post-review run (section 9); nothing was rewritten, because the store is
+append-only and every run in it is a real observation of the fleet.
 
 ### What the first honest fleet reading already shows
 
@@ -136,6 +140,38 @@ Read on the same pass, recorded here because it is what the transport contract w
   found in catalogs: testing` — the message that reads like a missing pkginfo and is not. Not this
   ticket's defect; recorded because it is the first machine-level reading of ticket 08's policy.
 
+## Review dispositions (two axes, 2026-09-14)
+
+Reviewed as `git diff 8e10127...HEAD` on both axes by two read-only parallel sub-agents, each given
+the ticket at its committed revision (`git show 78b8708:<this file>`) and told not to stage, commit
+or edit anything. Every finding is adjudicated below; the fixes are in the review commit.
+
+**Spec axis**
+
+| finding | disposition |
+|---|---|
+| criterion 4 "not met as written" — a reachable machine with no record yields `observed`, so no explicit unobserved result is retained | **declined as a criterion miss; accepted as an imprecision in the disposition.** The criterion says *existing* targets, and those do retain an unobserved result with the reason preserved (15 of 17, live). What it does not guarantee is that a no-record machine which happens to answer on its address stays unobserved; that reading is real state. The disposition above now states the boundary instead of implying an absolute. |
+| criterion 3 "partial" — `alerting.py:342` and `toolchain.py:85` branch on `outcome` and never read `problems` | **reproduced and accepted, kept open.** Both consumers ask what a machine *runs*, and the state they read is real whatever path carried it, so changing them would be wrong. The gap is that access *coverage* is not surfaced anywhere; it belongs to the access rollout and is recorded in *Left open*. |
+| "*keeps the transport's own message verbatim*" overclaims, because `_transport_message` substitutes the embedded script and keeps one line | **accepted; the disposition was corrected rather than the code.** The recorded reason is the transport's own message; for a timeout the command inside it is replaced by `<the probe script>`, which is paraphrase. The criterion's disposition now says exactly that. |
+| false count: "gained 40 records (23 → 43)" — 43 − 23 is 20 | **fixed.** Both numbers are the ones the capture prints; the sentence now quotes the pair rather than an arithmetic slip. |
+| scope creep: `--limit N` | **accepted, answered by decision.** The defect was that `cmd_probe` read a value the parser never defined; the two repairs were to delete the parameter or to wire it. Wiring it is the smaller blast radius and the access rollout needs a bounded first run, so it is now exercised live — evidence section 8 (`--limit 1` bounds the inventory to one machine). |
+| scope creep: `Deps.probe_runner` | **declined.** `cli.py` documents `Deps` as the injection seam for tests; without it no CLI test can drive `probe` without contacting live machines, and driving that command is what found the two defects recorded under *What was built*. |
+
+**Standards axis** (all judgement calls; no documented-standard violation was found)
+
+| finding | disposition |
+|---|---|
+| `queue = iter(resolved)` merged resolved targets back by position, re-applying a predicate (Mysterious Name) | **fixed.** `resolve_targets` takes `skip=` and passes those targets through untouched; the CLI merges nothing. Test: `test_a_machine_probed_locally_needs_no_access_record`. |
+| `_declared_path(observation, defect)` — the name says "path", the body notes a defect (Mysterious Name) | **fixed** by renaming to `_note_access_defect`. The mutate-and-return shape stays: all four call sites append its result. |
+| `access_defect` re-spelled `AccessDefect`'s three fields as a dict (Primitive Obsession / Data Clumps) | **fixed.** One conversion, `AccessDefect.as_target_field()`, because the target dict is what lands in the JSON store. |
+| `unavailable(self, target)` never read `target` (Speculative Generality) | **fixed.** No-argument, with the reason for the shape documented. |
+| the same map-writing helper in three test files; `import json` re-imported inside five test functions | **fixed.** One `access_map` in `tests/conftest.py` — where this repository's shared doubles already live — and the import hoisted. |
+| `[:200]` repeated across four `probe.py` sites | **fixed.** `DETAIL_LIMIT` and a single `_detail()` truncation. |
+
+One finding of my own, from reading the capture back: the section-8 listing was truncated with
+`head`, which cannot support the absence it claimed about the local machine's flag. Section 9 appends
+the complete read-back rather than editing section 8.
+
 ## Left open deliberately
 
 - Nothing in this ticket observed any machine other than `Sixto-5` and this workstation, so no
@@ -144,3 +180,9 @@ Read on the same pass, recorded here because it is what the transport contract w
   workstation is ticket 05 of this set, and ADR 0011 is why the two are different machines.
 - `--local-host` is the transport declaration for a machine probed without ssh, so the map
   deliberately has no record for `Cyrils-Mac-mini`. That is a decision, not a gap.
+- **Access coverage is not an alertable condition.** `alerting.py:342` and `toolchain.py:85` read
+  `outcome`, so a fleet where 15 of 17 machines have no declared path reports fewer readings and
+  nothing else. The flag exists in the record and in `observations`, and no consumer asks the access
+  question yet. Tickets 02–04 of this set are where coverage becomes a number worth reporting, and
+  the condition belongs there rather than here: this ticket's job was to make the undeclared path
+  visible, not to make the coverage alert.

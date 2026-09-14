@@ -27,7 +27,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 ACCESS_SCHEMA_VERSION = 1
 
@@ -54,6 +54,15 @@ class AccessDefect:
     kind: str
     detail: str
     blocks: bool
+
+    def as_target_field(self) -> dict:
+        """The same defect in the shape a target dict carries into the observation store.
+
+        Converted here and nowhere else: the target dict is what lands in the append-only store, and
+        the store holds JSON, so the dict is the defect's serialisable form rather than a second
+        spelling of it that a later edit could let drift.
+        """
+        return {"kind": self.kind, "detail": self.detail, "blocks": self.blocks}
 
 
 @dataclass(frozen=True)
@@ -149,7 +158,7 @@ class AccessMap:
     def resolve(self, target: dict) -> Resolution:
         """The declared access for one target, or the defect that stands in its place."""
         if not self.available:
-            return self.unavailable(target)
+            return self.unavailable()
         name = target.get("host")
         broken = [reason for record_name, reason in self.malformed if record_name == name]
         if broken:
@@ -174,7 +183,8 @@ class AccessMap:
                 blocks=True))
         return Resolution(record.destination, None)
 
-    def unavailable(self, target: dict) -> Resolution:
+    def unavailable(self) -> Resolution:
+        """Every machine is uncovered when there is no map, and the reason travels with each one."""
         return Resolution(None, AccessDefect(NO_ACCESS_MAP, self.reason or "no access map",
                                              blocks=False))
 
@@ -200,26 +210,32 @@ def _record_problem(row: dict) -> Optional[str]:
     return None
 
 
-def resolve_targets(targets: Sequence[dict],
-                    access_map: AccessMap) -> Tuple[List[dict], List[AccessDefect]]:
+def resolve_targets(targets: Sequence[dict], access_map: AccessMap,
+                    skip: Optional[Callable[[dict], bool]] = None
+                    ) -> Tuple[List[dict], List[AccessDefect]]:
     """Every target carrying its declared destination, plus the defects found while resolving.
 
     A blocked target **keeps its place** in the list rather than being dropped: the run still has to
     account for the machine (ADR 0004 — a run records its own completeness), it just must not be
     contacted. The defect travels on the target so whoever runs the probe does not have to re-derive
     why the machine was skipped.
+
+    `skip` names the targets that travel by another transport and therefore need no access record —
+    the collector's own machine, probed locally. They pass through untouched and raise no defect,
+    because a record about an ssh path does not apply to a probe that never opens one.
     """
     resolved: List[dict] = []
     defects: List[AccessDefect] = []
     for target in targets:
+        if skip is not None and skip(target):
+            resolved.append(dict(target))
+            continue
         resolution = access_map.resolve(target)
         carrying = dict(target)
         if resolution.destination:
             carrying["ssh_destination"] = resolution.destination
         if resolution.defect:
             defects.append(resolution.defect)
-            carrying["access_defect"] = {"kind": resolution.defect.kind,
-                                         "detail": resolution.defect.detail,
-                                         "blocks": resolution.defect.blocks}
+            carrying["access_defect"] = resolution.defect.as_target_field()
         resolved.append(carrying)
     return resolved, defects
