@@ -4,7 +4,9 @@
 
 **Blocked by:** 02: Authorize and observe the TOC pilot
 
-**Status:** ready-for-human — the wave is fixed and its before-state is measured (criteria 1 and 2 met); **everything that changes a machine waits on two decisions, below.**
+**Status:** ready-for-human — the wave is fixed and its before-state is measured (criteria 1 and 2 met). **Ticket 02 is now terminal** (its rollback drill was run and verified, 2026-09-14), so this ticket is unblocked and not blocked-by-anything. What remains is not a decision any more: it is **one hands-on action at each of three machines** — authorize the collector's key — plus this host's verified host-key trust, which is [Hermes]'s step and named in the ticket. Remote Login, the other half of the change, **is already done**: Cyril enabled it on all three on 2026-09-14 and all three now answer on port 22.
+
+**Update 2026-09-14 23:35 —** the two decisions this ticket was waiting on are resolved: Remote Login was enabled on all three machines by Cyril (done, measured), and the rollback drill that blocked it by the letter was run at the pilot and verified afterwards (ticket 02, commit `70b5df5`). The runbook for the remaining work is `~/T6-Ops-Docs/runbooks/fleet-ssh-wave-1-access-2026-09-14.html` — sections 2–4 are the three machines, section 5 is this host's step.
 
 **Notes on the blocker.** Ticket 02 is not terminal: its rollback criterion is open (the drill has not been run). Its *substance* is also a genuine prerequisite here — this ticket repeats the same class of authorization on three more machines, and the removal procedure for that class has not been exercised yet. Held rather than jumped.
 
