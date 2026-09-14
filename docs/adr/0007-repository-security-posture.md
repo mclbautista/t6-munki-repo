@@ -87,3 +87,30 @@ Two consequences this decision's original text does not imply, and that a reader
 The revisit trigger this decision states ("a profile delivery channel (or an MDM) ever exists, or if the
 repository would become reachable beyond the LAN") therefore gains a third, named case: **any change to
 the separation between the fleet LAN and another network, or any addition of the NAS to an overlay.**
+
+## Second amendment, 2026-09-14: the unread configuration is accepted, not pending
+
+Cyril's decision on ticket 13's option A: **stop trying to read the pfSense firewall. Accept the topology
+as the restriction.** Recorded here so this document does not go on implying that a reading is coming.
+
+- **The mechanism is the network path, and that is now the accepted answer — not the interim one.** Two
+  networks with no route between them (fleet `192.168.88.0/24`; Wi-Fi `192.168.0.0/24`, gateway `.1`; the
+  tailnet advertises no route in either direction), plus a NAS that establishes no path of its own
+  (`myQNAPcloud` enabled but unlinked and unpublished, Auto Router Configuration force-disabled, no VPN or
+  overlay app among its 19 App Center apps).
+- **`192.168.88.201` (pfSense, Protectli) remains unread and is now an accepted unknown**, not an open
+  item. It answers on TCP 53 and 80 and serves its management UI at `https://192.168.88.201:88/`; its NAT
+  / port-forward table and LAN rules were never read, because reading them needs credentials that were not
+  supplied and are no longer being asked for. Consequence, stated plainly: **there may be a configured rule
+  on that appliance that this decision does not know about** — if one exists it only makes the restriction
+  stronger, and it is not what the fleet relies on.
+- **What "must never be reachable from outside the LAN" rests on, after this amendment:** the NAS-side
+  evidence (no path created on the NAS) plus the observed absence of a route from any other network this
+  host can see, with the residual risk below accepted rather than eliminated.
+- **The cost that is now accepted deliberately:** nothing in the topology reports the restriction ending.
+  There is no rule to review, no deny-log to watch, and no invariant checked by any automation today — the
+  tripwires are named in ticket 13 and are **manual**. Any future monitoring of them is new work, not part
+  of this decision.
+- **The first amendment's finding is unchanged and still true**: no configured restriction was found on the
+  paths observable, and the appliance that could carry one has not been read. What changes is the
+  disposition — that gap is now accepted and documented instead of blocking a ticket.

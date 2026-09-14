@@ -6,10 +6,11 @@
 
 **Approval gate:** Changing the NAS firewall is a system change and requires Cyril's approval before execution.
 
-**Status:** ready-for-human — two criteria are **not met** (1 and 2), three are (3, 4 as a statement of
-record, 5), and what is left needs Cyril: **one credential-dependent read** of the firewall that carries
-the fleet LAN, and **one decision** about whether that firewall's configuration counts as this ticket's
-restriction or whether a rule should be read and recorded deliberately.
+**Status:** **done (2026-09-14) — closed by decision, not by evidence.** Two criteria are **not met** on
+their literal text (1 and 2); the requirement behind them is closed by decision **13E** below: the network
+path is accepted as the restriction, and the credential-dependent read of the pfSense firewall is
+abandoned rather than left pending. Three criteria are met (3, 4 as a statement of record, 5). Nothing here
+is left waiting on a person, and what remains unverified is named rather than implied.
 
 **Claimed by:** hermes-desktop (Cyril's Mac mini, /Users/cyrilbautista/Projects/t6-munki-repo) 2026-09-14T08:20+08:00
 
@@ -80,27 +81,61 @@ Both are consistent with everything measured. Which one holds changes what crite
 there is a rule to read, record, and rely on; under (1) nothing was set up and nothing would report the
 restriction ending. **The read is the deliverable, and it needs a login.**
 
-## The decision that is left
+## The decision (2026-09-14)
 
 | option | what it means | cost / what it needs |
 |---|---|---|
 | **A. Read the pfSense firewall's NAT and LAN rules, then record what they say** | establishes which account above is true; under (1) the ticket records the tripwires that would end the restriction, under (2) it records the rule as the enforcement | needs credentials for `https://192.168.88.201:88/` — Cyril can read the two pages himself, or save the login so the read can be done read-only |
 | **B. Configure an auditable rule deliberately** (on the pfSense box, not the NAS) | a rule permitting TCP 80 to the NAS only from `192.168.88.0/24`, so the enforcement is a deliberate, reviewable object | a network change on the appliance carrying the whole fleet LAN: every client on the segment is in the blast radius, and a mistake locks out the fleet's software delivery. Needs approval on its own |
 | C. Install a firewall on the NAS | — | already decided against (13A). Not re-opened. |
+| **D. Accept the topology as the restriction** | the enforcement is the network path itself: two networks with no route between them, plus a NAS that creates no path of its own. The firewall's configuration stays unread and becomes an accepted unknown rather than an open item | **chosen.** No system is touched, so there is nothing to roll back and no blast radius. The cost is real and accepted: no rule exists to point at, and nothing in the topology reports the restriction ending |
 
-**Recommendation: A first** — it is a read, it settles the question, and it is the only way to know
-whether B is even necessary. Then B only if the read shows nothing is enforcing the path today, or if
-Cyril wants the enforcement to be a thing an auditor can read.
+### 13E — the topology is accepted as the restriction (Cyril, 2026-09-14)
+
+- **Option A is abandoned, not deferred.** The credential-dependent read of `192.168.88.201` is dropped as
+  a blocker. Its configuration remains unread and is recorded as an accepted unknown in ADR 0007's second
+  amendment, so no successor re-opens this looking for a reading that is not coming.
+- **The restriction this ticket asked for exists, and it is the network path.** The repository is reachable
+  from the fleet subnet and gets no reply from any other network this host can observe; the NAS creates no
+  path of its own. That is the enforcement, accepted as final for the current topology rather than as a
+  provisional state.
+- **Option B is not taken.** No rule is to be configured on the pfSense appliance. The reason is the ratio:
+  a change on the appliance that carries the entire fleet LAN risks the fleet's software delivery, in
+  exchange for an auditable object that the accepted account does not need.
+- **The residual risk stays accepted as ADR 0007 records it**, with its revisit trigger plus the third case
+  the first amendment added. What changed is only that the mechanism behind it is now accepted as the
+  topology rather than pending a reading.
+- **Criteria 1 and 2 are therefore closed by decision, not met.** Their literal text asks for an allowlist
+  and for a refused connection from outside it; neither exists, and neither will be created under this
+  decision. Closing them by decision is the same disposition ticket 12 used for its sixth criterion. They
+  are not ticked, and this ticket does not claim the repository is "restricted by a rule".
+
+## Tripwires — what would mean the restriction has ended
+
+Named because the accepted enforcement has no configuration watching over it. **Nothing monitors these
+today**; they are a checklist for a human, and making any of them automatic is new work.
+
+1. **A route into `192.168.88.0/24` appears on a non-fleet interface** — the tailnet starts advertising the
+   subnet, or the Wi-Fi gateway is reconfigured to reach it.
+2. **The NAS gains an address outside the fleet subnet**, joins a VPN/overlay, or has `myQNAPcloud` linked
+   to a QNAP ID or an Auto-Router Configuration re-enabled (13D's verified state is the baseline).
+3. **A consumer router, MiFi, or switch is introduced as the fleet gateway**, or the NAS is moved to another
+   segment.
+4. **A fleet Mac resolves or fetches while off the fleet path** — a machine checking in from Wi-Fi or from
+   outside is the signal that the path restriction is no longer doing the work.
+5. **The repository host changes** (`192.168.88.188` is the endpoint these observations are about).
 
 ## Acceptance criteria
 
 The criteria below are left exactly as written. What follows each is the disposition.
 
 - [ ] An allowlist restricting the repository's port to T6's own addresses is configured at the NAS.
-  - **NOT MET.** There is no allowlist at the NAS (13A: no firewall app, no rule), and no configured
-    restriction has been found on any path this host can observe — but a pfSense firewall carries the
-    fleet LAN and its configuration has not been read, so "not found" is not "not there". This is the
-    ticket's open item; option A above is what closes it.
+  - **NOT MET — closed by decision 13E.** There is no allowlist at the NAS (13A: no firewall app, no rule),
+    and no configured restriction has been found on any path this host can observe; the pfSense firewall
+    that carries the fleet LAN stays unread and is now an **accepted unknown** rather than this ticket's
+    open item. What the criterion is really asking for — the repository reachable only from T6's own
+    network path — is satisfied by the topology, which 13E accepts as the enforcement. The criterion is
+    **not ticked**: no allowlist exists to point at, and this ticket does not claim one does.
 - [ ] The restriction is verified by a refused connection from an address outside the allowlist — the actual attempt, its result, and its source recorded. If no such source can be used, the ticket records that the negative case was not verified by us and states exactly what remains unverified, rather than claiming it.
   - **NOT MET.** What was observed is a **timeout**, not a refusal, and the two are not interchangeable:
     `curl` exit 28 (`HTTP 000`) means no reply at all, which is also what a filtered or unrouted
@@ -109,7 +144,9 @@ The criteria below are left exactly as written. What follows each is the disposi
     had no route to try (no tailnet node advertises `192.168.88.0/24`). Off-network, three attempts (a
     cloud scraping service, Shodan InternetDB, an external port-check service) produced no usable result
     and are recorded as inconclusive. The negative case therefore remains **not verified by us**, which
-    13C's escape hatch covers and which is why this is left open rather than ticked on the weak evidence.
+    13C's escape hatch covers. **Closed by decision 13E**: no source for a refusal is being sought any
+    further, and the criterion stays unticked rather than ticked on a timeout — a refusal and a timeout are
+    not interchangeable, and the record says which one was observed.
 - [x] A client inside the allowlist still fetches its artifacts over HTTP afterwards, recorded by machine name.
   - Met: `Cyrils-Mac-mini` over its fleet interface fetched `catalogs/all` — HTTP 200, 41,135 bytes,
     0.002 s — and the machine's name is grounded in captured output (`scutil --get LocalHostName`,

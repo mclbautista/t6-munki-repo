@@ -19,7 +19,7 @@ implemented-with-one-decision-open.
 | Alert decision | implemented and exercised live: 19 conditions from the real repository and the recorded fleet, one source-linked message, two silent cycles, a failed receipt recorded with exit 1 | `docs/evidence/15-alert-cycle-live-2026-09-14.txt` |
 | Alert delivery | **not wired** — nothing is delivered to anyone | the receipt in that capture was written by hand; the ticket says so |
 | Network path to the repository | reachable from the fleet LAN (HTTP 200, 0.002 s); **no reply** from this host's Wi-Fi network and no route on its Tailscale interface (8 s timeouts, not refusals) | `docs/evidence/13-network-path-verification-2026-09-14.txt` |
-| That restriction | **observed, not documented**: no configured restriction was found on the NAS or on any path this host can observe, and the pfSense firewall that carries the fleet LAN has not been read (credentials) | ticket 13; ADR 0007's amendment |
+| That restriction | **accepted as the topology** (decision 13E, 2026-09-14). The network path is the enforcement; the pfSense firewall at `192.168.88.201` stays unread as an **accepted unknown**, with five tripwires named and nothing monitoring them | ticket 13 (done); ADR 0007's second amendment |
 | Observation store | 1 machine observed, 1 unreachable, everything stale | `munki_fleet.cli observations` (ticket 05's state, unchanged) |
 
 ## The next step
@@ -47,14 +47,13 @@ Then, unchanged from the previous handoff and each still needing one approval:
 3. **`Cyrils-Mac-mini` still has no machine manifest.** With the forced core suspended this is
    consequence-free, and it is the last blocker on ticket 07's initial promotion (26 items, 27
    manifests).
-4. **Ticket 13** (repository network restriction) is **ready-for-human on one read and one decision**:
-   the fleet LAN's gateway is a **pfSense firewall** at `192.168.88.201` (its UI answers at
-   `https://192.168.88.201:88/`), and its NAT / port-forward table and LAN rules are the unread thing —
-   they need credentials, not a different vantage point. Reading them settles whether anything enforces
-   the fleet path to the repository today (recommended first step), after which the decision is whether
-   to accept what it says or configure a rule deliberately. Criteria 1 and 2 stay open: no allowlist was
-   found, and the non-fleet observations are timeouts, not refusals — a refusal is what criterion 2 asks
-   for and what we still do not have.
+4. **Ticket 13 is closed (2026-09-14) by decision 13E — the topology is accepted as the restriction.** The
+   credential-dependent read of the pfSense firewall at `192.168.88.201` is **abandoned, not deferred**;
+   its configuration is an accepted unknown recorded in ADR 0007's second amendment, with five tripwires
+   named and no automation watching any of them. Criteria 1 and 2 stay **unticked and closed by decision**
+   (no allowlist exists anywhere; what was observed off-fleet was a timeout, never a refusal). **Do not
+   re-open it looking for a reading** — if the enforcement ever needs to be an auditable object, that is a
+   new ticket for option B, with its own approval.
 5. **Ticket 14** (the fleet view's user-facing shape) needs the grilling session with Cyril. No
    implementation in that ticket; it produces a specification.
 
