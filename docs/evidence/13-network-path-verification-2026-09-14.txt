@@ -1,68 +1,102 @@
 Ticket 13 — where the repository is reachable from, verified read-only, 2026-09-14
-repo: e5dd12e (the commit this file is committed with; the checks below touch nothing)
+Captured from a working tree whose parent commit is 1185938; this file is committed with the
+corrections described below.
+
+** This is the second capture. ** The first, committed in 26df1cd, was reviewed line by line against
+its own claims and three defects were found and corrected here:
+
+ 1. It recorded the fleet LAN's gateway as a device that "answers on TCP 53 only". That is false: port
+    80 answers with a 301 to its own management UI, which is a pfSense login page (section 4). The
+    consequence matters more than the error — the port-forward table is blocked by *credentials*, not
+    by unreachability, so the remaining check is one Cyril can unblock, not one that "cannot be made".
+ 2. Its routing capture was truncated with `head -8`, so the route that makes the fleet path work and
+    the absence of a route to 192.168.254.0/24 were both asserted without a command that shows them.
+    Section 2 now captures the table untruncated and counts the missing route.
+ 3. Its connection-log extraction grepped for the prefix `192.168.88.`, which cannot detect an address
+    outside that subnet — the output was true by construction. Section 6 extracts addresses without a
+    prefix bias and shows what that turns up, including values that are artifacts of regexing a binary
+    log.
+
+A fourth claim was corrected in the ticket and the ADR rather than here: a TCP timeout was written as a
+"refusal". A timeout is no response at all (curl exit 28), which is also what a filtered or
+black-holed connection looks like, so it is recorded as a timeout.
 
 Ticket 13 asks for the repository to be reachable only from T6's own network path. Decisions 13A-13D
 replaced the originally-imagined NAS firewall with network segregation, so the remaining questions are
-facts about paths, not about rules: from where can the endpoint be reached, what did the NAS itself
-establish, and what is still unknown.
+facts about paths: from where can the endpoint be reached, what did the NAS itself establish, and what
+is still unknown.
 
-Method: read-only. Local checks run on Cyril's Mac mini (the host holding the checkout and the
-observation store); NAS facts come from the QNAP MCP read calls and the `t6-nas` SSH alias, whose
-filesystem is read-only for this user. No configuration was changed anywhere; nothing on the NAS, a
-Mac, or a client was written to.
+Method: read-only. Local checks run on Cyril's Mac mini; NAS facts come from QNAP MCP read calls and the
+`t6-nas` SSH alias, whose filesystem is read-only for this user. No configuration was changed anywhere;
+nothing on the NAS, a Mac, or a client was written to.
 
-NOTHING HERE IS A SECURITY SCAN OF ANYTHING BUT T6'S OWN ADDRESSES. The two public addresses named are
-T6's own uplinks, used to ask whether the repository is reachable from outside; the port checks are
-against T6's own gateway devices only.
+The two public addresses named below are T6's own uplinks, and the port checks are against T6's own
+gateway device only.
 
 == 1. The endpoint, from each path this host has ==
 
-This machine is dual-homed: wired on the fleet LAN (192.168.88.202) and on Wi-Fi (192.168.0.107), and
-it also carries a Tailscale interface. So three vantage points exist on one host, and they do not agree.
+This machine is dual-homed: wired on the fleet LAN (192.168.88.202) and on Wi-Fi (192.168.0.107), and it
+also carries a Tailscale interface. Three vantage points exist on one host and they do not agree.
 
+
+-- this machine, by name and by address (so the name below is grounded in output)
+$ scutil --get LocalHostName; hostname; echo "en0 $(ipconfig getifaddr en0)  en1 $(ipconfig getifaddr en1)"
+Cyrils-Mac-mini
+Cyrils-Mac-mini.local
+en0 192.168.88.202  en1 192.168.0.107
+[exit 0, 0.0s]
 
 -- fleet path (wired, en0 = 192.168.88.202)
 $ curl -sS -m 8 --interface en0 -o /dev/null -w "HTTP %{http_code}, %{size_download} bytes, %{time_total}s\n" http://192.168.88.188/MunkiRepo/catalogs/all
-HTTP 200, 41135 bytes, 0.002319s
+HTTP 200, 41135 bytes, 0.002215s
 [exit 0, 0.0s]
 
--- Wi-Fi path (en1 = 192.168.0.107)
+-- Wi-Fi path (en1 = 192.168.0.107) — curl exit 28 means no reply at all, not a refusal
 $ curl -sS -m 8 --interface en1 -o /dev/null -w "HTTP %{http_code}, %{size_download} bytes, %{time_total}s\n" http://192.168.88.188/MunkiRepo/catalogs/all
-HTTP 000, 0 bytes, 8.003552s
+HTTP 000, 0 bytes, 8.003207s
 curl: (28) Connection timed out after 8003 milliseconds
 [exit 28, 8.0s]
 
--- Tailscale overlay (utun5)
+-- Tailscale interface (utun5) — see section 8: no node advertises a route to the fleet subnet, so this request has nowhere to go regardless of the NAS's posture
 $ curl -sS -m 8 --interface utun5 -o /dev/null -w "HTTP %{http_code}, %{size_download} bytes, %{time_total}s\n" http://192.168.88.188/MunkiRepo/catalogs/all
-HTTP 000, 0 bytes, 8.002624s
-curl: (28) Connection timed out after 8002 milliseconds
+HTTP 000, 0 bytes, 8.005900s
+curl: (28) Connection timed out after 8005 milliseconds
 [exit 28, 8.0s]
 
-== 2. Why they disagree: the routing table ==
+== 2. The routing table, untruncated ==
 
-Two interface-scoped defaults, and no route to the Wi-Fi/roaming subnet the inventory records for
-`201 Bay 03 M1 Ultra` (192.168.254.106).
+Two interface-scoped defaults. The fleet subnet appears as a route on en0 (which is why the fleet path
+works), and 192.168.254.0/24 — the subnet the inventory records for `201 Bay 03 M1 Ultra` — has no route
+here at all. The count is captured rather than asserted.
 
 
--- default routes and the fleet subnet
-$ netstat -rn -f inet | grep -E '^(default|192\.168)' | head -8
+-- defaults and the fleet LAN's gateway
+$ netstat -rn -f inet | grep -E '^default'
 default            192.168.0.1        UGScg                 en1       
 default            192.168.88.201     UGScIg                en0       
-default            link#24            UCSIg               utun5       
-192.168.0          link#15            UCS                   en1      !
-192.168.0.1/32     link#15            UCS                   en1      !
-192.168.0.1        70:4f:57:c8:c9:34  UHLWIir               en1   1155
-192.168.0.107/32   link#15            UCS                   en1      !
-192.168.0.107      ae:2c:fd:6f:76:b7  UHLWIi                lo0
+default            link#24            UCSIg               utun5
 [exit 0, 0.0s]
 
--- the fleet LAN's gateway, by ARP
-$ arp -an | grep -E '192\.168\.88\.(201|1)\)' || echo '(none)'
-? (192.168.88.1) at (incomplete) on en0 ifscope [ethernet]
+-- the fleet subnet as a route
+$ netstat -rn -f inet | grep -E '^192\.168\.88( |/)' | head -3
+192.168.88         link#7             UCS                   en0      !
+[exit 0, 0.0s]
+
+-- is there any route to the inventory's Wi-Fi subnet?
+$ echo "routes to 192.168.254.0/24: $(netstat -rn -f inet | grep -c '^192\.168\.254')"
+routes to 192.168.254.0/24: 0
+[exit 0, 0.0s]
+
+-- the gateway's ARP entry (this MAC is looked up in section 4)
+$ arp -an | grep '192.168.88.201)' || echo '(not in the arp cache)'
 ? (192.168.88.201) at 64:62:66:21:cb:8e on en0 ifscope [ethernet]
 [exit 0, 0.0s]
 
-== 3. The two upstream addresses (T6's own), and what the inventory's Wi-Fi machine can do ==
+== 3. The two upstream addresses (T6's own) ==
+
+These are this host's egress addresses, not a reading of any router's WAN configuration: they say how
+traffic from each path is seen from outside. Whether the addresses are public or carrier-shared on the
+ISP side is a separate, unverified question (section 7).
 
 
 -- public egress via the fleet LAN (en0)
@@ -75,17 +109,46 @@ $ curl -sS -m 15 --interface en1 https://api.ipify.org
 112.203.166.248
 [exit 0, 0.3s]
 
--- is the inventory's Wi-Fi machine reachable from the fleet LAN?
-$ ping -c 1 -W 1500 192.168.254.106 >/dev/null 2>&1 && echo 'answers' || echo 'no answer (a different subnet: nothing on this host routes to 192.168.254.0/24)'
-no answer (a different subnet: nothing on this host routes to 192.168.254.0/24)
+-- can the fleet LAN reach the inventory's Wi-Fi machine?
+$ ping -c 1 -W 1500 192.168.254.106 >/dev/null 2>&1 && echo 'answers' || echo 'no answer — and there is no route to that subnet from here (section 2)'
+no answer — and there is no route to that subnet from here (section 2)
 [exit 0, 2.5s]
 
-== 4. The device that gives the fleet LAN its internet path ==
+== 4. The device on the fleet LAN's path: a pfSense firewall, and its UI answers ==
 
-Its WAN NAT address is 27.49.72.161 (section 3, en0). If a hand-made port-forward to the NAS existed on
-it, that is where the repository would become internet-reachable. It answers on nothing probed here, and
-its MAC block carries no vendor name:
+This is the correction that matters. The first capture recorded a port-80 probe result of "open" and then
+described the device as answering on TCP 53 only. Port 80 answers with a redirect to the device's own
+management UI, and that UI identifies itself:
 
+
+-- port 80
+$ curl -sS -i -m 8 http://192.168.88.201/ | head -8
+HTTP/1.1 301 Moved Permanently
+Server: nginx
+Date: Mon, 14 Sep 2026 00:20:22 GMT
+Content-Type: text/html
+Content-Length: 162
+Connection: keep-alive
+Location: https://192.168.88.201:88/
+X-Frame-Options: SAMEORIGIN
+[exit 0, 0.0s]
+
+-- the UI it redirects to
+$ curl -sSk -i -m 8 https://192.168.88.201:88/ | head -6
+HTTP/2 200 
+server: nginx
+date: Mon, 14 Sep 2026 00:20:22 GMT
+content-type: text/html; charset=UTF-8
+x-frame-options: SAMEORIGIN
+last-modified: Mon, 14 Sep 2026 00:20:22 GMT
+[exit 0, 0.1s]
+
+-- the UI's own title
+$ curl -sSk -m 8 https://192.168.88.201:88/ | tr -d "\r\n" | grep -io "<title>[^<]*</title>" | head -2
+<title>pfSense - Login</title>
+[exit 0, 0.1s]
+
+Other ports on the same device, for the record:
   192.168.88.201:22 -> no answer
   192.168.88.201:53 -> open
   192.168.88.201:80 -> open
@@ -97,50 +160,86 @@ its MAC block carries no vendor name:
   192.168.88.201:4443 -> no answer
   192.168.88.201:9090 -> no answer
 
--- its MAC block (64:62:66) in the vendor registry
-$ curl -sS -m 15 "https://api.maclookup.app/v2/macs/64:62:66"
-{"success":true,"found":true,"macPrefix":"646266","company":"IEEE Registration Authority","address":"445 Hoes Lane, Piscataway NJ 08554, US","country":"US","blockStart":"646266000000","blockEnd":"646266FFFFFF","blockSize":16777215,"blockType":"MA-L","updated":"2019-12-15","isRand":false,"isPrivate":false}
-[exit 0, 0.6s]
+Its hardware, from the full MAC in ARP (the first capture looked up only the 24-bit prefix, which is an IEEE-administered block and names no vendor):
+
+-- the full MAC in the vendor registry
+$ curl -sS -m 15 "https://api.maclookup.app/v2/macs/64:62:66:21:cb:8e"
+{"success":true,"found":true,"macPrefix":"6462662","company":"Protectli","address":"1315 Hot Springs Way, Vista CA 92081, US","country":"US","blockStart":"646266200000","blockEnd":"6462662FFFFF","blockSize":1048575,"blockType":"MA-M","updated":"2019-12-13","isRand":false,"isPrivate":false}
+[exit 0, 0.5s]
 
 == 5. Off-network vantage points, attempted ==
 
-Ticket 13's criterion 2 asks for a refusal from an address outside the allowlist, and its own text
-allows recording the negative case as not verified. Three attempts were made to get an off-network
-vantage point; none of them produced evidence in either direction, and none of them is proof of
-unreachability — a timeout is also what a filtered or refused fetch looks like from a vantage point we
-do not control.
+Criterion 2 asks for a refused connection from an address outside the allowlist, and allows recording
+the negative case as not verified. Three attempts were made to get an off-network vantage point; none
+produced evidence in either direction.
 
   (i) a cloud scraping service (firecrawl, via this session's web tool):
-      28-second timeout on http://27.49.72.161/MunkiRepo/catalogs/all
-      and on http://112.203.166.248/MunkiRepo/catalogs/all.  INCONCLUSIVE.
+      28-second timeout fetching http://27.49.72.161/MunkiRepo/catalogs/all and the same on
+      http://112.203.166.248/MunkiRepo/catalogs/all.  INCONCLUSIVE — a timeout from a vantage point we
+      do not control is not a closed-port finding.
 
  (ii) Shodan InternetDB, which reports what that service has seen on an address:
-      27.49.72.161: {"detail":"No information available"}   INCONCLUSIVE (no scan record is not a closed port)
-      112.203.166.248: {"detail":"No information available"}   INCONCLUSIVE (no scan record is not a closed port)
-(iii) an external port-check service (hackertarget nmap, scanning from its own host):
-      returned no usable output for either address.  INCONCLUSIVE.
+      27.49.72.161: {"detail":"No information available"}  INCONCLUSIVE (no scan record is not the same as a closed port)
+      112.203.166.248: {"detail":"No information available"}  INCONCLUSIVE (no scan record is not the same as a closed port)
+(iii) an external port-check service (hackertarget's nmap, scanning from its own host):
+      returned no usable output — the command produced an empty response body, so there is no result to
+      report in either direction.  NO EVIDENCE.
 
 
 == 6. NAS-side state, re-read on 2026-09-14 ==
 
-  App Center (mcp__qnap__appcenter_list_apps, 19 installed apps): no VPN or overlay application at all
-  — no Tailscale, no ZeroTier, no QVPN. `myQNAPcloud` is present, installed AND enabled, v1.1.100 —
-  the capability, with the state ticket 13D verified (no QNAP ID, no published service, no DDNS name,
-  Auto Router Configuration force-disabled). Nothing in the app list creates a path off the LAN.
+  App Center (mcp__qnap__appcenter_list_apps, 19 installed apps): no VPN or overlay application at all —
+  no Tailscale, no ZeroTier, no QVPN. `myQNAPcloud` is present, installed AND enabled, v1.1.100, with the
+  state ticket 13D verified on 2026-09-13 (no QNAP ID, no published service, no DDNS name, Auto Router
+  Configuration force-disabled). Nothing in the app list creates a path off the LAN.
 
   Connection log (mcp__qnap__list_access_logs, the 200 most recent entries, 2026-09-13 -> 2026-09-14):
   two source addresses, 192.168.88.202 (191 entries) and 192.168.88.151 (9), both on the fleet subnet.
-  Every real address in the wider window (`tail -4000 /mnt/HDA_ROOT/.logs/conn.log`, read-only over
-  the SSH alias) is 192.168.88.x as well:
+  That read covers one day and is the non-circular evidence; it is what the ticket rests on.
 
--- distinct real source addresses in the connection log
-$ ssh -o BatchMode=yes -o ConnectTimeout=10 t6-nas 'tail -4000 /mnt/HDA_ROOT/.logs/conn.log | grep -aoE "192\.168\.88\.[0-9]{1,3}" | sort -u | tr "\n" " "'
-192.168.88.151 192.168.88.173 192.168.88.174 192.168.88.181 192.168.88.202 192.168.88.49 192.168.88.7 192.168.88.73 192.168.88.82 192.168.88.84 192.168.88.86 192.168.88.861 192.168.88.862 192.168.88.863 192.168.88.87 192.168.88.95
+  The raw `conn.log` is a binary-framed file, and regexing it for addresses is only meaningful if the
+  pattern is not pinned to a prefix. Extracted without that bias, most values are fleet-subnet addresses
+  and the rest are a mix of private addresses and impossible values:
+
+
+-- addresses in conn.log, extracted without a prefix bias
+$ ssh -o BatchMode=yes -o ConnectTimeout=10 t6-nas 'grep -aoE "([0-9]{1,3}\.){3}[0-9]{1,3}" /mnt/HDA_ROOT/.logs/conn.log | sort | uniq -c | sort -rn | head -14'
+   4816 192.168.88.202
+    212 192.168.88.151
+    165 192.168.88.175
+    161 7.13.3.052
+    147 192.168.88.174
+    107 148.0.0.0
+    103 192.168.88.182
+     91 149.0.0.0
+     82 192.168.88.84
+     74 10.58.58.2
+     72 7.11.1.072
+     66 127.0.0.1
+     56 10.58.58.4
+     48 192.168.88.177
 [exit 0, 0.1s]
-  What that log is NOT: it records connections and administration, not client HTTP fetches. Its
-  MunkiRepo lines are File Station moves of the old share, and the NAS has no web-server access log at
-  all (`/var/log/apache*` absent; `/var/log` is tmpfs). So the NAS can confirm "nobody outside the fleet
-  subnet has connected", and cannot confirm "which Macs fetched the catalog".
+  Read carefully: `148.0.0.0`, `149.0.0.0` and `7.13.3.052` are not usable addresses and are
+  artifacts of matching digits inside a binary record; `127.0.0.1` is the NAS itself; and the two
+  `10.58.58.x` values match none of the NAS's own interface addresses listed below, so what they are is
+  unresolved — QNAP's Container Station uses such ranges by default, but that is an explanation I have
+  not verified here, and they are not evidence of a client outside the fleet subnet. The earlier,
+  prefix-pinned version of this command could not have shown any of this.
+
+
+-- the NAS's own addresses, to place those 10.x values
+$ ssh -o BatchMode=yes -o ConnectTimeout=10 t6-nas 'ip -4 -o addr show 2>/dev/null | awk "{print \$2, \$4}"'
+lo 127.0.0.1/8
+eth3 192.168.88.188/24
+docker0 10.0.5.1/24
+lxcbr0 10.0.3.1/24
+lxdbr0 10.0.7.1/24
+[exit 0, 0.1s]
+  What the log is NOT: it records connections and administration, not client HTTP fetches. Its
+  MunkiRepo lines are File Station operations, and the NAS keeps no web-server access log at all
+  (`/var/log/apache*` is absent; `/var/log` is tmpfs). So "nobody outside the fleet subnet has
+  connected" is evidenced for the window read, and "which Macs fetched the catalog" is not evidenced at
+  all from the NAS side.
 
   Two entries that look like an incident and are not: the Security Center's `Added IP address
   "192.168.88.202" to IP block list. Duration: for 5 minutes` entries are this host's own repeated
@@ -150,16 +249,32 @@ $ ssh -o BatchMode=yes -o ConnectTimeout=10 t6-nas 'tail -4000 /mnt/HDA_ROOT/.lo
 == 7. What is still NOT verified, stated exactly ==
 
 1. **Whether the repository is reachable from the public internet.** Unverified by us. What stands
-   behind the claim is (a) the NAS establishing no path (verified, section 6) and (b) no hand-made
-   port-forward on the device providing the fleet LAN's uplink — which cannot be read from here: it
-   answers on none of the ten ports probed, and its MAC block has no vendor name in the registry. The
-   specific check is a UI fact: the port-forwarding / virtual-server table of that uplink device, where
-   a forward of TCP 80 to 192.168.88.188 would be visible.
-2. **The path of any client whose primary connection is Wi-Fi.** `201 Bay 03 M1 Ultra`
-   (192.168.254.106 in the inventory) is on a subnet nothing here routes to, and the fleet's SSH probe
-   cannot reach it either (ticket 05's standing gap). Its ability to fetch the repository is therefore
-   unknown, and 13B named exactly this as a defect to fix rather than a hole to allowlist.
-3. **Whether the Wi-Fi path refusal generalizes.** This host's Wi-Fi interface cannot reach the
-   endpoint (section 1), which is one real refusal from a non-fleet path. Whether every device on that
-   network is likewise cut off follows from the topology, not from a test run per device.
+   behind the claim is (a) the NAS establishing no path of its own (section 6, verified) and (b) the
+   configuration of the fleet LAN's pfSense firewall — in particular its port-forward / NAT table — which
+   is only readable with credentials (section 4 shows the UI, not its contents).
+2. **Whether the ISP address is public or carrier-shared.** Gate-side and unverified, as ticket 13D
+   recorded. Section 3 shows this host's *egress* address on each path; it does not show how many NATs
+   are between this host and the internet, and a carrier-shared address would mean a forward could not
+   be reached even if one existed. Nothing here distinguishes the two.
+3. **The path of any client whose primary connection is Wi-Fi.** `201 Bay 03 M1 Ultra`
+   (192.168.254.106 in the inventory) is on a subnet this host has no route to (section 2), and the
+   fleet's SSH probe cannot reach it either (ticket 05's standing gap). Its ability to fetch the
+   repository is unknown; 13B named exactly this as a defect to fix rather than a hole to allowlist.
+4. **Whether the Wi-Fi timeout generalizes.** One host's Wi-Fi interface got no reply (section 1).
+   Whether every device on that network is likewise cut off follows from the topology, not from a test
+   per device — and a timeout is not proof of unreachability in any case.
 
+
+== 8. The tailnet advertises no route to the fleet subnet ==
+
+So the tailnet is not a path to the repository, and the timeout in section 1 is a fact about routing
+rather than about the NAS's posture.
+
+
+-- what each tailnet node advertises
+$ tailscale status --json > /tmp/tailnet.json; python3 -c "import json; d=json.load(open('/tmp/tailnet.json')); print('self:', d['Self']['HostName'], d['Self']['TailscaleIPs'], 'advertised:', d['Self']['AllowedIPs']); [print(' peer:', p['HostName'], p['TailscaleIPs'], 'advertised:', p['AllowedIPs']) for p in (d.get('Peer') or {}).values()]; print('peers advertising anything in 192.168.88.0/24:', [p['HostName'] for p in (d.get('Peer') or {}).values() if any(str(ip).startswith('192.168.88.') for ip in p['AllowedIPs'])] or 'none')"
+self: Cyril’s Mac mini (7) ['100.123.216.92', 'fd7a:115c:a1e0::5f01:d8be'] advertised: ['100.123.216.92/32', 'fd7a:115c:a1e0::5f01:d8be/128']
+ peer: MacBook Air ['100.100.204.77', 'fd7a:115c:a1e0::6401:ccd0'] advertised: ['100.100.204.77/32', 'fd7a:115c:a1e0::6401:ccd0/128']
+ peer: localhost ['100.76.224.35', 'fd7a:115c:a1e0::db01:e0c5'] advertised: ['100.76.224.35/32', 'fd7a:115c:a1e0::db01:e0c5/128']
+peers advertising anything in 192.168.88.0/24: none
+[exit 0, 0.1s]

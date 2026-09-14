@@ -18,8 +18,8 @@ implemented-with-one-decision-open.
 | Drift | 3 findings, all pending one approval: two manifests missing on the target (`303A-Mac-Mini-M4-Pro`, `Sixto-5`) and one file differing (`manifests/all` — the unpublished forced-core suspension) | `munki_fleet.cli check`, exit 1 |
 | Alert decision | implemented and exercised live: 19 conditions from the real repository and the recorded fleet, one source-linked message, two silent cycles, a failed receipt recorded with exit 1 | `docs/evidence/15-alert-cycle-live-2026-09-14.txt` |
 | Alert delivery | **not wired** — nothing is delivered to anyone | the receipt in that capture was written by hand; the ticket says so |
-| Network path to the repository | reachable from the fleet LAN (HTTP 200, 0.002 s) and **refused** from this host's Wi-Fi network and its Tailscale interface (8 s timeouts each) | `docs/evidence/13-network-path-verification-2026-09-14.txt` |
-| That restriction | **topological, not configured** — nothing was set up to create it, so nothing reports it ending | ticket 13's finding; ADR 0007's amendment |
+| Network path to the repository | reachable from the fleet LAN (HTTP 200, 0.002 s); **no reply** from this host's Wi-Fi network and no route on its Tailscale interface (8 s timeouts, not refusals) | `docs/evidence/13-network-path-verification-2026-09-14.txt` |
+| That restriction | **observed, not documented**: no configured restriction was found on the NAS or on any path this host can observe, and the pfSense firewall that carries the fleet LAN has not been read (credentials) | ticket 13; ADR 0007's amendment |
 | Observation store | 1 machine observed, 1 unreachable, everything stale | `munki_fleet.cli observations` (ticket 05's state, unchanged) |
 
 ## The next step
@@ -47,12 +47,14 @@ Then, unchanged from the previous handoff and each still needing one approval:
 3. **`Cyrils-Mac-mini` still has no machine manifest.** With the forced core suspended this is
    consequence-free, and it is the last blocker on ticket 07's initial promotion (26 items, 27
    manifests).
-4. **Ticket 13** (repository network restriction) is now **ready-for-human on one decision**: the path
-   facts are verified and recorded, and what is left is whether the existing topology counts as the
-   restriction (recommended, with the tripwires recorded) or an auditable rule should be configured on
-   the fleet path. One check only Cyril can make: read the fleet LAN's uplink device
-   (`192.168.88.201`) port-forward table and confirm no forward of TCP 80 to the NAS — that single UI
-   fact is what stands between the current evidence and "never internet-reachable".
+4. **Ticket 13** (repository network restriction) is **ready-for-human on one read and one decision**:
+   the fleet LAN's gateway is a **pfSense firewall** at `192.168.88.201` (its UI answers at
+   `https://192.168.88.201:88/`), and its NAT / port-forward table and LAN rules are the unread thing —
+   they need credentials, not a different vantage point. Reading them settles whether anything enforces
+   the fleet path to the repository today (recommended first step), after which the decision is whether
+   to accept what it says or configure a rule deliberately. Criteria 1 and 2 stay open: no allowlist was
+   found, and the non-fleet observations are timeouts, not refusals — a refusal is what criterion 2 asks
+   for and what we still do not have.
 5. **Ticket 14** (the fleet view's user-facing shape) needs the grilling session with Cyril. No
    implementation in that ticket; it produces a specification.
 
