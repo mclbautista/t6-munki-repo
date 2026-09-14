@@ -49,7 +49,7 @@ A ping sweep of `192.168.88.0/24` found 45 hosts; 31 answered from addresses the
 - [ ] Every observed machine reports a serial matching the inventory or role-matrix record and carries its resolved manifest, Munki version, pending state, warnings, rejections, and timestamps.
 - [ ] `202B-Mac-Studio` is not guessed into compliance: if its serial or address is still unknown, the run and ticket preserve that exact unresolved state and identify the authoritative evidence needed to close it.
   - Partly discharged: it is preserved as unresolved rather than guessed (this ticket does not claim it is compliant, and the sweep is explicitly recorded as insufficient). The run that will carry it as `unobserved — identity unknown` is criterion 5's, which waits on the authorization.
-- [ ] The access change has a recorded per-machine rollback, and the ticket reads back both the live authorization target and the append-only observation run before claiming completion.
+- [ ] The access change has a recorded per-machine rollback, and the ticket reads back both the live authorization target and the appended observations before claiming completion.
   - Rollback recorded per machine in evidence section 4; the live read-back happens when the change does. Note that removing the key alone does **not** return these two machines to today's state — they are closed today, so a full rollback also turns Remote Login off again, and that is written down rather than assumed.
 
 ## Verification
@@ -68,3 +68,19 @@ exit=0
 
 Nothing was changed on any machine in this wave while measuring. Full capture:
 `docs/evidence/03-wave-1-before-state-2026-09-14.txt`.
+
+## Corrections
+
+Two defects in this ticket's own first commit (`a4b0694`), both recorded rather than quietly fixed:
+
+1. **A criterion was paraphrased.** Criterion 8 was written into the ticket as "…reads back both the
+   live authorization target and the *append-only observation run*…", where the committed criterion
+   (from `8e10127`) says "…and the **appended observations**…". A criterion's wording is not an
+   agent's to edit — it is the thing the work is measured against. Restored verbatim in the follow-up
+   commit; the difference was a rewording, not a disagreement with the criterion, and the criterion
+   remains unticked on its substance (the read-back happens when the change does).
+2. **The suite was run before staging the evidence file**, so the citation check failed with
+   `evidence cited but not in git: … -> docs/evidence/03-wave-1-before-state-2026-09-14.txt`. That is
+   the guard working as designed — it resolves pointers against the *index*, not the filesystem — and
+   the commit passed its own pre-commit run once both paths were staged. Recorded because a red run in
+   a session's history reads as a mystery unless the reason is written down.
