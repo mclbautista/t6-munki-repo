@@ -1,0 +1,344 @@
+Alert cycle against the live repository and the recorded fleet, 2026-09-14
+git: 4865816 (the ticket-15 claim commit; the code under test is that commit's tree plus the staged
+change this file is committed with)
+
+This is the **second** capture. The first was taken before the two-axis review, and its output no
+longer describes the code: the review found four defects (an escalation dropped while a message was
+in flight, a superseded message reporting failure forever, an unreadable clock read as "in flight",
+and an unhandled refusal type in the CLI) and they are fixed here. What follows is the re-run against
+the fixed code, which is also what exercises the fixes on real data.
+
+The command, run once per capture below:
+
+  python3 -m munki_fleet.cli alert --metadata-root . \
+      --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo \
+      --http-base http://192.168.88.188/MunkiRepo \
+      --store ~/.munki-fleet/observations.jsonl \
+      --inventory data/machines.json --max-age 3600 \
+      --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 [--ack-ttl N | --dry-run]
+
+Every read is real: drift and integrity read the served tree over the `t6-nas` SSH path (ADR 0001)
+and the checkout in this working tree; the fleet comes from the observation store the collector wrote
+on 2026-09-13; the expected fleet is the committed inventory. Nothing on the NAS, the Mac Mini or any
+client was written to. `/tmp` is used deliberately: no deployment path is installed yet, and the
+transport that would deliver a message is ticket 15's open decision, ADR 0011.
+
+NOT WIRED, and visible as such below: there is no delivery transport, so every receipt in this
+capture is **written by hand** to exercise the receipt paths. None of these is a delivered alert.
+
+== 1. a dry run: the decision, and nothing written ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --dry-run
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+dry run (no state written) — alert run 2026-09-14T07:55:42+08:00
+  conditions: 19 actionable of 19 current
+  message: alert-20260914T0755420800-7c7c6df0 (10 of 19 condition(s) rendered) (not written)
+  delivered 0, failed 0, pending 0, undelivered 0, superseded 0, stray receipts 0
+
+--- the message this cycle would hand over ---
+🔴 T6 Munki: 19 actionable condition(s) at 2026-09-14T07:55:42+08:00
+
+1. 🔴 the checkout has a file the target does not serve
+   2 file(s): manifests/303A-Mac-Mini-M4-Pro, manifests/Sixto-5
+   source: http://192.168.88.188/MunkiRepo/manifests/303A-Mac-Mini-M4-Pro
+   source: http://192.168.88.188/MunkiRepo/manifests/Sixto-5
+
+2. 🔴 the target's bytes differ from the checkout
+   1 file(s): manifests/all
+   source: http://192.168.88.188/MunkiRepo/manifests/all
+
+3. 🟠 201-Bay-01-Mac-Pro has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[0]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+4. 🟠 201-Bay-02-M1-Max has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[1]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+5. 🟠 201-Bay-03-M1-Ultra has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[2]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+6. 🟠 201-Viewing-Room has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[3]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+7. 🟠 202-Jason-M2-Max has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[4]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+8. 🟠 202-Mac-Pro-3 has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[5]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+9. 🟠 202-TOC-M4-Max could not be observed
+   unreachable: cyrilbautista@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl (run 2026-09-13T19:39:19+08:00/4299990c)
+   source: data/machines.json#machines[6]
+
+10. 🟠 202-Tim-M2-Max-9 has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[7]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+… and 9 more condition(s) not listed (max-conditions 10)
+exit = 0   (wall clock 4.2s)
+
+== 2. cycle 1: one message handed to the outbox ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --ack-ttl 120
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+alert run 2026-09-14T07:55:46+08:00
+  conditions: 19 actionable of 19 current
+  message: alert-20260914T0755460800-7c7c6df0 (10 of 19 condition(s) rendered) -> /tmp/alert-outbox2/alert-20260914T0755460800-7c7c6df0.json
+  delivered 0, failed 0, pending 0, undelivered 0, superseded 0, stray receipts 0
+exit = 0   (wall clock 4.1s)
+
+== the message that was handed over (verbatim from the file) ==
+file: /tmp/alert-outbox2/alert-20260914T0755460800-7c7c6df0.json
+🔴 T6 Munki: 19 actionable condition(s) at 2026-09-14T07:55:46+08:00
+
+1. 🔴 the checkout has a file the target does not serve
+   2 file(s): manifests/303A-Mac-Mini-M4-Pro, manifests/Sixto-5
+   source: http://192.168.88.188/MunkiRepo/manifests/303A-Mac-Mini-M4-Pro
+   source: http://192.168.88.188/MunkiRepo/manifests/Sixto-5
+
+2. 🔴 the target's bytes differ from the checkout
+   1 file(s): manifests/all
+   source: http://192.168.88.188/MunkiRepo/manifests/all
+
+3. 🟠 201-Bay-01-Mac-Pro has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[0]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+4. 🟠 201-Bay-02-M1-Max has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[1]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+5. 🟠 201-Bay-03-M1-Ultra has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[2]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+6. 🟠 201-Viewing-Room has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[3]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+7. 🟠 202-Jason-M2-Max has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[4]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+8. 🟠 202-Mac-Pro-3 has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[5]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+9. 🟠 202-TOC-M4-Max could not be observed
+   unreachable: cyrilbautista@192.168.88.182: Permission denied (publickey,password,keyboard-interactive).
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl (run 2026-09-13T19:39:19+08:00/4299990c)
+   source: data/machines.json#machines[6]
+
+10. 🟠 202-Tim-M2-Max-9 has never been observed
+   no observation has reached this machine, so what it runs is unknown — unknown is not compliant
+   source: data/machines.json#machines[7]
+   source: /Users/cyrilbautista/.munki-fleet/observations.jsonl
+
+… and 9 more condition(s) not listed (max-conditions 10)
+
+rendered keys: 10 of 19 carried
+
+== 3. cycle 2: the same conditions, the message still in flight ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --ack-ttl 3600
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+alert run 2026-09-14T07:55:50+08:00
+  conditions: 0 actionable of 19 current
+  message: none — nothing newly actionable
+  delivered 0, failed 0, pending 1, undelivered 0, superseded 0, stray receipts 0
+exit = 0   (wall clock 4.0s)
+
+== 4. cycle 3: the failed receipt, and the run does not report success ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --ack-ttl 60
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+alert run 2026-09-14T07:55:54+08:00
+  conditions: 19 actionable of 19 current
+  message: alert-20260914T0755540800-7c7c6df0 (10 of 19 condition(s) rendered) -> /tmp/alert-outbox2/alert-20260914T0755540800-7c7c6df0.json
+  delivered 0, failed 1, pending 0, undelivered 0, superseded 0, stray receipts 0
+exit = 1   (wall clock 4.1s)
+
+== what that first failure left in the state (verbatim) ==
+{
+ "delivered_at": null,
+ "failed_at": "2026-09-14T08:05:00+08:00",
+ "failures": 1,
+ "first_seen": "2026-09-14T07:55:46+08:00",
+ "last_seen": "2026-09-14T07:55:54+08:00",
+ "severity": "red"
+}
+{
+ "alert-20260914T0755460800-7c7c6df0": {
+  "created_at": "2026-09-14T07:55:46+08:00",
+  "detail": "transport not wired (ticket 15's open decision)",
+  "keys": [
+   "drift:missing_on_target",
+   "drift:differing",
+   "fleet:unobserved:C02C71SCK7GF",
+   "fleet:unobserved:GK7RW3463R",
+   "fleet:unobserved:KL6G9VMQVP",
+   "fleet:unobserved:J4X5JTVXDD",
+   "fleet:unobserved:J90PHXGC5V",
+   "fleet:unobserved:C02C71SDK7GF",
+   "fleet:not-reached:RW3HL9FL4M",
+   "fleet:unobserved:R6WV6DCVVH",
+   "fleet:unobserved:X904F44LHX",
+   "fleet:unobserved:PM4PWN40R0",
+   "fleet:unobserved:HPXH7XG2DD",
+   "fleet:unobserved:C02DX110PN5V",
+   "fleet:unobserved:PKXTGR769Q",
+   "fleet:unobserved:C07D317NPJJ7",
+   "fleet:unobserved:K267DWDMWX",
+   "fleet:unobserved:GYC39Q30PJ",
+   "fleet:stale:RWJ57V9PW4"
+  ],
+  "receipt": "failed",
+  "receipt_at": "2026-09-14T08:05:00+08:00",
+  "rendered_keys": [
+   "drift:missing_on_target",
+   "drift:differing",
+   "fleet:unobserved:C02C71SCK7GF",
+   "fleet:unobserved:GK7RW3463R",
+   "fleet:unobserved:KL6G9VMQVP",
+   "fleet:unobserved:J4X5JTVXDD",
+   "fleet:unobserved:J90PHXGC5V",
+   "fleet:unobserved:C02C71SDK7GF",
+   "fleet:not-reached:RW3HL9FL4M",
+   "fleet:unobserved:R6WV6DCVVH"
+  ]
+ }
+}
+
+== 5. cycle 4: the retry was delivered, and the lost message stops reporting failure ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --ack-ttl 60
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+alert run 2026-09-14T07:55:58+08:00
+  conditions: 9 actionable of 19 current
+  message: alert-20260914T0755580800-d341268e (9 of 9 condition(s) rendered) -> /tmp/alert-outbox2/alert-20260914T0755580800-d341268e.json
+  delivered 1, failed 0, pending 0, undelivered 0, superseded 0, stray receipts 0
+exit = 0   (wall clock 4.0s)
+
+== 6. cycle 5: the retry delivered, the lost message is history, nothing is outstanding ==
+python3 -m munki_fleet.cli alert --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo --http-base http://192.168.88.188/MunkiRepo --store /Users/cyrilbautista/.munki-fleet/observations.jsonl --inventory data/machines.json --max-age 3600 --state /tmp/alert-state2.json --outbox /tmp/alert-outbox2 --ack-ttl 60
+repository: drift missing on the target 2, only on the target 0, differing 1, unreadable 0; integrity 0 finding(s)
+fleet: 17 expected, 2 reading(s) held, 2 stale
+alert run 2026-09-14T07:56:07+08:00
+  conditions: 0 actionable of 19 current
+  message: none — nothing newly actionable
+  delivered 1, failed 0, pending 0, undelivered 0, superseded 0, stray receipts 0
+exit = 0   (wall clock 4.1s)
+
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+ValueError: too many values to unpack (expected 2)
+== the ledger afterwards (verbatim; key lists abridged) ==
+{
+ "alert-20260914T0755460800-7c7c6df0": {
+  "created_at": "2026-09-14T07:55:46+08:00",
+  "keys": "19 carried",
+  "rendered_keys": "10 rendered",
+  "receipt": "failed",
+  "receipt_at": "2026-09-14T08:05:00+08:00",
+  "detail": "transport not wired (ticket 15's open decision)"
+ }
+}
+{
+ "alert-20260914T0755540800-7c7c6df0": {
+  "created_at": "2026-09-14T07:55:54+08:00",
+  "keys": "19 carried",
+  "rendered_keys": "10 rendered",
+  "receipt": "delivered",
+  "receipt_at": "2026-09-14T08:15:00+08:00",
+  "detail": "delivered by the retry"
+ }
+}
+{
+ "alert-20260914T0755580800-d341268e": {
+  "created_at": "2026-09-14T07:55:58+08:00",
+  "keys": "9 carried",
+  "rendered_keys": "9 rendered",
+  "receipt": "delivered",
+  "receipt_at": "2026-09-14T08:20:00+08:00",
+  "detail": "delivered by the retry"
+ }
+}
+
+== one condition's entry, to show what a delivered notification records ==
+{
+ "drift:differing": {
+  "delivered_at": "2026-09-14T08:15:00+08:00",
+  "failed_at": "2026-09-14T08:05:00+08:00",
+  "failures": 1,
+  "first_seen": "2026-09-14T07:55:46+08:00",
+  "last_seen": "2026-09-14T07:56:07+08:00",
+  "severity": "red"
+ }
+}
+{
+ "fleet:unobserved:GYC39Q30PJ": {
+  "delivered_at": "2026-09-14T08:20:00+08:00",
+  "failed_at": null,
+  "failures": 0,
+  "first_seen": "2026-09-14T07:55:46+08:00",
+  "last_seen": "2026-09-14T07:56:07+08:00",
+  "severity": "orange"
+ }
+}
+
+== 7. Is there any other monitor for these conditions? (criterion 7, with the commands) ==
+
+-- the Hermes cron job definition file, asked for any mention of munki --
+0
+-- the job names it holds, listed for completeness --
+  "Flood Risk Check — Teresa Rizal (6-hourly)"
+  "Weekly News Digest — Teresa Rizal (Sunday 8AM)"
+  "Turnover Reminder"
+  "Sunday TP-Link Switch Restart Check"
+  "NAS — Stale Project Folder Audit (Mon/Thu)"
+  "NAS — Health Check (SMB + SMART + Thermal, 30min)"
+  "NAS — Off-Hours Activity Log (6-9am)"
+  "NAS — Power Event Check (Mon/Thu)"
+  "NAS — Storage Pool Health & Free Space Report (Mon/Thu)"
+  "Weekly LLM Pricing Report — Nous Research"
+  "Weekly T6 Mnemosyne Schema Drift Check"
+  "NAS Power Log Check (one-shot)"
+  "t6-nas-qulog-backup"
+-- files under the Hermes script directory --
+  none
+-- the Kulit bot repository (excluding its venv and git dirs) --
+  none
+-- launchd agents on this host --
+  none
+
+== What this capture does not show ==
+
+- No message was delivered to anyone: the transport is not wired, so every receipt here is
+  hand-written and the only delivery evidence beyond them is the module tests.
+- The healthy period is exercised by tests, not live: today's fleet is not healthy (two files the
+  target does not serve, one file whose bytes differ, 15 machines never observed, one machine
+  unreachable, one reading stale). A live silent-cycle capture needs a fleet that is observed and in
+  sync, which is tickets 06/10/11 first. Note what the silent cycles above do show: cycles 2 and 5
+  handed over no message while 19 conditions were current.
+- The state file is written on every non-dry cycle, including a silent one (cycles 2 and 5). That is
+  deliberate and it is what the next cycle's decision rests on; what silence means is that no
+  *message* is handed over.

@@ -80,7 +80,21 @@ Two failures this project exists to prevent, in order:
 - **Staleness:** the age of an observation. Stale observations are always qualified as stale,
   never presented as current state.
 - **Drift:** any difference between the metadata tree and what the NAS is actually serving.
+- **Condition:** one actionable fact a check found, with a stable key and at least one source a
+  reader can open. It exists whether or not anyone has been told about it.
+- **Alert message:** one rendered digest of every newly actionable condition, handed to the delivery
+  transport. A first sight of seventeen conditions is one message, not seventeen; a healthy cycle
+  produces none.
+- **Receipt:** the delivery transport's own record that a message was delivered or failed, read back
+  by the next cycle. Nothing counts as delivered without one.
+- **Alert state:** the durable record of which conditions have been notified, kept beside the
+  observation store on the machine that runs the cycle (today Cyril's Mac mini, `192.168.88.202` —
+  see ADR 0011 on the host). A condition that persists does not re-alert; a condition that clears
+  forgets itself, so its return alerts again.
+- **Outbox:** the directory where a cycle hands a message to the delivery transport and where that
+  transport's receipts land (ADR 0011).
 - **Kulit:** the T6 Telegram bot that owns alert delivery. Munki monitoring routes through it.
+  Kulit delivers and does not decide: what is actionable is computed here (ADR 0011).
 
 ## Boundaries
 

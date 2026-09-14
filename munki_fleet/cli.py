@@ -8,6 +8,11 @@ Usage:
                                        [--expect-file PATH] [--backup-dir DIR] [--dry-run]
     python3 -m munki_fleet.cli verify  --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo \
                                        [--http-base http://192.168.88.188/MunkiRepo]
+    python3 -m munki_fleet.cli alert   --metadata-root . --target t6-nas:/share/ZFS23_DATA/Web/MunkiRepo \
+                                       --http-base http://192.168.88.188/MunkiRepo \
+                                       --store ~/.munki-fleet/observations.jsonl \
+                                       --inventory data/machines.json \
+                                       --state <alert-state.json> --outbox <dir> [--dry-run]
 
 There is no "publish anyway" flag. `publish` requires the caller to declare what it expects to
 change — item keys, item membership, whole files — and refuses anything else, including a
@@ -30,6 +35,7 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 from .catalogs import CatalogError, build_catalogs
 from .drift import DriftReport, integrity, repo_url
 from .drift import drift as drift_report
+from . import alerting
 from .gate import evaluate_gate
 from .promote import (PROMOTIONS_PATH, PromotionError, declared_exclusions, demote,
                       initial_promotion_plan, load_history, load_pilots, promote)
@@ -148,6 +154,61 @@ def cmd_check(args, deps) -> int:
         if len(findings) > args.max_list:
             print(f"    … and {len(findings) - args.max_list} more")
     return 0 if (drift.ok and report.ok) else 1
+
+
+def cmd_alert(args, deps) -> int:
+    """One alert cycle: every actionable condition, one message, delivered through the outbox.
+
+    Read-only against the repository and the fleet — the only things written are the alert state
+    and the message handed to the delivery transport (ticket 15). A healthy cycle hands over
+    nothing.
+    """
+    try:
+        alerting.check_knobs(ack_ttl=args.ack_ttl, max_refs=args.max_refs,
+                             max_conditions=args.max_conditions, max_age=args.max_age)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    try:
+        expected = alerting.load_inventory(args.inventory)
+    except (OSError, ValueError) as exc:
+        print(f"error: cannot read the inventory {args.inventory}: {exc}", file=sys.stderr)
+        return 2
+
+    target = deps.target_factory(args.target)
+    repository_drift = drift_report(args.metadata_root, target)
+    report = integrity(args.metadata_root, target)
+    now = args.now or datetime.now().astimezone().isoformat(timespec="seconds")
+
+    try:
+        records = probe.ObservationStore(args.store).read()
+        current = alerting.conditions(drift_report=repository_drift, integrity_report=report,
+                                      records=records, expected=expected, now=now,
+                                      max_age=args.max_age, http_base=args.http_base or "",
+                                      store_path=args.store)
+        readings = probe.latest_per_machine(records, now=now, max_age=args.max_age)
+    except (alerting.AlertError, probe.ProbeError) as exc:
+        # The state, a receipt or the store could not be trusted. Refusing beats alerting on a
+        # reading nobody can vouch for.
+        print(f"error: {exc}", file=sys.stderr)
+        return 3
+    stale = sum(1 for entry in readings.values() if entry.get("stale"))
+    print(f"repository: drift {repository_drift.describe()}; integrity {len(report.findings)} "
+          f"finding(s)")
+    print(f"fleet: {len(expected)} expected, {len(readings)} reading(s) held, {stale} stale")
+
+    try:
+        run = alerting.cycle(state_path=args.state, outbox=args.outbox, conditions=current,
+                             now=now, ack_ttl=args.ack_ttl, max_refs=args.max_refs,
+                             max_conditions=args.max_conditions, dry_run=args.dry_run)
+    except alerting.AlertError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 3
+    print(run.describe())
+    if args.dry_run and run.message is not None:
+        print("\n--- the message this cycle would hand over ---")
+        print(run.message.body)
+    return 0 if run.ok else 1
 
 
 def cmd_files(args, deps) -> int:
@@ -669,6 +730,31 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     common(p, with_target=True)
     p.add_argument("--max-list", type=int, default=25, help="entries to print per category")
     p.set_defaults(func=cmd_check)
+    p = sub.add_parser("alert",
+                       help="one alert cycle: actionable conditions, one message, or silence")
+    common(p, with_target=True, with_http=True)
+    p.add_argument("--store", required=True,
+                   help="the observation store to read fleet state from (required: fleet state is "
+                        "read from a record, never guessed)")
+    p.add_argument("--inventory", required=True, metavar="PATH",
+                   help="the identity inventory of the expected fleet, e.g. data/machines.json")
+    p.add_argument("--state", required=True, metavar="PATH",
+                   help="the durable alert state (what has already been notified)")
+    p.add_argument("--outbox", required=True, metavar="DIR",
+                   help="where a message is handed to the delivery transport, with its receipts")
+    p.add_argument("--max-age", type=int, default=3600,
+                   help="seconds before an observation is stale (default 3600)")
+    p.add_argument("--ack-ttl", type=int, default=alerting.DEFAULT_ACK_TTL,
+                   help=f"seconds a message may wait for a delivery receipt before it counts as "
+                        f"undelivered (default {alerting.DEFAULT_ACK_TTL})")
+    p.add_argument("--max-refs", type=int, default=alerting.DEFAULT_MAX_REFS,
+                   help="source lines rendered per condition (default 3)")
+    p.add_argument("--max-conditions", type=int, default=alerting.DEFAULT_MAX_CONDITIONS,
+                   help="conditions rendered per message (default 10)")
+    p.add_argument("--now", default=None, help="treat this as now (for tests and replays)")
+    p.add_argument("--dry-run", action="store_true",
+                   help="decide and print, but write no state and hand over no message")
+    p.set_defaults(func=cmd_alert)
 
     args = parser.parse_args(argv)
     try:
