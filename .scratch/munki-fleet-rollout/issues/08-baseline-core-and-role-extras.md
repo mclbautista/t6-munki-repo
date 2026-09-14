@@ -6,7 +6,8 @@
 
 **Approval gate:** Cyril confirms or amends the forced core list before it takes effect. Initial proposal: TeamViewer, AnyDesk, RemotePC, Remote Desktop, Google Chrome, Telegram, Notion.
 
-**Status:** ready-for-human (the forced core is suspended; role extras and the managed-updates pairing remain)
+**Status:** ready-for-human (the forced core is suspended **and, as of 2026-09-14, published**; role extras
+and the managed-updates pairing remain).
 
 ## The forced core is empty (Cyril, 2026-09-13)
 
@@ -28,7 +29,7 @@ Two consequences that are now live decisions rather than footnotes: the 26 items
 Self Service** (they were hidden as managed installs), and a Mac missing them **will not receive
 them** until a user installs one or the core is restored.
 
-**This change is committed but not published** — see the ordering note below.
+**This change is PUBLISHED** — 2026-09-14, in the one publish that carried it together with ticket 06's two machine manifests, exactly as the ordering note below required. Served `manifests/all` now reads **0 `managed_installs` / 26 `optional_installs`**, verified over HTTP, and the drift check reports 0 findings. Full capture: `docs/evidence/06-08-publish-2026-09-14.txt`.
 
 ## Ordering: this change and ticket 06's manifests are entangled
 
@@ -41,6 +42,12 @@ that manifest is applied, so the two should not be published by this ticket's ur
 is **one publish carrying both**, because the suspension lands in the same change: those two machines
 then resolve their own manifests and inherit 0 forced / 26 optional, where publishing them *before*
 this change would have force-installed up to 26 items on both.
+
+**Discharged 2026-09-14:** that is what the publish did — one run, declared up front with three
+`--expect-file` entries, gate accepted, `written 3, unchanged 93, backed up 1`, HTTP verify `96/96 match`.
+The two machines are served their own manifests and, through `all`, inherit 0 forced / 26 optional.
+Capture: `docs/evidence/06-08-publish-2026-09-14.txt`. The pre-publish state of `manifests/all` is kept
+at `~/.munki-fleet/pre-images-20260914T092916/manifests/all` (sha256 `88a3e05f…`) as the way back.
 
 ## Acceptance criteria (revised against the current decision)
 
