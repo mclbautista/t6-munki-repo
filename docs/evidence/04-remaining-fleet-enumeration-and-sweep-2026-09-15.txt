@@ -1,0 +1,134 @@
+TICKET 04 — THE REMAINING FLEET: ENUMERATION, SWEEP, AND ONE DISPOSITION PER MACHINE
+====================================================================================
+ticket 04 of fleet-ssh-access (establish-remaining-fleet-ssh-access)
+captured 2026-09-15 00:30-00:45 +08:00 from the collector host, Cyrils-Mac-mini, 192.168.88.202
+appended by Hermes; new file, append-only from here
+
+This is ticket 04's read-only half: criteria 1 and 2. Nothing here changed a machine — no Remote Login
+was enabled, no key was authorized, no known_hosts entry was written. The runbook the operator works
+from is ~/T6-Ops-Docs/runbooks/fleet-ssh-ticket04-remaining-fleet-2026-09-15.html; the raw captures are
+~/.munki-fleet/pre-images/fleet-universe-20260915.json and remaining-fleet-sweep-20260915.json.
+
+
+1. THE WAVE, ENUMERATED FROM THE SOURCES IMMEDIATELY BEFORE EXECUTION (criterion 1)
+--------------------------------------------------------------------------------
+    role matrix (docs/role-matrix.csv)           19 identities
+    inventory  (data/machines.json)              16 rows, export_date 2026-09-13 18:37,
+                                                 identity_source docs/evidence/04-ard-system-overview-2026-09-13.txt
+    expected observation targets                 17 = the 16 inventory rows + Cyrils-Mac-mini
+
+The 17 is not arithmetic done here: it is how the collector's own loader composes a target list —
+`_inventory_targets` walks `machines` and then walks `known_absent`, adding the latter by its
+`probe_hostname` (read from munki_fleet/cli.py), which is why every earlier fleet run reports
+`targeted 17`.
+
+    already have approved access (5)
+        Sixto-5  ·  202-TOC-M4-Max  ·  202-Mac-Pro-3  ·  202A-Mac-Mini-M4  ·  202B-Mac-Studio
+
+    remaining (14)
+        201-Bay-01-Mac-Pro · 201-Bay-02-M1-Max · 201-Bay-03-M1-Ultra · 201-Viewing-Room
+        202-Jason-M2-Max · 202-Tim-M2-Max-9 · 202C-Studio-M1-Ultra · 303A-Mac-Mini-M4-Pro
+        303B iMac · 303D-Mac-Studio-M2 · T6-MacBook-M3-Pro · T6-MacBook-M4-Max
+        Angels-iMac · Cyrils-Mac-mini
+
+THE INVENTORY'S OWN RECORDED ANOMALIES, reported rather than silently normalized:
+
+    orphan_manifests   : 202B-Mac-Studio, Angels-iMac      (a manifest nothing answers to)
+    unmanaged_machines : 303A-Mac-Mini-M4-Pro, Sixto-5     (the inventory's own flag; the meaning is
+                                                            that they resolve no machine manifest)
+    known_absent       : Cyrils-Mac-mini (serial RWJ57V9PW4, Mac16,10, macOS 26.6.2, role production)
+    unassigned_roles   : none
+    findings           : name-difference 201-Bay-01-Mac-Pro-111 vs its manifest 201-Bay-01-Mac-Pro;
+                         uuid-unavailable for C02C71SCK7GF; a Bays projection name difference
+                         ("Bay 01 Mac Pro" vs "201 Bay 01 Mac Pro (63)")
+
+    Two inventory rows carry NO munki_name at all: the 303A-Mac-Mini-M4-Pro row and the Sixto-5 row
+    (serial HPXH7XG2DD / C07D317NPJJ7, addresses .190 / .151). That is why a join keyed on munki_name
+    silently drops them — and the same join is what a "17 machines" count is usually computed with.
+
+**Which machine this collector actually runs on, because it matters downstream.** This host's own
+answers: `scutil --get LocalHostName` = `Cyrils-Mac-mini`, `ipconfig getifaddr en0` = `192.168.88.202`,
+serial `RWJ57V9PW4` — so it is the inventory's known-absent fleet member, **not** the admin
+workstation. The admin workstation is `Sixto-5` (192.168.88.151, serial C07D317NPJJ7), which is what
+the `t6-mac-mini` ssh alias reaches and what ticket 05's cutover targets. Every stanza and known_hosts
+entry created in this workstream lives on Cyrils-Mac-mini and must be recreated on Sixto-5 at that
+cutover, or those destinations will fail to resolve there.
+
+
+2. THE SWEEP: ICMP, PORT 22, AND THE NAME BINDING, PER MACHINE (criterion 2's evidence)
+--------------------------------------------------------------------------------
+Method: ICMP ping, a TCP connect to 22, and the machine's own mDNS binding (`ping <unix hostname>.local`
+and read the address it answers with). The three port states are kept apart on purpose — **refused** is
+a closed service, **timeout** is no answer at all and is not evidence of anything.
+
+    machine                 inventory ip       mDNS binding      ICMP       tcp/22
+    201-Bay-01-Mac-Pro      192.168.88.171     none              no reply   timeout
+    201-Bay-02-M1-Max       192.168.88.172     none              no reply   timeout
+    201-Bay-03-M1-Ultra     192.168.254.106    none              no reply   timeout
+    201-Viewing-Room        192.168.88.170     none              replies    REFUSED
+    202-Jason-M2-Max        192.168.88.179     192.168.88.179    replies    REFUSED
+    202-Tim-M2-Max-9        192.168.88.180     192.168.88.180    replies    REFUSED
+    202C-Studio-M1-Ultra    192.168.88.181     192.168.88.181    replies    REFUSED
+    303A-Mac-Mini-M4-Pro    (no row)           192.168.88.190    no reply   timeout
+    303B iMac               192.168.88.191     none              no reply   timeout
+    303D-Mac-Studio-M2      192.168.88.193     192.168.88.193    replies    REFUSED
+    T6-MacBook-M3-Pro       192.168.88.80      none              no reply   timeout
+    T6-MacBook-M4-Max       192.168.88.100     192.168.88.82     no reply   REFUSED
+    Angels-iMac             (no row)           none              no reply   timeout
+    Cyrils-Mac-mini         (no row)           192.168.88.202    replies    OPEN (this host)
+
+**One disposition per machine, and every one is source-grounded:**
+
+    reached locally (1)   Cyrils-Mac-mini — the collector runs on it. It needs no ssh transport at
+                          all; `--local-host Cyrils-Mac-mini` is the declaration of that, and the
+                          probe reads it directly. (Read from munki_fleet/cli.py: a target reached
+                          locally travels without ssh, so no ssh record applies to it.)
+    two-part change (6)   201-Viewing-Room, 202-Jason-M2-Max, 202-Tim-M2-Max-9, 202C-Studio-M1-Ultra,
+                          303D-Mac-Studio-M2, T6-MacBook-M4-Max — ICMP answers and port 22 REFUSES, so
+                          sshd is off. Each needs Remote Login enabled AND the key authorized.
+    not reachable (6)     201-Bay-01-Mac-Pro, 201-Bay-02-M1-Max, 201-Bay-03-M1-Ultra,
+                          303A-Mac-Mini-M4-Pro, 303B iMac, T6-MacBook-M3-Pro — no ICMP, port times
+                          out. Asleep, off, or off the office network; 201-Bay-03-M1-Ultra is recorded
+                          on 192.168.254.x, a different subnet, so it is expected to stay unobserved
+                          from here.
+    no identity (1)       Angels-iMac — no serial in the role matrix, no address in any source, no
+                          mDNS binding, no ICMP, no port. Nothing can key on it until it is read at the
+                          machine. Cyril confirmed the machine exists (2026-09-13).
+
+
+3. ADDRESS AND NAME DISAGREEMENTS FOUND BY THIS SWEEP (criterion 8's input, not fixed here)
+--------------------------------------------------------------------------------
+    - **T6-MacBook-M4-Max**: the inventory says 192.168.88.100; the machine's own name binding says
+      **192.168.88.82**, and port 22 refuses there. A laptop that moves will do this again.
+    - **201-Bay-01-Mac-Pro**: its ARD row's UNIX hostname is `201-Bay-01-Mac-Pro-111` while its
+      Munki manifest is `201-Bay-01-Mac-Pro` — the inventory already carries this as a
+      `name-difference` finding, unchanged by this sweep.
+    - **201-Bay-03-M1-Ultra**: recorded on 192.168.254.106, a different subnet from every other
+      machine. Either it is off-site or the address is a VPN/other-interface artifact.
+    - **Angels-iMac / 202B-Mac-Studio**: manifests with no ARD row (`orphan_manifests`). 202B is now
+      enrolled and resolving its own manifest, so the orphan finding's *meaning* has changed for it
+      even though the ARD export still has no row — that belongs to whichever ticket owns the
+      inventory, and is not corrected by guesswork here.
+    - **303A-Mac-Mini-M4-Pro and Sixto-5**: the inventory's `unmanaged_machines` flag. 303A has no
+      ARD munki_name and no manifest; Sixto-5 has a manifest and resolves it (ticket 02's finding), so
+      the flag is at least partly historical.
+
+**A claim of mine withdrawn, in the same pass that would have shipped it further.** Ticket 03 records
+a finding that `202C-Studio-M1-Ultra.local` answered at `192.168.88.99` while the inventory carries
+`192.168.88.181`, and calls one of the two stale. Re-measured today, the name binds to **.181** — the
+inventory's own address — and the machine refuses port 22 there. So the inventory was right and the
+earlier observation was a second interface or a lease, not a stale record. Ticket 03 carries a dated
+correction; the finding does not travel to ticket 04 as a defect.
+
+
+4. WHAT THIS DOES NOT CLAIM
+--------------------------------------------------------------------------------
+    - **No access was established.** Six machines still have no sshd, six do not answer at all, one has
+      no identity, and only the local machine is readable today. Ticket 04's criteria 3-9 are open.
+    - **Nothing was changed on any machine**, so there is nothing to roll back from this file. The
+      rollback paths for the six that will change are recorded in the runbook, not here, because they
+      describe a change that has not happened yet.
+    - **The six "not reachable" machines are not proven absent** — a timeout is not evidence of
+      absence. They are recorded as not reachable at 00:40 on 2026-09-15, which is what was measured.
+    - **Cyrils-Mac-mini's own reading** is a target of the fleet run, not an access path: the run may
+      still report it partial or unobserved for its own reasons, and that would be a finding.
