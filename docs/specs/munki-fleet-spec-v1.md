@@ -262,17 +262,27 @@ at 7.3.0.5808; NAS backup jobs zero; snapshots none; admin mount absent.
 
 - Adopting an MDM, or any configuration-profile delivery channel (ADR 0005).
 - TLS for the client endpoint (ADR 0007 defers it with an explicit revisit trigger).
-- Distributing the deferred vendor suites (DaVinci Resolve, Adobe Creative Cloud, Avid Media
-  Composer, Avid Pro Tools, NTFS for Mac).
+- Distributing the deferred vendor software (DaVinci Resolve, NTFS for Mac). Adobe Creative Cloud,
+  Avid Media Composer and Avid Pro Tools left this list in the 2026-10-30 scope amendment (below).
 - Automatic remediation of client machines: no agent-initiated installs, ever.
-- AutoPkg-driven automatic package updates. Package acquisition is deliberate for now; this may
-  become its own effort once the promotion path is proven.
-- MunkiReport or Sal as a fleet telemetry product; the observation layer is bespoke and
-  deterministic (ADR 0004).
+- AutoPkg intake that promotes on its own. Intake lands in `testing`; production promotion stays a
+  recorded decision by Cyril (ADR 0003, 0008). AutoPkg itself came into scope on 2026-10-30.
+- Replacing the bespoke observation layer (ADR 0004). SAL came into scope on 2026-10-30 as a
+  reporting service on eligible Macs, alongside the observation layer rather than instead of it.
 - The T6 operations control plane's Notion/Telegram feed: unrelated ownership, though Kulit is the
   alert transport this project uses.
 - Any change to the operational mirror database `projects-mgmt.db`. The tracker entry this project
   updates is the software-project tracker, `projects.db`.
+
+## Scope Amendment (2026-10-30)
+
+Cyril, 2026-10-30, widened the scope. Now in scope: SAL reporting on eligible Macs; a designated
+admin Mac running MunkiAdmin and AutoPkg/AutoPkgr; authorized Adobe Creative Cloud (from Admin
+Console deployment packages) and Avid Media Composer and Pro Tools (from official Avid sources),
+distributed only after validation in `testing` and an approved promotion. Unchanged: Git-owned
+metadata with the pre-publish gate, deliberate promotion, the ADR 0008 approval boundaries, no MDM,
+no agent-initiated client installs, the suspended forced-install baseline, and credential-free Git.
+The SAL host and the admin Mac are not yet chosen. See `CONTEXT.md` and the amendment to ADR 0002.
 
 ## Further Notes
 
