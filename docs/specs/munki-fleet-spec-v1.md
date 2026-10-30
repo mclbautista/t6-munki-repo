@@ -68,8 +68,8 @@ For Cyril, the finished state behaves like this:
    the facility uses those Macs.
 8. As Cyril, I want approved software to stay patched on Macs where it is already installed, even
    when it is optional, so that optional stops meaning unmanaged.
-9. As Cyril, I want no deferred vendor suite offered through Munki, so that the recorded decision
-   is the state of the fleet.
+9. As Cyril, I want no vendor suite offered through Munki without a recorded promotion, so that the
+   recorded decision is the state of the fleet. (Amended 2026-10-30: no suite is deferred any more.)
 10. As Cyril, I want no test artifact visible in a client's software catalog, so that the fleet
     never sees the workshop.
 11. As Cyril, I want every item that only supports one CPU architecture to say so, so that
@@ -215,7 +215,9 @@ tree, the observation store, the NAS, or a client (ADR 0004).
 - Everything else approved for the fleet is optional; approved optional items are also listed for
   managed updates.
 - Role groups may only add optional items.
-- Deferred vendor suites appear in no manifest section.
+- A vendor suite appears in a manifest section only after a recorded promotion. (Amended 2026-10-30:
+  the deferred list is retired; `munki_fleet/drift.py` and `data/rings.json` still enforce the old
+  exclusion until a follow-up change.)
 - Pilot machines: `202-TOC-M4-Max` and Cyril's Mac mini. Pilot manifests read
   `[testing, production]`; all other machine manifests read `[production]`.
 - The Mac Mini admin workstation is a fleet member and requires a machine manifest.
@@ -262,8 +264,9 @@ at 7.3.0.5808; NAS backup jobs zero; snapshots none; admin mount absent.
 
 - Adopting an MDM, or any configuration-profile delivery channel (ADR 0005).
 - TLS for the client endpoint (ADR 0007 defers it with an explicit revisit trigger).
-- Distributing the deferred vendor software (DaVinci Resolve, NTFS for Mac). Adobe Creative Cloud,
-  Avid Media Composer and Avid Pro Tools left this list in the 2026-10-30 scope amendment (below).
+- Distributing vendor suites without a recorded promotion. DaVinci Resolve, NTFS for Mac, Adobe
+  Creative Cloud, Avid Media Composer and Avid Pro Tools were out of scope until the 2026-10-30
+  scope amendment (below), which retired the deferred list.
 - Automatic remediation of client machines: no agent-initiated installs, ever.
 - AutoPkg intake that promotes on its own. Intake lands in `testing`; production promotion stays a
   recorded decision by Cyril (ADR 0003, 0008). AutoPkg itself came into scope on 2026-10-30.
@@ -278,8 +281,8 @@ at 7.3.0.5808; NAS backup jobs zero; snapshots none; admin mount absent.
 
 Cyril, 2026-10-30, widened the scope. Now in scope: SAL reporting on eligible Macs; a designated
 admin Mac running MunkiAdmin and AutoPkg/AutoPkgr; authorized Adobe Creative Cloud (from Admin
-Console deployment packages) and Avid Media Composer and Pro Tools (from official Avid sources),
-distributed only after validation in `testing` and an approved promotion. Unchanged: Git-owned
+Console deployment packages), Avid Media Composer and Pro Tools (from official Avid sources), DaVinci
+Resolve and NTFS for Mac, distributed only after validation in `testing` and an approved promotion. Unchanged: Git-owned
 metadata with the pre-publish gate, deliberate promotion, the ADR 0008 approval boundaries, no MDM,
 no agent-initiated client installs, the suspended forced-install baseline, and credential-free Git.
 The SAL host and the admin Mac are not yet chosen. See `CONTEXT.md` and the amendment to ADR 0002.

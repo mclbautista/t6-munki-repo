@@ -65,10 +65,11 @@ Two failures this project exists to prevent, in order:
   tree mixed `.pkginfo` and `.plist` and split items into nested `pkgsinfo/apps/**` directories,
   which made the layout itself a source of duplicate entries. Nothing nests under `pkgsinfo/`
   now, and `.plist` is not a pkginfo extension here.
-- **Deferred software:** vendor software explicitly not distributed by Munki (DaVinci Resolve,
-  NTFS for Mac). Adobe Creative Cloud, Avid Media Composer and Avid Pro Tools were deferred until
-  the 2026-10-30 scope amendment and are now **in scope as authorized, validated, deliberately
-  promoted packages** (see Scope amendment below).
+- **Deferred software (retired term):** DaVinci Resolve, Adobe Creative Cloud, Avid Media Composer,
+  Avid Pro Tools and NTFS for Mac were deferred until the 2026-10-30 scope amendment. All five are
+  now **in scope as authorized, validated, deliberately promoted packages** (see Scope amendment
+  below). `munki_fleet/drift.py` (`DEFERRED_SUITES`) and `data/rings.json` still enforce the old
+  exclusion until a follow-up change.
 - **SAL:** the central reporting service that eligible Macs report to alongside Munki. Host not
   yet chosen; it is picked only after capacity, persistence, backup, security and supportability
   checks. Replaces the earlier exclusion of MunkiReport/Sal; the bespoke observation layer
@@ -125,7 +126,7 @@ Two failures this project exists to prevent, in order:
 
 ## Scope amendment (2026-10-30)
 
-Requested by Cyril on 2026-10-30. Adds to scope: SAL reporting on eligible Macs, a designated
+Requested by Cyril on 2026-10-30. Adds to scope: all five formerly deferred titles, SAL reporting on eligible Macs, a designated
 admin Mac running MunkiAdmin and AutoPkg/AutoPkgr, and authorized Adobe and Avid (Media Composer,
 Pro Tools) distribution. Unchanged: Git-owned metadata with gated publishing (ADR 0001, 0009),
 deliberate promotion (ADR 0003), the approval boundaries of ADR 0008, no MDM (ADR 0005), and
@@ -140,8 +141,9 @@ exclusions and need matching amendments before implementation of the new scope.
 - No package payloads, credentials, or keys in Git.
 - No LLM writes to the metadata tree, the observation store, the NAS, or a client machine. An
   LLM may render a bounded, read-only summary from the fleet view and nothing else.
-- Munki never distributes the deferred vendor software, and never without a recorded promotion.
-- Adobe, Avid and AutoPkg-acquired items are distributed only after validation in `testing` and a
+- Munki never distributes a vendor suite (Adobe, Avid, DaVinci Resolve, NTFS for Mac) without a
+  recorded promotion.
+- Adobe, Avid, DaVinci Resolve, NTFS for Mac and AutoPkg-acquired items are distributed only after validation in `testing` and a
   promotion Cyril approves; no blanket latest-version upgrades on editing machines, no unapproved
   OS upgrades, and the suspended forced-install baseline is not re-enabled by this amendment.
 - A pkginfo lives at `pkgsinfo/<Item>-<version>.pkginfo`. Nested pkginfo directories and `.plist`
