@@ -65,8 +65,19 @@ Two failures this project exists to prevent, in order:
   tree mixed `.pkginfo` and `.plist` and split items into nested `pkgsinfo/apps/**` directories,
   which made the layout itself a source of duplicate entries. Nothing nests under `pkgsinfo/`
   now, and `.plist` is not a pkginfo extension here.
-- **Deferred software:** vendor suites explicitly not distributed by Munki (DaVinci Resolve,
-  Adobe Creative Cloud, Avid Media Composer, Avid Pro Tools, NTFS for Mac).
+- **Deferred software:** vendor software explicitly not distributed by Munki (DaVinci Resolve,
+  NTFS for Mac). Adobe Creative Cloud, Avid Media Composer and Avid Pro Tools were deferred until
+  the 2026-10-30 scope amendment and are now **in scope as authorized, validated, deliberately
+  promoted packages** (see Scope amendment below).
+- **SAL:** the central reporting service that eligible Macs report to alongside Munki. Host not
+  yet chosen; it is picked only after capacity, persistence, backup, security and supportability
+  checks. Replaces the earlier exclusion of MunkiReport/Sal; the bespoke observation layer
+  (ADR 0004) is not removed by this amendment.
+- **AutoPkg/AutoPkgr:** package intake tooling on the designated admin Mac (with MunkiAdmin), not
+  on every workstation. Intake lands items in `testing` only; it never promotes.
+- **Entitlement authority:** Adobe for Adobe titles (packages from authorized Admin Console
+  deployment packages); Avid for Media Composer and Pro Tools (official Avid sources). Vendor
+  sign-in may stay manual. No credentials, license keys or activation details enter Git.
 - **Probe:** the read-only client-side script (`munki_fleet/probe_client.sh`) that reports one
   machine's Munki state. One artefact, run over ssh or locally; it writes nothing and needs no root.
 - **Collector:** the deterministic writer that runs the probe over a set of machines and appends the
@@ -112,6 +123,15 @@ Two failures this project exists to prevent, in order:
 - **Kulit:** the T6 Telegram bot that owns alert delivery. Munki monitoring routes through it.
   Kulit delivers and does not decide: what is actionable is computed here (ADR 0011).
 
+## Scope amendment (2026-10-30)
+
+Requested by Cyril on 2026-10-30. Adds to scope: SAL reporting on eligible Macs, a designated
+admin Mac running MunkiAdmin and AutoPkg/AutoPkgr, and authorized Adobe and Avid (Media Composer,
+Pro Tools) distribution. Unchanged: Git-owned metadata with gated publishing (ADR 0001, 0009),
+deliberate promotion (ADR 0003), the approval boundaries of ADR 0008, no MDM (ADR 0005), and
+recovery safeguards. `docs/specs/munki-fleet-spec-v1.md` and ADR 0002 still carry the old
+exclusions and need matching amendments before implementation of the new scope.
+
 ## Boundaries
 
 - This repository never writes to a Mac. Clients initiate their own checks and installs.
@@ -120,7 +140,10 @@ Two failures this project exists to prevent, in order:
 - No package payloads, credentials, or keys in Git.
 - No LLM writes to the metadata tree, the observation store, the NAS, or a client machine. An
   LLM may render a bounded, read-only summary from the fleet view and nothing else.
-- Munki never distributes the deferred vendor suites, and never without a recorded promotion.
+- Munki never distributes the deferred vendor software, and never without a recorded promotion.
+- Adobe, Avid and AutoPkg-acquired items are distributed only after validation in `testing` and a
+  promotion Cyril approves; no blanket latest-version upgrades on editing machines, no unapproved
+  OS upgrades, and the suspended forced-install baseline is not re-enabled by this amendment.
 - A pkginfo lives at `pkgsinfo/<Item>-<version>.pkginfo`. Nested pkginfo directories and `.plist`
   pkginfos are the inherited layout defect and stay retired; a reintroduction is a review failure,
   not a style choice.
