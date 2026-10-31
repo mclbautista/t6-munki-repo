@@ -80,3 +80,26 @@ updated automatically, it is not removed. Two consequences to know:
 - **A machine missing them will not get them.** Machines without the remote-support tools stay
   without them until a user installs them from Self Service or the core is restored.
 
+
+## Amendment: the deferred list is retired (2026-10-30)
+
+**Superseded wording** (Decision, deferred paragraph): "The **deferred vendor suites** (DaVinci
+Resolve, Adobe Creative Cloud, Avid Media Composer, Avid Pro Tools, NTFS for Mac) are not present in
+any manifest section. Staged payloads for deferred software may exist on the NAS, but no manifest may
+reference them."
+
+Cyril, 2026-10-30, widened the project scope. **No suite is deferred any more**: Adobe Creative
+Cloud, Avid Media Composer, Avid Pro Tools, DaVinci Resolve and NTFS for Mac are all in scope.
+
+What replaces the rule for these titles: they may appear in a manifest only as **role extras
+(`optional_installs`)**, and only after the package is validated in `testing` and Cyril approves the
+promotion (ADR 0003, 0008). They never enter `managed_installs`; the baseline core stays empty and is
+not re-enabled by this amendment. Eligible versions are set per OS and architecture, with no blanket
+latest-version upgrades on editing machines. Adobe remains the entitlement authority (packages from
+authorized Admin Console deployment packages); Avid titles come from official Avid sources. Vendor
+sign-in may stay manual, and no credential, license key or activation detail enters Git.
+
+Until the first validated package is promoted, no manifest references these titles, so nothing in the
+served metadata changes by this amendment. `DEFERRED_SUITES` in `munki_fleet/drift.py`, the two
+DaVinci `promotion_exclusions` in `data/rings.json`, and ticket 08's no-deferred-suite criterion still
+encode the old rule and need a follow-up change; this amendment does not touch code or data.
