@@ -287,6 +287,58 @@ metadata with the pre-publish gate, deliberate promotion, the ADR 0008 approval 
 no agent-initiated client installs, the suspended forced-install baseline, and credential-free Git.
 The SAL host and the admin Mac are not yet chosen. See `CONTEXT.md` and the amendment to ADR 0002.
 
+## Implementation Plan for the 2026-10-30 Scope
+
+The amendment above is a statement of intent. This section turns it into work. Nothing here
+changes served metadata or touches a Mac; each item is a follow-up change that goes through
+review, and anything fleet-facing keeps its ADR 0008 approval gate.
+
+### Additional user stories
+
+38. As Cyril, I want Adobe, Avid, DaVinci Resolve and NTFS for Mac to flow through the same
+    `testing` → pilot → `production` path as every other item, so that a vendor suite is never a
+    special case that bypasses promotion.
+39. As Cyril, I want each vendor package traceable to its authorised source (Adobe Admin Console
+    deployment package, official Avid source, vendor download), so that entitlement is auditable
+    without any licence key entering Git.
+40. As Cyril, I want AutoPkg intake to land only in `testing`, so that automation can fetch updates
+    but never promote them.
+41. As Cyril, I want eligible Macs to report to SAL alongside the observation layer, so that I have a
+    second, independent view of fleet state.
+42. As Cyril, I want the inventory to agree across the network scan, Notion Bays and Munki, so that
+    "which Mac is which" has one reconciled answer and Notion stops drifting from reality.
+43. As Cyril, I want to know which Macs actually have a Munki client, so that a manifest on file is
+    never mistaken for an enrolled machine.
+
+### Code and data that still enforce the old exclusion
+
+| Where | Old behaviour | Required change |
+|---|---|---|
+| `munki_fleet/drift.py` `DEFERRED_SUITES` | flags Resolve, Adobe, Avid and NTFS items as deferred | retire the constant; replace with a check that any vendor-suite item in `production` has a promotion record |
+| `data/rings.json` `promotion_exclusions` | blocks `davinci-resolve-studio` and `davinci-resolve-project-server` from production | remove both exclusions; promotion becomes a normal recorded decision |
+| ticket 08, no-deferred-suite criterion | asserts no suite in any manifest | restate as "no suite in a manifest without a recorded promotion" |
+| ADR 0002 | amended 2026-10-30 | no change needed |
+
+Tests that assert the old exclusion must be rewritten, not deleted, so the replacement invariant
+(promotion record required) is covered.
+
+### Work breakdown (proposed tickets, in dependency order)
+
+1. **Enrolment backlog** (unblocks 06, 16, 17): per machine in the role matrix, record whether a
+   Munki client exists and which manifest it resolves. Rides on the ticket 04 access path.
+2. **Retire the deferred-suite enforcement** (table above). Pure repo change, fully testable offline.
+3. **Reconcile inventory**: compare Piolo's audit, the network scan, Notion Bays and
+   `data/machines.json`; produce a discrepancy list. Notion corrections are proposed to Cyril first.
+4. **Choose the SAL host and the designated admin Mac**, then write the ADR (capacity, persistence,
+   backup, security, supportability).
+5. **Vendor package intake procedure** per title: source, validation in `testing`, pilot evidence,
+   promotion record. Adobe and Avid sign-in may stay manual.
+6. **AutoPkg/MunkiAdmin on the admin Mac**, intake to `testing` only.
+7. **TOC pilot with Munki and SAL**, then packaging and enrolment waves, then recovery and handover.
+
+Open decisions blocking items 4 to 7: SAL host, designated admin Mac, ADR 0011 acceptance, and the
+ticket 07 production catalog decision.
+
 ## Further Notes
 
 - The previously recorded plan for this project (tracker entry `munki-repo-macmini`) is superseded
