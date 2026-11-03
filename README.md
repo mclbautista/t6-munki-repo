@@ -23,3 +23,9 @@ This repository is configured for the Matt Pocock engineering skills pack:
 - Tickets live under `.scratch/<feature>/issues/`, numbered in dependency order.
 - Tickets declare `Blocked by` edges; work the frontier (tickets whose blockers are done).
 - Verify acceptance criteria against the live system; a command exit code is not evidence.
+
+## Workflow
+
+Work moves through five separate stages: grill, spec, tickets, implement, code review. Finish one before starting the next. Work is tracked in GitHub Issues and sub-issues (spec as one issue, tickets as its sub-issues). Agent instructions: see `the Agent skills section above`.
+
+The tracker named above is local Markdown for now. The stages apply either way, and GitHub Issues is the target tracker.
