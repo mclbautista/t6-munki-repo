@@ -34,7 +34,7 @@ def writeback(client, data_source, inventory_path, rings_path, *, apply=False):
     rows = [(page, BaysRow.from_page(page)) for page in pages]
     planned = []
     absent = [{'unix_hostname': item.get('probe_hostname'), 'computer_name': item.get('name'),
-               'serial': item.get('serial')} for item in inventory.get('known_absent', [])
+               'serial': item.get('serial'), '_known_absent': True} for item in inventory.get('known_absent', [])
               if isinstance(item, dict)]
     for machine in inventory['machines'] + absent:
         candidates = (machine.get('unix_hostname'), machine.get('computer_name'))
@@ -54,8 +54,9 @@ def writeback(client, data_source, inventory_path, rings_path, *, apply=False):
         page, row = matches[0]
         print(f"{name}: Bays {row.name!r} ({page['id']}) {page.get('url', '')}")
         manifest = machine.get('munki_name')
+        known_pilot = machine.get('_known_absent') and machine.get('unix_hostname') in pilots
         desired = {'serial_number': machine.get('serial'), 'munki_manifest': manifest,
-                   'ring': ('pilot' if manifest in pilots else 'production')
+                   'ring': 'pilot' if known_pilot else ('pilot' if manifest in pilots else 'production')
                    if manifest and complete_pilots else None}
         changes = {}
         for field, new in desired.items():

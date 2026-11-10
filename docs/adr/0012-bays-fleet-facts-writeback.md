@@ -12,8 +12,10 @@ Bays as a projection rather than a source of machine identity.
 
 Munki tooling may use `t6.notion` to write three known facts to an existing matching Bays row:
 `Serial Number` from the identity inventory, `Munki Manifest` from the machine manifest, and `Ring`
-from the declared pilot ring (ADR 0003). It must use the identity check's matching rules, skip
-unmatched or ambiguous machines instead of creating rows, and leave unknown fields untouched.
+from the declared pilot ring (ADR 0003). It uses the identity check's name normalization and candidate
+names but, unlike that read-only check's first-match precedence, refuses any competing normalized
+matches. It skips unmatched or ambiguous machines instead of creating rows, and leaves unknown fields
+untouched.
 
 A dry run is the default and reports the match and old and new values. An explicit `--apply` is
 required to write; unchanged fields must not be written. The identity check continues to read the

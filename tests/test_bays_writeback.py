@@ -158,11 +158,12 @@ def test_known_absent_probed_machine_can_write_its_serial_without_inventing_mani
     fake, inventory, rings = setup_case(tmp_path, machines=[])
     inventory.write_text(json.dumps({'machines': [], 'known_absent': [
         {'name': 'Bay-1', 'probe_hostname': 'Bay-1', 'serial': 'S1'}]}))
-    page = add_bay(fake)
+    page = add_bay(fake, ring='production')
     assert run(fake, inventory, rings, '--apply') == 0
     row = BaysRow.from_page(fake.page(page['id']))
     assert row.serial_number == 'S1'
     assert row.munki_manifest == 'old-manifest'
+    assert row.ring == 'pilot'
 
 
 def test_incomplete_pilot_declaration_does_not_write_production(tmp_path):
