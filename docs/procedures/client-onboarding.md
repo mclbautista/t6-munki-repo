@@ -7,9 +7,23 @@ before each step, and what "correct" looks like after it.
 **Tooling requirements, stated so nothing fails on a tool version.** At the machine: macOS's own
 `/bin/bash` (3.2.57 is what the fleet runs; nothing here needs bash 4) and macOS built-ins only —
 `pkgutil`, `installer`, `defaults`, `scutil`, `plutil`, `curl`, `launchctl`, `sw_vers`, `uname`,
-`system_profiler`. **No Python, no Homebrew, no Munki admin tools** are required on the client. The
-*collector* side is a different rule: it runs `/usr/bin/python3` (CommandLineTools) and never
-invokes Python on the machine being onboarded.
+`system_profiler`. **No Python, no Homebrew, no Munki admin tools** are required on the client. On
+the admin Mac Sixto-5, use the approved python.org interpreter
+`/Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11` for `munki-fleet` and its
+collector; do not use the Command Line Tools `/usr/bin/python3`, which is Python 3.9 on that Mac.
+The collector never invokes Python on the machine being onboarded. Other collector hosts need their
+own Python 3.11+ interpreter; this Sixto-5 path is not a claim about those hosts.
+
+Verify the admin interpreter with:
+
+```sh
+/Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11 --version
+```
+
+Select that interpreter explicitly when creating the environment for `munki-fleet`; installing its
+dependencies and changing an existing job or environment are separate steps. Munki's own tools use
+their own runtime; do not replace it as part of this procedure. See [issue #5](https://github.com/mclbautista/t6-munki-repo/issues/5)
+for approval and observed versions.
 
 **No MDM** (ADR 0005). This is driven over SSH plus one privileged step at the machine.
 
