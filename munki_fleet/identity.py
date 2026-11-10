@@ -8,7 +8,9 @@ Three sources, each with its own authority, and they do not agree:
 * **State of record** for a machine's hardware UUID and architecture is a *probe of
   the machine itself* (ticket 05's probe). Where a probe exists, it wins.
 * **The T6 operational database's `bays` records are a projection** (ADR 0004), read
-  here only to be *reconciled*: differences are reported, never applied.
+  here only to be *reconciled*: this identity check reports differences and does not apply
+  them. Separate deterministic tooling may write selected facts to matched Bays records
+  under ADR 0012; Bays remains a projection, not the identity source.
 * The **recorded role matrix** (`docs/role-matrix.csv`) is the outside check on the
   manifest tree. Without it a machine's role is the role group its own manifest names —
   derived from the same tree it would be checked against — so a manifest naming the

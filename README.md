@@ -13,6 +13,28 @@ deterministic tooling that observes fleet state.
 Read `CONTEXT.md` before planning or changing behaviour, then the applicable ADR under
 `docs/adr/` and the specification under `docs/specs/`.
 
+## Dependency
+
+`munki-fleet` requires Python 3.11 or newer and the `notion` extra of
+[`t6-core`](https://github.com/mclbautista/t6-core), pinned to its `v0.3.0` release tag. It does
+not install the other `t6` extras. The approved interpreter on Sixto-5 is recorded in
+`docs/procedures/client-onboarding.md`.
+
+## Bays write-back
+
+Provide the Notion integration token in `NOTION_TOKEN` without placing it in a command or Git, and
+pass the verified Bays **data source ID** with `--data-source`. From the repository root:
+
+```sh
+python -m munki_fleet.cli bays-writeback --data-source "$BAYS_DATA_SOURCE_ID"
+```
+
+The command defaults to a preview; add `--apply` only after reviewing the matched rows and changes
+and obtaining the required approval. Unmatched, ambiguous and changed-since-query rows are skipped.
+The caller must verify the data source ID: a matching schema alone does not prove the source is Bays.
+The tool re-reads each row before writing, but this is not an atomic concurrency guard. Review the
+age and accuracy of the inventory and ring declarations before applying, and read back the result.
+
 ## Agent skills
 
 This repository is configured for the Matt Pocock engineering skills pack:
