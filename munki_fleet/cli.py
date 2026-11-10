@@ -68,6 +68,7 @@ class Deps:
     target_factory: Callable[[str], object] = parse_target
     catalog_runner: Optional[Callable] = None
     probe_runner: Optional[Callable] = None
+    notion_client_factory: Optional[Callable] = None
 
 
 def tracked_paths(metadata_root: str, include_generated: bool = True) -> List[str]:
@@ -639,6 +640,25 @@ def cmd_promotion_plan(args, deps: Deps) -> int:
     return 0
 
 
+def cmd_bays_writeback(args, deps) -> int:
+    from .bays_writeback import writeback
+    from t6.notion import NotionClient, NotionError
+
+    factory = deps.notion_client_factory
+    if factory is None:
+        token = os.environ.get("NOTION_TOKEN")
+        if not token:
+            print("error: NOTION_TOKEN is required", file=sys.stderr)
+            return 2
+        factory = lambda: NotionClient(token)
+    try:
+        with factory() as client:
+            return writeback(client, args.data_source, args.inventory, args.rings, apply=args.apply)
+    except (OSError, ValueError, KeyError, NotionError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+
 def main(argv=None, deps: Optional[Deps] = None) -> int:
     deps = deps or Deps()
     parser = argparse.ArgumentParser(prog="munki_fleet.cli", description=__doc__)
@@ -653,6 +673,12 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
                            help="client endpoint, e.g. http://192.168.88.188/MunkiRepo")
 
     p = sub.add_parser("files"); common(p); p.set_defaults(func=cmd_files)
+    p = sub.add_parser("bays-writeback", help="preview or apply fleet identity facts to Bays")
+    p.add_argument("--inventory", default="data/machines.json")
+    p.add_argument("--rings", default="data/rings.json")
+    p.add_argument("--data-source", required=True, help="Notion Bays data source ID")
+    p.add_argument("--apply", action="store_true", help="write changes (default: dry run)")
+    p.set_defaults(func=cmd_bays_writeback)
     p = sub.add_parser("build"); common(p); p.set_defaults(func=cmd_build)
     p = sub.add_parser("publish"); common(p, with_target=True)
     p.add_argument("--backup-dir", default=None, help="keep the target's pre-images here")

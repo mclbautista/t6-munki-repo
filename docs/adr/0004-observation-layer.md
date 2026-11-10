@@ -70,3 +70,9 @@ instead: the probe of the machine, which this ADR already makes the source of st
 decision is unchanged** — identity still comes from the export, the Bays records are still only a
 projection, and the probe is still the machine's own word — only the description of what the
 export contains is corrected. Accepted by Cyril on 2026-09-13.
+
+## Amendment: Bays write-back
+
+ADR 0012 permits deterministic Munki tooling to write selected fleet facts to matched Bays rows.
+The Bays projection remains a cross-check, not the identity source, and the observation store and
+fleet view remain subject to the read/write boundaries above. Unknown values are not cleared.
