@@ -14,8 +14,9 @@
 # TOOLING REQUIREMENTS (stated, so this does not fail on a tool version)
 #   macOS's own /bin/bash (3.2 is fine; nothing here needs bash 4) and macOS built-ins only:
 #   pkgutil, installer, defaults, scutil, plutil, curl, launchctl, sw_vers, uname. No Python, no
-#   Homebrew, no Munki admin tools. The COLLECTOR side is a different story: it runs
-#   /usr/bin/python3 (CommandLineTools) per the repository's rule, and this script never invokes it.
+#   Homebrew, no Munki admin tools. The COLLECTOR side is separate: on Sixto-5 use the approved
+#   /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11 for munki-fleet; this script
+#   never invokes it. Other collector hosts need their own Python 3.11+ interpreter.
 #
 # USAGE — as root, at the machine:
 #   sudo bash onboard-munki-client.sh --pkg ~/munki-bootstrap/munkitools-7.3.0.5808.pkg
