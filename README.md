@@ -39,9 +39,10 @@ age and accuracy of the inventory and ring declarations before applying, and rea
 
 This repository is configured for the Matt Pocock engineering skills pack:
 
-- Issue tracker: local Markdown — `docs/agents/issue-tracker.md`
+- Issue tracker: GitHub Issues for specs and tickets from spec #3 on; local Markdown for the
+  earlier rollout tickets — `docs/agents/issue-tracker.md`
 - Triage labels: `docs/agents/triage-labels.md`
 - Domain docs: `docs/agents/domain-docs.md`
-- Tickets live under `.scratch/<feature>/issues/`, numbered in dependency order.
+- Local tickets live under `.scratch/<feature>/issues/`, numbered in dependency order.
 - Tickets declare `Blocked by` edges; work the frontier (tickets whose blockers are done).
 - Verify acceptance criteria against the live system; a command exit code is not evidence.

@@ -1,6 +1,8 @@
 # Issue Tracker
 
-This repository uses a local Markdown issue tracker.
+This repository has two trackers. Specs and tickets from spec #3 on (Bays write-back, the Resolve
+scan job) live in GitHub Issues for `mclbautista/t6-munki-repo`. The earlier features
+(`munki-fleet-rollout`, `fleet-ssh-access`) use the local Markdown tracker described below.
 
 ## Workflow
 
