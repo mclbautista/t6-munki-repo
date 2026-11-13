@@ -1,6 +1,6 @@
 # 0003: Two catalogs, three rings, explicit promotions
 
-- **Status:** Accepted (2026-09-13)
+- **Status:** Accepted (2026-09-13), amended 2026-11-13 (see below: every Mac reads `testing` for now)
 
 ## Context
 
@@ -43,3 +43,25 @@ The pilot ring is machine-readable in `data/rings.json`, which names the two mac
 name came from. It exists because the promotion path has to decide who tests first, and prose in an
 ADR cannot be read by the plan. **If the file and this decision disagree, this ADR wins and the file
 is the bug.**
+
+## Amendment: every Mac reads `testing` until Cyril decides otherwise (2026-11-13)
+
+**Superseded wording** (Decision, Rings and manifests): "The pilot machines are the only Macs that
+read `testing`." and "Machine manifests for pilot machines declare `catalogs: [testing, production]`;
+every other machine manifest declares `catalogs: [production]`."
+
+Cyril, 2026-11-13, confirmed that every manifest being on `testing` is intentional for now. Until
+Cyril decides to move the fleet to `production`, **every Mac reads `testing`**, and the state this
+ADR's Context recorded (every manifest declares `catalogs: [testing]`) is the accepted state, not a
+defect. The move to `production` is Cyril's decision and is not made by this amendment.
+
+What still holds: the two catalogs, a pkginfo's own `catalogs` array as the record of membership,
+the pilot machines as the place an item is verified first, and promotion and demotion as explicit
+steps that need Cyril's approval (ADR 0008). What changes in practice: while every Mac reads
+`testing`, an import reaches the whole fleet at its next check, so the "only two machines" limit in
+Consequences does not apply until the fleet moves.
+
+When Cyril decides to move the fleet, that decision restores the superseded wording (pilots on
+`[testing, production]`, everyone else on `[production]`) or records a different split. The
+`_why_it_matters` note in `data/rings.json` still describes the old rule; this amendment does not
+touch code or data.
