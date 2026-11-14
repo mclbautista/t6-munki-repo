@@ -68,8 +68,9 @@ Two failures this project exists to prevent, in order:
 - **Deferred software (retired term):** DaVinci Resolve, Adobe Creative Cloud, Avid Media Composer,
   Avid Pro Tools and NTFS for Mac were deferred until the 2026-10-30 scope amendment. All five are
   now **in scope as authorized, validated, deliberately promoted packages** (see Scope amendment
-  below). `munki_fleet/drift.py` (`DEFERRED_SUITES`) and `data/rings.json` still enforce the old
-  exclusion until a follow-up change.
+  below). The old exclusion is gone from the code: `DEFERRED_SUITES` is removed from
+  `munki_fleet/drift.py` and `data/rings.json` declares no `promotion_exclusions`. These items are
+  checked like any other approved item, and reach `production` only through a recorded promotion.
 - **SAL:** the central reporting service that eligible Macs report to alongside Munki. Host not
   yet chosen; it is picked only after capacity, persistence, backup, security and supportability
   checks. Replaces the earlier exclusion of MunkiReport/Sal; the bespoke observation layer

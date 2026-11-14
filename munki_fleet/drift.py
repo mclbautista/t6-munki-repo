@@ -35,7 +35,6 @@ DRIFT_DIRS = ("pkgsinfo", "manifests", "icons", "catalogs")
 MANIFEST_SECTIONS = ("managed_installs", "optional_installs", "managed_updates",
                      "managed_uninstalls", "forced_installs", "default_installs")
 ITEM_EXTENSIONS = (".pkginfo", ".plist")
-DEFERRED_SUITES = ("davinci-resolve", "Adobe", "Avid", "NTFS")
 
 
 def repo_url(base: str, relpath: str) -> str:

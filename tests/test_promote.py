@@ -333,3 +333,9 @@ def test_write_pkginfo_catalogs_preserves_the_rest_of_the_plist(tmp_path):
     assert after["catalogs"] == ["production"]
     before.pop("catalogs"), after.pop("catalogs")
     assert before == after, "only the catalogs array may change"
+
+
+def test_the_repository_ring_file_excludes_no_vendor_suite():
+    """CONTEXT.md: the five formerly deferred titles are in scope; promotion needs a record instead."""
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    assert declared_exclusions(here) == []
