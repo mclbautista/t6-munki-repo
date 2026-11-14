@@ -7,7 +7,7 @@ name = "munki-fleet"
 version = "0.1.0"
 description = "Build, publish and verify the T6 Munki repository metadata (see docs/adr/0001)"
 requires-python = ">=3.11"
-dependencies = ["t6[notion] @ git+https://github.com/mclbautista/t6-core.git@v0.3.0"]
+dependencies = ["t6[notion] @ git+https://github.com/mclbautista/t6-core.git@7c417fefa54ba4805a7990d2a0bbc73ce9d33172"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
