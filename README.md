@@ -29,7 +29,9 @@ pass the verified Bays **data source ID** with `--data-source`. From the reposit
 python -m munki_fleet.cli bays-writeback --data-source "$BAYS_DATA_SOURCE_ID"
 ```
 
-The command defaults to a preview; add `--apply` only after reviewing the matched rows and changes
+Add `--store ~/.munki-fleet/observations.jsonl` to also write the client version, OS version and
+last check-in from the newest observation per machine; observations older than `--max-age` (3600 s)
+are not written. The command defaults to a preview; add `--apply` only after reviewing the matched rows and changes
 and obtaining the required approval. Unmatched, ambiguous and changed-since-query rows are skipped.
 The caller must verify the data source ID: a matching schema alone does not prove the source is Bays.
 The tool re-reads each row before writing, but this is not an atomic concurrency guard. Review the

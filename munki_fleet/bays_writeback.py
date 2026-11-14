@@ -1,78 +1,114 @@
-"""Project known Munki identity facts to existing Bays pages."""
+"""Project known Munki identity facts to Bays through `t6.fleet`.
+
+This module only builds the facts (from this repo's inventory and rings data) and prints the
+plan. Matching, the dry run, the write and the Bays field mapping are `t6.fleet`'s.
+"""
 from __future__ import annotations
 
 import json
-import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
-from t6.notion.generated import BaysRow
-from .identity import normalise_name
+from t6.domain import Ring
+from t6.fleet import Fleet, MachineFacts
+from t6.fleet.bays import OBSERVED
+from t6.notion.writes import Ambiguous, Rejected
 
 
-def writeback(client, data_source, inventory_path, rings_path, *, apply=False):
+def _instant(text, utc_if_naive):
+    """A report or log time as an aware datetime. The report writes UTC without an offset; the
+    log writes local time with one. Anything else is unknown, not guessed."""
+    if not text:
+        return None
+    try:
+        when = datetime.fromisoformat(str(text).strip())
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        if not utc_if_naive:
+            return None
+        when = when.replace(tzinfo=timezone.utc)
+    return when
+
+
+def observed_facts(entry):
+    """The observed facts from one `probe.latest_per_machine` entry, and why any are missing.
+
+    Only what the observation actually carries is returned (a partial observation writes only
+    its own fields); `Last Check-in` is Munki's own last run time, not when the probe ran.
+    """
+    if entry is None:
+        return {}, 'no observation'
+    observation = entry['observation']
+    if observation.get('outcome') == 'unobserved':
+        return {}, f"unobserved ({observation.get('reason') or 'unknown reason'})"
+    machine = observation.get('machine') or {}
+    check = (observation.get('state') or {}).get('last_check') or {}
+    last = (_instant(check.get('report_ended'), True) or _instant(check.get('log_run_ended'), False)
+            or _instant(check.get('log_run_started'), False))
+    facts = {'munki_client_version': machine.get('munki_version') or None,
+             'os_version': machine.get('os_vers') or None, 'last_check_in': last,
+             'observed_at': _instant(observation.get('observed_at'), False)}
+    return facts, ('stale observation' if entry.get('stale') else None)
+
+
+def machine_facts(inventory_path, rings_path, observations=None):
     inventory = json.loads(Path(inventory_path).read_text(encoding='utf-8'))
     rings = json.loads(Path(rings_path).read_text(encoding='utf-8'))
     pilot_entries = rings['pilots']
     pilots = {entry['munki_name'] for entry in pilot_entries if entry.get('munki_name')}
     complete_pilots = bool(pilot_entries) and all(entry.get('munki_name') for entry in pilot_entries)
-    schema = client.retrieve_data_source(data_source).get('properties', {})
-    for name, kind in {'Name': 'title', 'Hostname': 'rich_text', 'Serial Number': 'rich_text',
-                       'Munki Manifest': 'rich_text', 'Ring': 'select'}.items():
-        if schema.get(name, {}).get('type') != kind:
-            raise ValueError(f'data source {data_source}: {name} must be {kind}')
-    pages = client.query_data_source(data_source)
-    def canonical(value):
-        try:
-            return uuid.UUID(value)
-        except (ValueError, TypeError, AttributeError):
-            return value
-    for page in pages:
-        parent = page.get('parent') or {}
-        if (parent.get('type') != 'data_source_id' or
-                canonical(parent.get('data_source_id')) != canonical(data_source)):
-            raise ValueError(f'page {page.get("id")} is not in data source {data_source}')
-    rows = [(page, BaysRow.from_page(page)) for page in pages]
-    planned = []
     absent = [{'unix_hostname': item.get('probe_hostname'), 'computer_name': item.get('name'),
-               'serial': item.get('serial'), '_known_absent': True} for item in inventory.get('known_absent', [])
-              if isinstance(item, dict)]
+               'serial': item.get('serial'), '_known_absent': True}
+              for item in inventory.get('known_absent', []) if isinstance(item, dict)]
+    facts = []
+    reasons = {}
     for machine in inventory['machines'] + absent:
-        candidates = (machine.get('unix_hostname'), machine.get('computer_name'))
-        keys = {normalise_name(value) for value in candidates if value}
-        matches = [(page, row) for page, row in rows if any(
-            normalise_name(value) in keys for value in (row.hostname, row.name) if value)]
-        planned.append((machine, matches))
-    claimed = {}
-    for _, matches in planned:
-        for page, _ in matches:
-            claimed[page['id']] = claimed.get(page['id'], 0) + 1
-    for machine, matches in planned:
-        name = machine.get('unix_hostname') or machine.get('computer_name') or '<unknown>'
-        if len(matches) != 1 or claimed[matches[0][0]['id']] > 1:
-            print(f"{name}: {'ambiguous' if matches else 'unmatched'}; skipped")
+        names = tuple(v for v in (machine.get('unix_hostname'), machine.get('computer_name')) if v)
+        if not names:
             continue
-        page, row = matches[0]
-        print(f"{name}: Bays {row.name!r} ({page['id']}) {page.get('url', '')}")
         manifest = machine.get('munki_name')
-        known_pilot = machine.get('_known_absent') and machine.get('unix_hostname') in pilots
-        desired = {'serial_number': machine.get('serial'), 'munki_manifest': manifest,
-                   'ring': 'pilot' if known_pilot else ('pilot' if manifest in pilots else 'production')
-                   if manifest and complete_pilots else None}
-        changes = {}
-        for field, new in desired.items():
-            old = getattr(row, field)
-            label = BaysRow.notion_name(field)
-            print(f"  {label}: {old!r} -> {new!r}" if new else
-                  f"  {label}: {old!r} -> unknown (skipped)")
-            if new and new != old:
-                changes[field] = new
-        if apply and changes:
-            current = client.retrieve_page(page['id'])
-            if (current.get('parent') != page.get('parent') or
-                    current.get('archived') or current.get('in_trash') or
-                    any(current.get('properties', {}).get(key) != page.get('properties', {}).get(key)
-                        for key in ('Name', 'Hostname', 'Serial Number', 'Munki Manifest', 'Ring'))):
-                print(f"{name}: Bays row changed since query; skipped")
-                continue
-            client.update_page(page['id'], {'properties': BaysRow.to_properties(**changes)})
-    return 0
+        if machine.get('_known_absent') and machine.get('unix_hostname') in pilots:
+            ring = Ring.PILOT
+        elif manifest and complete_pilots:
+            ring = Ring.PILOT if manifest in pilots else Ring.PRODUCTION
+        else:
+            ring = None
+        serial = machine.get('serial')
+        seen = next((entry for entry in (observations or {}).values()
+                     if serial and serial in ((entry['observation'].get('machine') or {}).get('serial'),
+                                              (entry['observation'].get('target') or {}).get('serial'))),
+                    None)
+        observed, why = observed_facts(seen) if observations is not None else ({}, None)
+        facts.append(MachineFacts(names=names, serial_number=serial, munki_manifest=manifest,
+                                  ring=ring, **observed))
+        reasons[names[0]] = why
+    return facts, reasons
+
+
+def writeback(client, data_source, inventory_path, rings_path, *, apply=False, observations=None, now=None):
+    facts, reasons = machine_facts(inventory_path, rings_path, observations)
+    failed = False
+    for result in Fleet(client, data_source).sync(facts, apply=apply, now=now):
+        if result.status in ('unmatched', 'ambiguous'):
+            print(f'{result.name}: {result.status}; skipped')
+            continue
+        print(f'{result.name}: Bays row {result.page_id}')
+        for change in result.changes:
+            print(f'  {change.fact}: {_show(change.old)} -> {_show(change.new)}')
+        for fact in result.skipped:
+            why = reasons.get(result.name) if fact in OBSERVED else None
+            print(f'  {fact}: unknown (skipped{": " + why if why else ""})')
+        if result.status == 'changed':
+            print(f'{result.name}: Bays row changed since query; skipped')
+        elif apply and result.changes:
+            if isinstance(result.written, (Rejected, Ambiguous)):
+                failed = True
+                print(f'  NOT written: {result.written}')
+            else:
+                print('  written')
+    return 1 if failed else 0
+
+
+def _show(value):
+    return repr(getattr(value, 'value', value))

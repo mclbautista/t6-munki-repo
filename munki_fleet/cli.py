@@ -652,9 +652,16 @@ def cmd_bays_writeback(args, deps) -> int:
             return 2
         factory = lambda: NotionClient(token)
     try:
+        observations = None
+        now = datetime.fromisoformat(args.now) if args.now else None
+        if args.store:
+            now_text = args.now or datetime.now().astimezone().isoformat(timespec="seconds")
+            records = probe.ObservationStore(args.store).read()
+            observations = probe.latest_per_machine(records, now=now_text, max_age=args.max_age)
         with factory() as client:
-            return writeback(client, args.data_source, args.inventory, args.rings, apply=args.apply)
-    except (OSError, ValueError, KeyError, NotionError) as exc:
+            return writeback(client, args.data_source, args.inventory, args.rings,
+                             apply=args.apply, observations=observations, now=now)
+    except (OSError, ValueError, KeyError, NotionError, probe.ProbeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
@@ -677,6 +684,10 @@ def main(argv=None, deps: Optional[Deps] = None) -> int:
     p.add_argument("--inventory", default="data/machines.json")
     p.add_argument("--rings", default="data/rings.json")
     p.add_argument("--data-source", required=True, help="Notion Bays data source ID")
+    p.add_argument("--store", default=None,
+                   help="observation store; also writes client version, OS version and last check-in")
+    p.add_argument("--max-age", type=int, default=3600, help="seconds before an observation is stale")
+    p.add_argument("--now", default=None, help="treat this as now (for tests and replays)")
     p.add_argument("--apply", action="store_true", help="write changes (default: dry run)")
     p.set_defaults(func=cmd_bays_writeback)
     p = sub.add_parser("build"); common(p); p.set_defaults(func=cmd_build)

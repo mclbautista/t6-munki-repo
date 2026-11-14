@@ -1,0 +1,16 @@
+name: checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e '.[dev]'
+      - run: pytest
+      # The consumer contract (t6-core ADR 0002): no direct Notion call, no generated import.
+      - run: t6 check-consumer .
