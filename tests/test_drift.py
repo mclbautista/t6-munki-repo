@@ -255,3 +255,17 @@ def test_repo_url_percent_encodes_paths_with_spaces():
     """A published manifest is named `303B iMac`; a raw space is not a legal URL."""
     assert repo_url("http://192.168.88.188/MunkiRepo", "manifests/303B iMac") == \
         "http://192.168.88.188/MunkiRepo/manifests/303B%20iMac"
+
+
+def test_vendor_suite_items_are_checked_like_any_other_item(tmp_path):
+    """The Oct 30 amendment brought Adobe, Avid, Resolve and NTFS into scope (no deferred list)."""
+    suites = [item("davinci-resolve-studio"), item("Adobe Creative Cloud"),
+              item("Avid Media Composer"), item("NTFS for Mac")]
+    source = metadata_tree(tmp_path / "src", items=suites,
+                           manifests={"m": {"catalogs": ["testing"],
+                                      "optional_installs": [s["name"] for s in suites]}})
+    clean = integrity(source, seed_target(source, tmp_path / "ok"))
+    assert clean.ok is True, clean.describe()
+    broken = integrity(source, seed_target(source, tmp_path / "bad", with_payloads=False))
+    assert {f.subject for f in broken.findings if f.kind == "payload_missing"} == {
+        s["name"] for s in suites}, broken.describe()
