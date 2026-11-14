@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: munki-fleet
-Version: 0.1.0
-Summary: Build, publish and verify the T6 Munki repository metadata (see docs/adr/0001)
-Requires-Python: >=3.11
-Requires-Dist: t6[notion] @ git+https://github.com/mclbautista/t6-core.git@v0.3.0
-Provides-Extra: dev
-Requires-Dist: pytest>=7; extra == "dev"

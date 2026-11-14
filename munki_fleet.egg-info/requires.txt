@@ -1,4 +1,0 @@
-t6[notion] @ git+https://github.com/mclbautista/t6-core.git@v0.3.0
-
-[dev]
-pytest>=7
