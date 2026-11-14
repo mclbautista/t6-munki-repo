@@ -23,6 +23,16 @@ Bays projection, and the observation store remains the authoritative record of o
 amends ADR 0004 only to allow the specified Bays projection writes, not to make Bays an identity
 source or relax its other boundaries.
 
+## Amendment 2026-11-14: through `t6.fleet`
+
+Under the consumer contract (t6-core#115), this repo no longer calls `t6.notion` or names a Bays
+property. `bays-writeback` builds the machine facts from the inventory and rings data and calls
+`t6.fleet`, which owns the matching, the dry run, the write and the field mapping. The rules above
+still hold. With `--store`, the command also writes `Munki Client Version`, `Last Check-in` (Munki's
+own last run time, not the probe time) and `OS Version` from the newest observation per machine
+(`probe.latest_per_machine`); an unreachable, missing or stale observation leaves the existing
+values and the dry run says why.
+
 ## Consequences
 
 Bays can reflect selected facts without changing fleet clients or Munki metadata. A write is an
